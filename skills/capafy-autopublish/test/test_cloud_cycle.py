@@ -182,6 +182,18 @@ class CloudCycleTest(unittest.TestCase):
         self.assertIn('tenant-home/vault/capafy/credential', prompt)
         self.assertNotIn('Create an original product and listing offline', prompt)
 
+    def test_signup_prompt_spells_out_the_canonical_state_file_schema(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        # The host binding layer (maritime-tenant-binding.js) accepts exactly
+        # one outer shape; an agent-invented {state, transitions, binding}
+        # record makes the next cycle fail closed as tenant_signup_state_invalid.
+        self.assertIn('"schemaVersion": 1', prompt)
+        self.assertIn('"platformId": "capafy"', prompt)
+        self.assertIn('"state": "bound"', prompt)
+        self.assertIn('"history"', prompt)
+
     def test_signup_directive_for_a_foreign_tenant_is_rejected(self):
         self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive(tenantId='lm_22222222-2222-4222-8222-222222222222')
         with self.assertRaisesRegex(ValueError, 'signup_directive_invalid'):
@@ -249,12 +261,24 @@ class CloudCycleTest(unittest.TestCase):
         self.env.update(FOUNDER_SECRET='fixture-private', SUPABASE_SERVICE_ROLE_KEY='fixture-db',
                         ANICCA_USAGE_LEDGER='/parent/usage.jsonl',
                         ANICCA_TOKEN_BUDGET_LEDGER='/parent/budget.jsonl',
-                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model')
+                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model',
+                        CAPAFY_HOST_OPENROUTER_KEY='fixture-tenant-host-key')
         self.run_cycle()
         child = self.calls[0][1]['env']
         self.assertNotIn('FOUNDER_SECRET', child)
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', child)
         self.assertEqual(child['LM_CLOUD_MODEL_API_KEY'], 'fixture-tenant-model')
+        # The tenant-scoped Capafy host key provisioned into THIS computer's
+        # own environment crosses to its own agent (the run_online funding
+        # gate reads process env only on maritime); it is the tenant's key
+        # for the tenant's own listings, not a founder-host value.
+        self.assertEqual(child['CAPAFY_HOST_OPENROUTER_KEY'], 'fixture-tenant-host-key')
+        # The Capafy duplicate gate judges through the tenant's own cloud
+        # model route, never the founder's claude CLI login (absent here by
+        # design); cloud_cycle wires the CLI-shaped runner into the child env.
+        gate_runner = MODULE.parent / 'dupgate_cloud_runner.py'
+        self.assertEqual(child['CAPAFY_DUPGATE_CLAUDE_BIN'], str(gate_runner))
+        self.assertTrue(gate_runner.is_file())
         for key in ['ANICCA_USAGE_LEDGER', 'ANICCA_TOKEN_BUDGET_LEDGER', 'TMPDIR']:
             self.assertTrue(Path(child[key]).is_relative_to(self.home), key)
 

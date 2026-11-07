@@ -193,15 +193,26 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
         final = result('effect_unknown', 'occurrence_workspace_unavailable')
         _save(receipt, dict(initial, result=final))
         return final
-    # Only the tenant model key crosses this boundary; founder/provider secrets do not.
+    # Only tenant-scoped keys cross this boundary; founder/provider secrets
+    # do not. CAPAFY_HOST_OPENROUTER_KEY here is the tenant's OWN host key,
+    # provisioned into this computer's own environment (e.g. the Maritime
+    # agent env): it funds the tenant's own run_online listings, and the
+    # pre-publish funding gate reads process env only on maritime hosts —
+    # without this pass-through the gate can never pass on a tenant.
     child = {key: context[key] for key in (
         'PATH', 'LANG', 'LC_ALL', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
-        'LM_CLOUD_MODEL_API_KEY',
+        'LM_CLOUD_MODEL_API_KEY', 'CAPAFY_HOST_OPENROUTER_KEY',
     ) if key in context}
     # Image-owned binary only; never inherit another user's browser/profile/CDP.
     browser = '/usr/local/bin/lm-cloud-chromium'
     if os.access(browser, os.X_OK):
         child.update(CAPAFY_CHROMIUM=browser, CLOAKBROWSER_BINARY_PATH=browser)
+    # The Capafy duplicate gate's model judge runs on this computer's own
+    # cloud model route (AGENT_RUNNER_CONFIG + LM_CLOUD_MODEL_API_KEY above).
+    # The founder's claude CLI login is not a tenant dependency: inside this
+    # computer the CLI exists but is deliberately not logged in, which left
+    # the gate fail-closed with publishable=0 for every tenant.
+    child.update(CAPAFY_DUPGATE_CLAUDE_BIN=str(RELEASE / 'skills/capafy-autopublish/scripts/dupgate_cloud_runner.py'))
     child.update({key: str(path) for key, path in child_paths.items() if key != 'EVIDENCE_DIR'})
     child.update(AGENT_RUNNER_CONFIG=str(config), AGENT_RUNNER_WORKDIR=str(occurrence_workspace),
                  LM_RUNTIME_HOST='maritime', LM_RUNTIME_TENANT_ID=tenant_id,
@@ -231,8 +242,10 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
             f"1) Read your own agent mail identity from {signup['identityPath']} (create it under your tenant home vault first if absent; it is your own agent mail, never a founder or company account).",
             '2) Using the image-owned browser, register a NEW Capafy publisher account with that identity and complete any email confirmation sent to that mailbox.',
             f"3) Save the credential material ONLY to {signup['credentialPath']} (file mode 0600) and the browser session ONLY under {signup['browserSessionPath']}; never print credential values in artifacts, evidence, or output.",
-            f"4) Record completion in {signup['stateFile']}: advance the state none -> signed_up -> bound and store the references-only binding "
-            f"{{tenantId, provider: 'capafy', subjectId: <your Capafy publisher subject id>, credentialRef: '{signup['credentialRef']}', browserSessionRef: '{signup['browserSessionRef']}'}}.",
+            f"4) Record completion in {signup['stateFile']} as exactly one JSON object in the canonical schema below (the host binding layer rejects any other outer shape, so do not invent fields such as 'transitions'): "
+            f'{{"schemaVersion": 1, "tenantId": "{tenant_id}", "platformId": "capafy", "state": "bound", '
+            f'"binding": {{"tenantId": "{tenant_id}", "provider": "capafy", "subjectId": "<your Capafy publisher subject id>", "credentialRef": "{signup["credentialRef"]}", "browserSessionRef": "{signup["browserSessionRef"]}"}}, '
+            f'"history": [{{"from": "none", "to": "signed_up", "at": "<ISO-8601 timestamp>"}}, {{"from": "signed_up", "to": "bound", "at": "<ISO-8601 timestamp>"}}]}}.',
             'Do not publish listings in the signup cycle; publication starts in a later bound cycle.',
         ])
     else:

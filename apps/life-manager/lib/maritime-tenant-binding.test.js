@@ -88,6 +88,39 @@ test('resolution materializes a paths-only publisher session and never reads cre
   assert.equal(JSON.stringify(manifest).includes(SECRET), false);
   assert.equal(fs.statSync(resolved.manifestPath).mode & 0o077, 0);
 });
+test('host writes hand the directories they create to the tenant uid', (t) => {
+  // Regression (2026-11-07 E2E): atomicJson created runtime/capafy-publisher
+  // directories as root with mode 0700 and chowned only the file, so the
+  // dropped-privilege (uid 10001) cycle could not even stat the session
+  // manifest inside them and the first bound cycle crashed.
+  const home = tenantHome(t);
+  writeVaultFixture(home);
+  const publisherStateHome = path.join(home, 'runtime', 'capafy-publisher');
+  const directoryFds = new Map();
+  const handed = [];
+  const recording = { ...fs,
+    openSync(target, flags, mode) {
+      const fd = fs.openSync(target, flags, mode);
+      if (typeof flags === 'number' && (flags & fs.constants.O_DIRECTORY)) directoryFds.set(fd, String(target));
+      return fd;
+    },
+    fchownSync(fd, uid, gid) {
+      // Record instead of performing: the test process is not root, so a real
+      // cross-uid fchown would fail with EPERM. Directory assertions below pin
+      // the behavior; file fds keep the pre-existing swallow.
+      if (directoryFds.has(fd)) handed.push({ target: directoryFds.get(fd), uid, gid });
+    },
+  };
+  const getuid = process.getuid;
+  process.getuid = () => 0;
+  t.after(() => { process.getuid = getuid; });
+  const resolved = resolveTenantBinding({ binding: binding(), tenantId: UID, platformId: 'capafy',
+    stateHome: home, publisherStateHome, fsImpl: recording });
+  assert.equal(resolved.status, 'resolved');
+  const owned = handed.filter(entry => entry.uid === 10001 && entry.gid === 10001).map(entry => entry.target);
+  assert.ok(owned.includes(path.join(publisherStateHome, 'sessions')), 'sessions directory handed to the tenant uid');
+  assert.ok(owned.includes(path.join(publisherStateHome, 'sessions', 'capafy')), 'platform directory handed to the tenant uid');
+});
 test('resolution fails closed on missing, exposed, or escaping vault material', (t) => {
   const home = tenantHome(t);
   const publisherStateHome = path.join(home, 'runtime', 'capafy-publisher');
