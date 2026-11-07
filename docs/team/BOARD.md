@@ -10,6 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [ChatGPT / Manager P09+BFM+INT02 evidence] claim: research/manager-p09-bfm01-bfm02-int02-20261107 (isolated .worktrees/manager-model-eval-20261107). Own only new pinned empirical HeartSteps assignment evaluator, open-license Qwen heldout evaluation, scoped tests/workflow, source-backed verification docs/slides. No production, credentials, marketing, current SSOT cursor or other agents' owned scripts. Existing P09 PR #9292 preserved.
 - [Codex / CLOUD-SINGLE-RUNTIME] 本番Maritime一つ・Naïve大会専用の設計/原子的計画を所有。状態と実行順の正本→統合SSOT末尾「Life Manager Cloud：本番Maritime一つ・Naïve大会専用」。provider/他owner変更なし。
 - [home-codex / NEAR反復外注report統合] task1d5ec011dfbf4098c35454c4、owner home-codex、branch docs/near-integration-1d5ec0。PR9219は必要CI15件成功後main67596940b8へ公式統合、原稿/CSV/証拠3件の公式blob一致。5pending/受注0、売上/費用実額の新receiptなし。現在cursor=本訂正CI→main→既存hourly全assignment照合、受注時の最新brief/契約確認とSLA内納品。親接続/Naive・会計・投稿・lease/fence維持、追加bid/submit/課金0。正本→NEAR初回販売spec task1d5ec0。
 - [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
