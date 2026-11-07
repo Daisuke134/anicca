@@ -1,6 +1,19 @@
 # MG-01｜実ホストS1 Qwen3-4B対既存ルールの比較実験契約
 
-2026-11-07。唯一の実装カーソルは、統合SSOTのMG-01。これは新たな独立ロードマップではなく、**MG-01一件の実行証拠と追試条件**。
+2026-11-07。実行開始時の唯一のカーソルはMG-01。実モデル・課金・独立readbackを受入後、唯一のカーソルは**MG-02**へ更新。これは新たな独立ロードマップではなく、元のMG-01一件の実行証拠と追試条件である。
+
+## 実際に得られた結果（公式GitHub Actions）
+
+- [実行run #42393800213](https://github.com/Daisuke134/life-manager/actions/runs/42393800213)：正式workflow完了・success。モデルファイル2,497,280,736bytes/SHA256を照合した本物のforward passが1回。
+- 実サイトのManifest SHA256 bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff、source f8e11d27b9f98b511d6fdc55e2781cacbe26f8a5。公開6HTMLを比較前後の2回、別のMacでさらに1回GETしSHA一致。
+- 従来のルール判断 NO_ACTION、Qwen3-4Bの判断 REVIEW_ONLY、**不一致**。モデルは具体的な修正箇所の根拠を示していない。自動修正に転用せず、Qwenのモデル昇格は明示的に拒否。
+- 正本の処理時間：既存ルール0.004287秒、モデル起動+推論46.606165秒、元ホストGET0.293709秒。公式GitHubジョブ全体135,000ms。
+- GitHub Actions公式Billing/Timing APIではUbuntuのbillable=0ms、ジョブ1件。GitHub公開リポジトリの標準runner掲載料金=0ドル/分であるが、銀行/個別請求明細の確認はしておらずinvoice=null。実際の運用コストをゼロと一般化しない。
+- モデルのプロンプトは公的サイトの公開リンクだけ。実人間の登録・行動介入・メンタルヘルス状態取得・通知・ホスト書込・承諾省略は**全0件**。利用者の便益、汎化、因果効果、長期の業務改善はNOT_MEASURED。
+- MG-01は**公開サイト限定の技術的S1比較が成立した**ことだけを受入。ほかの一般化したモデル・製品品質は未達。次は統合SSOTのMG-02「データの目的・本番権限・撤回/停止」の一本のみ。
+- [Qwen・既存ルール比較JSON](MG01_S1_REAL_QWEN_VS_INCUMBENT_42393800213.json)、[公式Billing JSON](MG01_S1_OFFICIAL_GHA_BILLING_42393800213.json)、[13条件の受入JSON](MG01_TECHNICAL_S1_ACCEPTANCE_20261107.json)、[最新の一つのカーソル](MANAGER_SINGLE_CURRENT_CURSOR_20261107.json)。
+
+---
 
 ## 何を実行するのか
 

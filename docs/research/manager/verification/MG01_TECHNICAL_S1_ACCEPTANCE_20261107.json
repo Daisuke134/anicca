@@ -1,0 +1,58 @@
+{
+  "accepted_scope": "first real publicly accessible company-owned site same-snapshot technical model-vs-incumbent shadow with immutable release provenance",
+  "actual_provider_invoice_usd": null,
+  "all_technical_acceptance_conditions": {
+    "actual_qwen4b_forward_with_pinned_gguf": true,
+    "known_original_host_commit": true,
+    "model_not_production_promoted": true,
+    "no_world_effect_or_personal_user_data": true,
+    "nonpaid_public_standard_runner_policy": true,
+    "official_billable_runner_ms_zero": true,
+    "official_github_run_success": true,
+    "public_source_with_exact_owner": true,
+    "same_snapshot_decisions_measured": true,
+    "site_baseline_model_latency_measured": true,
+    "six_page_sha256_independent_get": true,
+    "source_manifest_and_prompt_sha_match": true,
+    "source_verification_before_model": true
+  },
+  "completed_mg_id": "MG-01",
+  "external_writes": 0,
+  "github_actions_run_url": "https://github.com/Daisuke134/life-manager/actions/runs/42393800213",
+  "human_outcome_measured": false,
+  "independent_external_readback": "SAME_PUBLIC_SNAPSHOT",
+  "latency_seconds": {
+    "baseline_latency_seconds": 0.004287,
+    "host_latency_seconds": 0.293709,
+    "model_latency_seconds": 46.606165
+  },
+  "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+  "model_production_approved": false,
+  "model_sha256": "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
+  "next_mg_id": "MG-02",
+  "not_accepted": [
+    "Qwen superiority or factual correctness",
+    "customer/person benefit",
+    "individual person modeling",
+    "official payer invoice",
+    "continuous live host policy comparison",
+    "production model/action authorization"
+  ],
+  "notifications_sent": 0,
+  "official_actions_run_conclusion": "success",
+  "official_actions_run_status": "completed",
+  "official_billable_ubuntu_ms": 0,
+  "official_public_standard_runner_list_rate_usd_per_minute": 0.0,
+  "official_ubuntu_run_duration_ms": 135000,
+  "one_current_task_cursor_change_only": true,
+  "one_snapshot_comparison": {
+    "agreement": false,
+    "baseline": "NO_ACTION",
+    "model": "REVIEW_ONLY"
+  },
+  "personal_data_accessed": false,
+  "schema": "manager.mg01.technical_s1_acceptance.v1",
+  "source_commit": "f8e11d27b9f98b511d6fdc55e2781cacbe26f8a5",
+  "source_manifest_sha256": "bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff",
+  "status": "TECHNICAL_S1_ACCEPTED_MODEL_NOT_PROMOTED"
+}

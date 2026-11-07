@@ -1,3 +1,9 @@
+# 【新しい実験による受入更新】
+
+**この文書は最初の公開GETだけを実施した時点の履歴。現在は、実モデルを使ったS1比較をGitHub Actions run #42393800213で実施、同サイトSHA三度一致、時間と公式課金対象時間0msを受入済み。**Qwen REVIEW_ONLY / 従来 NO_ACTION で不一致、モデル昇格なし。MG-01の限定技術S1を完了扱いとし、唯一の現在カーソルはMG-02。詳細は [最新のS1研究プロトコル](MG01_S1_QWEN_REAL_PUBLIC_HOST_PROTOCOL_20261107_JA.md)。以下はhistorical readback情報。
+
+---
+
 # Manager MG-01｜公式公開ホストの読み取り専用Shadow 実測（2026-11-07）
 
 **唯一の現在の実装カーソル：MG-01（G3 / P00-3 / P05-5 S1 / P06-1）。** 正式な順番付きTODOと完了条件は [統合SSOT](../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md) のMANAGER MG表のみ。ここでは観測事実だけを記録し、第二のTODOは作らない。
