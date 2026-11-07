@@ -10,7 +10,7 @@ from decimal import Decimal
 from collections import defaultdict
 import json
 
-KINDS = {"revenue", "inference", "tool", "human", "fee", "assist_seconds"}
+KINDS = {"revenue", "refund", "inference", "tool", "human", "fee", "assist_seconds"}
 STATES = {"VERIFIED_SUCCESS", "VERIFIED_FAILURE", "NO_ACTION", "UNKNOWN"}
 TIERS = {"SYNTHETIC", "OBSERVED", "RECONCILED", "ESTIMATED", "UNKNOWN"}
 COST_KINDS = {"inference", "tool", "human", "fee"}
@@ -36,6 +36,7 @@ class Event:
     currency: str
     source_ref: str
     evidence_tier: str
+    seconds: int = 0  # duration only for assist_seconds, never money
 
 
 def _valid_event(event: Event) -> None:
@@ -49,7 +50,14 @@ def _valid_event(event: Event) -> None:
         raise ValueError("this synthetic demo requires USD; add explicit FX before mixing")
     if type(event.amount_minor) is not int or event.amount_minor < 0:
         raise ValueError("amount_minor must be a nonnegative integer")
-    if event.kind == "revenue" and event.evidence_tier == "ESTIMATED":
+    if type(event.seconds) is not int or event.seconds < 0:
+        raise ValueError("seconds must be nonnegative integer")
+    if event.kind == "assist_seconds":
+        if event.amount_minor != 0 or event.seconds <= 0:
+            raise ValueError("assistance duration cannot be money")
+    elif event.seconds != 0:
+        raise ValueError("non-assistance event cannot carry seconds")
+    if event.kind == "revenue" and event.evidence_tier not in {"SYNTHETIC", "RECONCILED"}:
         raise ValueError("estimated revenue cannot be recognized")
 
 
@@ -76,18 +84,20 @@ def summarize(works: list[Work], events: list[Event]) -> dict:
         _valid_event(e)
         if e.work_item_id not in ids:
             raise ValueError("unallocated source cost: must report separately")
-        amounts[e.work_item_id][e.kind] += e.amount_minor
+        amounts[e.work_item_id][e.kind] += e.seconds if e.kind == "assist_seconds" else e.amount_minor
 
-    all_complete = all(w.cost_coverage_complete and w.revenue_coverage_complete for w in works)
+    all_complete = (all(w.cost_coverage_complete and w.revenue_coverage_complete for w in works)
+                    and all(e.evidence_tier in {"SYNTHETIC", "RECONCILED"} for e in events))
     totals = {k: sum(amounts[w.work_item_id][k] for w in works)
               for k in KINDS}
     total_cost = sum(totals[k] for k in COST_KINDS)
+    net_revenue = totals["revenue"] - totals["refund"]
     successful = sum(w.state == "VERIFIED_SUCCESS" for w in works)
     assisted = sum(amounts[w.work_item_id]["assist_seconds"] > 0 for w in works)
     verified = {
-        "revenue_minor": totals["revenue"] if all_complete else None,
+        "revenue_minor": net_revenue if all_complete else None,
         "cost_minor": total_cost if all_complete else None,
-        "contribution_margin_minor": totals["revenue"] - total_cost if all_complete else None,
+        "contribution_margin_minor": net_revenue - total_cost if all_complete else None,
         "cost_per_verified_success_minor": str(Decimal(total_cost) / successful) if all_complete and successful else None,
     }
     per_work = []
@@ -98,9 +108,9 @@ def summarize(works: list[Work], events: list[Event]) -> dict:
         per_work.append({
             "id": w.work_item_id,
             "state": w.state,
-            "revenue_minor": a["revenue"] if complete else None,
+            "revenue_minor": a["revenue"] - a["refund"] if complete else None,
             "cost_minor": cost if complete else None,
-            "margin_minor": a["revenue"] - cost if complete else None,
+            "margin_minor": a["revenue"] - a["refund"] - cost if complete else None,
             "human_seconds": a["assist_seconds"],
             "benefit_state": w.benefit_state,
             "financial_status": "COMPLETE" if complete else "INCOMPLETE",
@@ -112,7 +122,8 @@ def summarize(works: list[Work], events: list[Event]) -> dict:
         "human_assisted_work_count": assisted,
         "human_seconds_total": totals["assist_seconds"],
         "all_financial_coverage_complete": all_complete,
-        "known_event_total_revenue_minor": totals["revenue"],
+        "known_event_total_revenue_minor": net_revenue,
+        "known_refund_minor": totals["refund"],
         "known_event_total_cost_minor": total_cost,
         "verified_financials": verified,
         "per_work": per_work,
@@ -126,9 +137,9 @@ def demo() -> tuple[list[Work], list[Event]]:
         Work("B", "VERIFIED_FAILURE", "synthetic:independent-readback:B", True, True),
         Work("C", "NO_ACTION", "synthetic:safety-stop:C", True, True),
     ]
-    def event(i: str, work: str, kind: str, cents: int) -> Event:
+    def event(i: str, work: str, kind: str, cents: int, seconds: int = 0) -> Event:
         return Event(i, "synthetic-provider:"+i, work, kind, cents, "USD",
-                     "synthetic:source:"+i, "SYNTHETIC")
+                     "synthetic:source:"+i, "SYNTHETIC", seconds=seconds)
     events = [
         event("a-r", "A", "revenue", 500),
         event("a-i", "A", "inference", 30),
@@ -137,7 +148,7 @@ def demo() -> tuple[list[Work], list[Event]]:
         event("b-i", "B", "inference", 80),
         event("b-t", "B", "tool", 50),
         event("b-h", "B", "human", 100),
-        event("b-s", "B", "assist_seconds", 120),
+        event("b-s", "B", "assist_seconds", 0, seconds=120),
         event("c-i", "C", "inference", 10),
     ]
     return works, events
