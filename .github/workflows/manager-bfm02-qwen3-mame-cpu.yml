@@ -106,14 +106,13 @@ jobs:
           result=subprocess.run(command,capture_output=True,timeout=100,check=False)
           raw=result.stdout.decode("utf-8",errors="replace")+"\n"+result.stderr.decode("utf-8",errors="replace")
           answer=parse_llama_reply(raw)
+          import re
           sanitized=raw.replace(prompt,"[PUBLIC_CONTEXT_AND_DESCRIPTION_REDACTED]")
-          # Public sources only; redact raw Japanese context to avoid logging data.
-          for marker in ("状況: ","Aのコマの描写: ","Bのコマの描写: "):
-              if marker in sanitized:
-                  sanitized="[REDACTED_PROMPT_PRESENT] "+repr(sanitized[:120])
-                  break
+          sanitized=re.sub(r"(?m)^.*(?:状況:|Aのコマの描写:|Bのコマの描写:|回答（A/Bの一文字）:).*$",
+                           "[PUBLIC_SOURCE_TEXT_REDACTED]",sanitized)
           print("BFM02_CANARY",{"returncode":result.returncode,"chars":len(raw),
-              "parsed_answer":answer,"sanitized_log_prefix":repr(sanitized[:900])},flush=True)
+              "prompt_bytes":len(prompt.encode("utf8")),
+              "parsed_answer":answer,"sanitized_log_tail":repr(sanitized[-850:])},flush=True)
           assert result.returncode==0 and answer in ("A","B"), "No valid generated A/B; stop BEFORE all 24 eval cases"
           PY_CANARY
 
