@@ -95,7 +95,7 @@
 
 ## Task 5: 同一候補buildの全画面E2E動画と審査提出（G5）
 
-**状態:** 1.9.8/build 818の提出は取消済み。再提出は禁止条件がすべてPASSするまで行わない。現ASC stateはversion=`DEVELOPER_REJECTED`、build 818=`VALID`、旧submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`=`COMPLETE`/item=`REMOVED`。
+**状態:** 1.9.8/build 818に対する提出は取消済み。最新ASC readbackはversion=`DEVELOPER_REJECTED`、build 818=`VALID`、latest submission `d584f304-8581-4b11-b803-f8289b804e35`=`COMPLETE`/item=`REMOVED`、`inFlight=false`。このsubmissionは今回のCodex操作で作成しておらず、submittedByActorはAPI_KEYだが実行者/起動processはASC履歴から特定できない。再提出は全証拠の提示とユーザーの明示承認まで行わない。
 
 **Xcode Cloud:** enabled `Default` workflowはlockedで`main` branchだけを受け付け、PR/manual branch conditionは空。Draft PR #9289のApple SCM PR IDを使った起動はbranch未登録で拒否され、buildは作成されなかった。既存`Untitled Workflow`はdisabled/unlocked、schemeは`aniccaios`だがcontainer pathが旧値`aniccaios/aniccaios.xcodeproj`。次はこのworkflowを現行project pathと今回のfeature branchへ限定して一回だけ使い、run後にdisabledへ戻す。Xcode Cloud environment variablesは公開APIに現れず、Apple web sessionは2FA SMSをMac Messagesで取得できず未認証。Mixpanel token注入/readbackは未確認で、build成功を本番tracking成功と扱わない。
 

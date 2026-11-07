@@ -14,7 +14,7 @@
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
-| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818はbuild=`VALID`。submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消し後`COMPLETE`、item=`REMOVED`。version=`DEVELOPER_REJECTED` | doctorの1 blockerは`review.submission.removed_items_only`。新submissionは存在しない。全製品ゲート前は提出しない |
+| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818はbuild=`VALID`。latest submission `d584f304-8581-4b11-b803-f8289b804e35`は取消し後`COMPLETE`、item=`REMOVED`、`inFlight=false`。version=`DEVELOPER_REJECTED` | 履歴上のsubmittedByActorはAPI_KEY/emailなしで実行元未特定。doctorの1 blockerは`review.submission.removed_items_only`。新submissionは作成せず、全製品ゲートと明示承認後だけ提出 |
 | 計測 | build 818の`AnalyticsManager.swift`はMixpanelへ送信し、PostHog設定時には同じeventも送信。`PlanSelectionStepView.swift`に直接PostHog capture/flag経路がある。Package.resolvedはMixpanel `master` revision `6e2a786b…`とPostHog 3.49.0 | **選定はMixpanel一本**。イベント受信・ID/property・PostHogとの重複実測・Mixpanel実験プランは未確認。SDK導入は本番受信の証拠ではない |
 | Onboarding | 9つの列挙stepと別の2段paywallが存在 | コメントの「10/20-step」と実際の画面数を混同しない |
 | 課金 | 閉じると無料利用へ進めるsoft paywall。`variant: "b"` 呼び出し | フラグの存在だけでA/B稼働としない |
@@ -35,7 +35,7 @@
 | 版 | build/source | 含まれる変更 | 現在の状態 |
 |---|---|---|---|
 | 1.9.7 | 816、source `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`、PR #9272 | 初回目的選択→最初のaffirmation→任意通知→soft paywall、affirmation catalog/保存/like/推薦、swipe/通知遷移と一部画面/購入event | 旧提出は取り下げ済み。現行App Store version recordは1.9.8へ更新済み |
-| 1.9.8 | 818、source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の変更に、同じquote IDがpersonalized feedにもある場合に通知本文を表示文字列へ保持する修正を追加 | build=`VALID`。submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消後`COMPLETE`/item`REMOVED`。version=`DEVELOPER_REJECTED`。新submissionなし |
+| 1.9.8 | 818、source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の変更に、同じquote IDがpersonalized feedにもある場合に通知本文を表示文字列へ保持する修正を追加 | build=`VALID`。最新submission `d584f304-8581-4b11-b803-f8289b804e35`は取消後`COMPLETE`/item`REMOVED`。version=`DEVELOPER_REJECTED`。新submissionなし |
 
 どちらもscreen-level analyticsがMixpanel serviceで受信されたこと、全画面の離脱率、MixpanelからOpenへのfunnel、paid restoreのevent、build 818そのものの全画面動画を証明しない。現在の限定公開動画2本はSimulator candidate build 817の録画である。
 
