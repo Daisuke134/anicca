@@ -9,7 +9,13 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { prisma } from './lib/prisma.js';
-import { buildOpenApiDocument, buildPaymentRoutes } from './lib/discovery.js';
+import {
+  buildAgentCardDocument,
+  buildLlmsText,
+  buildOpenApiDocument,
+  buildPaymentRoutes,
+  buildWellKnownDocument,
+} from './lib/discovery.js';
 import { listSettlementRecords, recordSettlement } from './lib/settlement-records.js';
 
 import buddhistCounselRouter from './routes/buddhistCounsel.js';
@@ -49,7 +55,12 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
   const limiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
-    skip: (req) => req.path === '/openapi.json' || req.path === '/favicon.ico',
+    skip: (req) => req.path === '/openapi.json'
+      || req.path === '/.well-known/x402'
+      || req.path === '/.well-known/agent.json'
+      || req.path === '/llms.txt'
+      || req.path === '/'
+      || req.path === '/favicon.ico',
   });
   app.use(limiter);
 
@@ -57,6 +68,34 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
     const configuredOrigin = process.env.PUBLIC_ORIGIN;
     const requestOrigin = `${req.protocol}://${req.get('host')}`;
     return res.json(buildOpenApiDocument({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  app.get('/.well-known/x402', (req, res) => {
+    const configuredOrigin = process.env.PUBLIC_ORIGIN;
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    return res.json(buildWellKnownDocument({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  app.get('/.well-known/agent.json', (req, res) => {
+    const configuredOrigin = process.env.PUBLIC_ORIGIN;
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    return res.json(buildAgentCardDocument({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  app.get('/llms.txt', (req, res) => {
+    const configuredOrigin = process.env.PUBLIC_ORIGIN;
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    res.type('text/plain; charset=utf-8');
+    return res.send(buildLlmsText({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  // Service index for humans and crawlers that start at the root: the agent
+  // card doubles as the landing document (the paid surface itself is the
+  // routes below, each behind its 402 challenge).
+  app.get('/', (req, res) => {
+    const configuredOrigin = process.env.PUBLIC_ORIGIN;
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    return res.json(buildAgentCardDocument({ origin: configuredOrigin || requestOrigin }));
   });
 
   app.get('/favicon.ico', (req, res) => {
@@ -105,7 +144,8 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
         ? new HTTPFacilitatorClient(cdpFacilitator)
         : new HTTPFacilitatorClient({ url: 'https://x402.org/facilitator' });
       const server = new x402ResourceServer(facilitatorClient);
-      server.register(network, new ExactEvmScheme());
+      const schemeServer = new ExactEvmScheme();
+      server.register(network, schemeServer);
       server.onAfterSettle(async context => {
         await recordSettlement(context);
       });
@@ -131,13 +171,33 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
       }
 
       if (isX402Ready) {
+        const paymentRoutes = buildPaymentRoutes({
+          payTo: PAY_TO,
+          network,
+          declareDiscoveryExtension,
+          // Lets each route config mirror the Payment Required document
+          // into the 402 response body (see discovery.js); parsePrice is
+          // the scheme's own local conversion, so body and header agree.
+          parsePrice: (price, net) => schemeServer.parsePrice(price, net),
+        });
+        // Directories such as 402index verify a listing by probing the
+        // resource URL with GET, but the paid operations are POST-only and
+        // used to answer those probes with 404. Serve the same 402
+        // challenge for GET on every POST route. The routers stay
+        // POST-only, and the payment middleware never settles a payment
+        // for a >= 400 response, so a paid GET still ends at the router's
+        // 404 without any funds moving. The GET variants drop the bazaar
+        // discovery extension: it declares the POST body schema, which
+        // the middleware rejects as invalid under a GET route.
+        const middlewareRoutes = { ...paymentRoutes };
+        for (const [route, config] of Object.entries(paymentRoutes)) {
+          if (route.startsWith('POST ')) {
+            middlewareRoutes[`GET ${route.slice('POST '.length)}`] = { ...config, extensions: undefined };
+          }
+        }
         app.use(
           paymentMiddleware(
-            buildPaymentRoutes({
-              payTo: PAY_TO,
-              network,
-              declareDiscoveryExtension,
-            }),
+            middlewareRoutes,
             server,
             undefined,
             undefined,
@@ -154,7 +214,13 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
   // Fail-closed guard: if x402 not ready, all API routes return 503
   if (!isX402Ready) {
     app.use((req, res, next) => {
-      if (req.path === '/health' || req.path === '/openapi.json' || req.path === '/favicon.ico') return next();
+      if (req.path === '/health'
+        || req.path === '/openapi.json'
+        || req.path === '/.well-known/x402'
+        || req.path === '/.well-known/agent.json'
+        || req.path === '/llms.txt'
+        || req.path === '/'
+        || req.path === '/favicon.ico') return next();
       return res.status(503).json({ error: 'Service unavailable: x402 payment system not initialized' });
     });
   }

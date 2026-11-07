@@ -306,6 +306,46 @@ function splitRoute(route) {
   return { method, path };
 }
 
+// Mirrors the default applied by @x402/core's buildPaymentRequirements
+// (resourceConfig.maxTimeoutSeconds || 300); the route configs built here
+// never override it.
+const MAX_TIMEOUT_SECONDS = 300;
+
+// Body mirror of the Payment Required document that @x402/core places in the
+// PAYMENT-REQUIRED header. In x402 v2 the middleware answers unpaid API
+// requests with an empty {} body unless the route config supplies
+// unpaidResponseBody, which several directories (402index) and HTTP-native
+// buyers rely on to read price, network, and payee without decoding headers.
+// The header stays authoritative; this body is built from the same catalog
+// entry and the scheme's own parsePrice, so the two cannot drift apart.
+export async function buildUnpaidPaymentRequiredBody({
+  entry,
+  payTo,
+  network,
+  parsePrice,
+  resourceUrl,
+}) {
+  const parsed = await parsePrice(`$${entry.price}`, network);
+  return {
+    x402Version: 2,
+    error: 'Payment required',
+    resource: {
+      url: resourceUrl || '',
+      description: entry.description,
+      mimeType: 'application/json',
+    },
+    accepts: [{
+      scheme: 'exact',
+      network,
+      amount: parsed.amount,
+      asset: parsed.asset,
+      payTo,
+      maxTimeoutSeconds: MAX_TIMEOUT_SECONDS,
+      extra: { ...(parsed.extra || {}) },
+    }],
+  };
+}
+
 function discoveryExtension(entry, method) {
   return {
     input: entry.input.example,
@@ -319,6 +359,7 @@ export function buildPaymentRoutes({
   payTo,
   network,
   declareDiscoveryExtension,
+  parsePrice,
 }) {
   if (!payTo || !network || typeof declareDiscoveryExtension !== 'function') {
     throw new TypeError('payTo, network, and declareDiscoveryExtension are required');
@@ -337,6 +378,23 @@ export function buildPaymentRoutes({
       extensions: {
         ...declareDiscoveryExtension(discoveryExtension(entry, method)),
       },
+      // Only when the caller supplies the scheme's parsePrice (server.js
+      // does, from its registered ExactEvmScheme) can the unpaid 402 carry
+      // the payment document in its body as well as in the header.
+      ...(typeof parsePrice === 'function'
+        ? {
+            unpaidResponseBody: async (context) => ({
+              contentType: 'application/json',
+              body: await buildUnpaidPaymentRequiredBody({
+                entry,
+                payTo,
+                network,
+                parsePrice,
+                resourceUrl: context?.adapter?.getUrl?.(),
+              }),
+            }),
+          }
+        : {}),
     }];
   }));
 }
@@ -409,4 +467,82 @@ export function buildOpenApiDocument({ origin }) {
     ...(origin ? { servers: [{ url: origin }] } : {}),
     paths,
   };
+}
+
+// Compatibility discovery surface (x402scan DISCOVERY.md spec B): directories
+// that do not read OpenAPI fan out from /.well-known/x402, which lists the
+// absolute resource URLs only; the live 402 challenge stays authoritative
+// for price, network, and payee.
+export function buildWellKnownDocument({ origin }) {
+  const base = origin ? origin.replace(/\/+$/, '') : '';
+  return {
+    version: 1,
+    resources: Object.keys(PAID_ROUTE_CATALOG).map(route => {
+      const { path } = splitRoute(route);
+      return `${base}${path}`;
+    }),
+    ownershipProofs: [],
+  };
+}
+
+const SERVICE_NAME = 'Anicca x402 Agent APIs';
+const SERVICE_DESCRIPTION = 'Small paid JSON tools for autonomous agents, settled in USDC over x402.';
+const SERVICE_CONTACT = Object.freeze({
+  name: 'Anicca',
+  email: 'contact@aniccaai.com',
+  url: 'https://aniccaai.com',
+});
+
+// Agent card served at /.well-known/agent.json (and mirrored at /): service
+// identity plus the endpoint index. Like the OpenAPI and well-known
+// documents it carries prices and descriptions only — never the payee
+// address; the live 402 challenge stays authoritative for payment details.
+export function buildAgentCardDocument({ origin }) {
+  const base = origin ? origin.replace(/\/+$/, '') : '';
+  return {
+    name: SERVICE_NAME,
+    description: SERVICE_DESCRIPTION,
+    url: base,
+    version: '1.0.0',
+    contact: SERVICE_CONTACT,
+    protocols: ['x402'],
+    discovery: {
+      x402Manifest: `${base}/.well-known/x402`,
+      openapi: `${base}/openapi.json`,
+      llms: `${base}/llms.txt`,
+    },
+    endpoints: Object.entries(PAID_ROUTE_CATALOG).map(([route, entry]) => {
+      const { method, path } = splitRoute(route);
+      return {
+        method,
+        url: `${base}${path}`,
+        description: entry.description,
+        price: { currency: 'USD', amount: entry.price, per: 'call' },
+      };
+    }),
+  };
+}
+
+// llms.txt (https://llmstxt.org/) index for LLM-driven buyers: the same
+// catalog facts as the OpenAPI document, in the plain-text discovery format.
+export function buildLlmsText({ origin }) {
+  const base = origin ? origin.replace(/\/+$/, '') : '';
+  const lines = [
+    `# ${SERVICE_NAME}`,
+    '',
+    '> Small paid JSON tools for autonomous agents, settled in USDC over the x402 protocol. No account and no API key: the x402 payment is the authentication. Every price below is a fixed per-call amount.',
+    '',
+    '## Discovery',
+    `- [x402 manifest](${base}/.well-known/x402): Machine-readable list of the paid resource URLs.`,
+    `- [OpenAPI document](${base}/openapi.json): Full request and response schemas with per-endpoint prices.`,
+    `- [Agent card](${base}/.well-known/agent.json): Service identity and the endpoint index in JSON.`,
+    '',
+    '## Paid endpoints',
+    ...Object.entries(PAID_ROUTE_CATALOG).map(([route, entry]) => {
+      const { method, path } = splitRoute(route);
+      return `- [${method} ${path}](${base}${path}): ${entry.description} Price: $${entry.price} per call.`;
+    }),
+    '',
+  ];
+  return lines.join('\n');
 }
