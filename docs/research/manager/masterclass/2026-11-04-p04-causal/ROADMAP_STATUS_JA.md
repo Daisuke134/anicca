@@ -3,6 +3,12 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
+
+## 2026-11-06｜Phase 8後半（P08-3・P08-4・P08-5）を既存学習経路に統合
+既存の1つのManager Roadmapから分岐しない。[Bandit/OPE](P08-3_JA.md)、[MDP/POMDP](P08-4_JA.md)、[同意・限定研究・安全監視](P08-5_JA.md)の一次資料に基づく日本語講義・FAQを追加。[BFM×ManagerBench仕様](BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md)にPolicy E、長期方策と人間便益Fの実装契約を追記。[研究スライド12枚分の原稿](journal_club/PHASE8_P08-3_TO_P08-5_RESEARCH_SLIDES_SOURCE_JA.md)と[日英記事原稿](../../articles/2026-11-06-learn-bandits-mdp-and-safe-interventions-ja.md)を作成。**118枚の既存研究PPTX/PDF・34枚発表版・公開Webは未変更**、原稿のみ。
+**P08-3〜5は講義/設計のみ。** Bandit・MDP/POMDP実コード、オンライン学習、本人への新しい通知、MRT新規実験、法律上/倫理上の承認、外部便益はすべて未実施。前例のOralytics 2025/2026とManager製品の効能を混同しない。日本の2026年8月改正倫理指針は12月1日から適用（現時点では未施行）。
+INT-02のHeartSteps割付再構築・適切な因果再現が後続学習方策の前提。これらはBFM-01/既存INT-02と同一製品ロードマップ内の工程であり、別事業にしない。
+
 ## 2026-11-05｜BFM-01の必須商用ライセンス・ゲート（最優先の検証結果）
 
 **今回の一次規約確認：** `befm/BeFM1.5-4B`のHugging FaceモデルカードはApache-2.0と記すが、同じカードから参照する公式[Be.FM Terms of Use](https://docs.google.com/document/d/10n7ccfUAf89yQhx5u1lF45o70JgsOEYNu8bDxtRKbHA/edit)（Last Updated 2025-07-24）には**Non-commercial（商用利用禁止）／No Distribution（第三者への再配布禁止）／No Derivatives（改変モデルの配布禁止）**が明記されている。この規約は旧LLaMA 3.1を参照しているため、Qwen3ベースのBe.FM 1.5へどの条項が適用されるかの解釈にも不明点がある。**モデルカードのApache表示だけから商用利用・派生公開が許されると判断しない。**
@@ -176,11 +182,11 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
-| P08-1 | JITAIと支援しない選択 | **残** | 必要な時点と文脈。 |
-| P08-2 | MRT・N-of-1・反復測定 | **残** | 同一人の繰返し、持越し、欠測。 |
-| P08-3 | バンディット・探索と活用 | **残** | 情報獲得と今の利益。 |
-| P08-4 | 状態、方策、価値、MDP／POMDP | **残** | 長期の支援と部分観測。 |
-| P08-5 | 同意・撤回・安全を備えた限定研究 | **残** | 必要な審査・専門性・独立した結果測定。 |
+| P08-1 | JITAIと支援しない選択 | **コード・20テストのPR #9278未マージ** | P07安全機構を再利用するread-only DRAFT_ONLY/NO_ACTIONゲート。mainへの統合は未完了。 |
+| P08-2 | MRT・N-of-1・反復測定 | **チャット講義済／原著因果再現は未完了** | HeartSteps元割付・6061判断点・WCLSの正しい再現がINT-02の前提。 |
+| P08-3 | バンディット・探索と活用 | **[一次資料に基づく講義を作成](P08-3_JA.md)／実装未着手** | MABWiser/OBP、OPEのsupport・propensity監査、NO_ACTIONとhard safety。 |
+| P08-4 | 状態、方策、価値、MDP／POMDP | **[一次資料に基づく講義を作成](P08-4_JA.md)／実装未着手** | Bellman・状態遷移・belief、人工世界の評価、長期の外挿誤差。 |
+| P08-5 | 同意・撤回・安全を備えた限定研究 | **[一次資料に基づく講義を作成](P08-5_JA.md)／研究未開始** | 同意/撤回/研究制度/監視/fallback。実際の便益・害の独立検証は未完。 |
 
 ### P09｜汎用性と移植
 
