@@ -17,6 +17,21 @@ class TextOnlyHumanMemeTests(unittest.TestCase):
         self.assertEqual(len(set(a+b+c)),250)
         self.assertEqual(len(set(a)&set(c)),0)
 
+    def test_echoed_public_japanese_prompt_then_single_generated_answer(self):
+        prompt = ("<|im_start|>user\n日本語の文脈を選ぶ\n"
+                  "状況: 店で会う\nAのコマの描写: 風景\nBのコマの描写: 三人\n"
+                  "回答（A/Bの一文字）:\n<|im_end|>\n<|im_start|>assistant\n")
+        stdout = ("Loading model...\n> <|im_start|>user\n"
+                  "状況: 店で会う\nAのコマの描写: 風景\nBのコマの描写: 三人\n"
+                  "回答（A/Bの一文字）:\nB\n\nExiting...\n")
+        self.assertEqual(parse_llama_reply(stdout, expected_prompt=prompt), "B")
+
+    def test_reject_ambiguous_prompt_or_multiple_bare_choices(self):
+        self.assertIsNone(parse_llama_reply("状況: 店で会う\nAのコマの描写: 風景\nBのコマの描写: 三人\nExiting..."))
+        self.assertIsNone(parse_llama_reply("A\nB\nExiting..."))
+        with self.assertRaises(ValueError):
+            parse_llama_reply("B\nExiting...", expected_prompt="状況: テスト\nB\n")
+
     def test_one_turn_cli_outputs_hidden_prompt_answer(self):
         # llama-cli with --single-turn --simple-io --no-display-prompt
         # returns generated text without an echoed ChatML assistant marker.
