@@ -63,7 +63,21 @@ function prepareMaritimeRuntime({ env = process.env, baseConfig, dataRoot = '/da
   // This marker has no credentials; actual per-agent access remains in memory/env.
   const authFile = path.join(home, 'runner-auth-empty.json');
   atomicJson(authFile, {});
-  task.candidates = [{ ...task.candidates[0], profile_alias: 'cloud' }];
+  // Optional per-tenant model override: the platform-injected endpoint and the
+  // tenant-provisioned endpoint do not always name the same model (e.g. a
+  // tenant routed to OpenRouter needs the provider-prefixed id). The override
+  // arrives through this computer's own environment only; an invalid value
+  // fails closed like every other model input above.
+  const modelOverride = env.LM_CLOUD_MODEL_ID;
+  if (modelOverride !== undefined && modelOverride !== '') {
+    if (typeof modelOverride !== 'string' || modelOverride.length > 128
+      || !/^[A-Za-z0-9][A-Za-z0-9._/:~-]*$/.test(modelOverride)) {
+      throw new Error('maritime_runtime_model_invalid');
+    }
+    task.candidates = [{ ...task.candidates[0], profile_alias: 'cloud', model: modelOverride }];
+  } else {
+    task.candidates = [{ ...task.candidates[0], profile_alias: 'cloud' }];
+  }
   const oldProvider = original.providers?.codex || {};
   const provider = {
     executable: 'codex', executable_fallbacks: [],
