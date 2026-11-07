@@ -244,15 +244,21 @@ def perform_live_model(cases: list[dict], cli: Path, gguf: Path) -> list[dict]:
     for i,row in enumerate(cases):
         started=time.monotonic()
         cmd=[str(cli),"-m",str(gguf),"-p",row["_prompt"],"-n","12","-c","1024","-t","4","--temp","0"]
-        proc=subprocess.run(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=75)
+        proc=subprocess.run(cmd,text=True,encoding="utf-8",errors="replace",stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=75)
         response=parse_llama_reply(proc.stdout) if proc.returncode==0 else None
         item={k:v for k,v in row.items() if k!="_prompt"}
         item.update({"model":response,"exit_code":proc.returncode,"seconds":round(time.monotonic()-started,3)})
         results.append(item)
+        # Diagnostics contain ONLY assistant-generation tail, never source prompt.
+        reply_marker = "<|im_start|>assistant\n"
+        tail = proc.stdout.rsplit(reply_marker,1)[-1] if reply_marker in proc.stdout else ""
+        diagnostic = {"marker_present": bool(tail),
+                      "generated_prefix": repr(tail.strip()[:75]) if response is None else "",
+                      "stdout_chars": len(proc.stdout)}
         print(json.dumps({
             "case":i+1,"context_id":item["context_id"],
             "response":response,"exit_code":proc.returncode,
-            "seconds":item["seconds"]},ensure_ascii=False),flush=True)
+            "seconds":item["seconds"],"diag": diagnostic},ensure_ascii=False),flush=True)
     return results
 
 
