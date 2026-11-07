@@ -1,0 +1,69 @@
+{
+  "all_tracks_better_than_baseline": false,
+  "global_accuracy": null,
+  "global_score_prohibited": true,
+  "no_test_label_train_leakage_claim": "study/context split asserted by original scripts; detailed row identity not independently encoded in every receipt",
+  "product_benefit_measured": false,
+  "prospective_human_intervention": false,
+  "schema": "managerbench.v1",
+  "shared_behavior_foundation_model_trained": false,
+  "source_provenance": "pinned official research result receipts; independently rerunnable via linked scripts",
+  "tracks": [
+    {
+      "baseline": 0.12007970488006758,
+      "candidate": 0.08025662672919869,
+      "delta": 0.0398230781508689,
+      "evidence_kind": "published_GPT4_effects_then_study_calibration",
+      "lower_is_better": true,
+      "n_groups": 36,
+      "scientific_boundary": "Published Figure1 aggregate effect contrasts; original RDS not replayed; macro bootstrap compares global calibrated vs k5 only.",
+      "source_sha256": "b51b86c03639728b39c713c815ec22b6daabf3383163efa70fd54366944a6214",
+      "split": "LOSO 69 train studies + 1 heldout; k5 target support/query different",
+      "status": "EXPLORATORY_IMPROVEMENT",
+      "task_id": "nature_effect",
+      "unit": "fractional_treatment_effect_RMSE"
+    },
+    {
+      "baseline": 0.18460451802248332,
+      "candidate": 0.18469405308231177,
+      "delta": -8.953505982844945e-05,
+      "evidence_kind": "published_human_5vote_aggregate_new_ridge",
+      "lower_is_better": true,
+      "n_groups": 50,
+      "scientific_boundary": "No manga image/dialogue; historical item mean performs slightly better; no individual laughing-person prediction.",
+      "source_sha256": "aad13533093fe9d2fcf80d0299c1abcaf751d3016e7d897b37604924abf56568",
+      "split": "disjoint Japanese context IDs: 160 train / 40 validation / 50 test",
+      "status": "NOT_DEMONSTRATED",
+      "task_id": "mame_rating",
+      "unit": "fractional_5vote_funniness_RMSE"
+    },
+    {
+      "baseline": 9.98677813675426,
+      "candidate": 9.924668001628204,
+      "delta": 0.062110135126056676,
+      "evidence_kind": "published_study_arm_aggregate_regression",
+      "lower_is_better": true,
+      "n_groups": 405,
+      "scientific_boundary": "Study bootstrap CI includes zero, so observed +0.062pp improvement not established as reliable; no individual treatment effects.",
+      "source_sha256": "eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b",
+      "split": "five-fold study-disjoint with train-only imputation",
+      "status": "NOT_DEMONSTRATED",
+      "task_id": "hbcp_quit_rate",
+      "unit": "smoking_cessation_arm_rate_MAE_percentage_points"
+    },
+    {
+      "baseline": 0.6111111111111112,
+      "candidate": 0.5555555555555556,
+      "delta": -0.05555555555555558,
+      "evidence_kind": "real_qwen3_4b_gguf_forward_and_human_aggregate",
+      "lower_is_better": false,
+      "n_groups": 18,
+      "scientific_boundary": "Separate independent five-vote ratings, NOT direct pairwise human judgments; no image understanding and pilot is small.",
+      "source_sha256": "aad13533093fe9d2fcf80d0299c1abcaf751d3016e7d897b37604924abf56568",
+      "split": "24 frozen heldout contexts; 6 human rating ties; 18 comparable",
+      "status": "NOT_DEMONSTRATED",
+      "task_id": "mame_qwen_pairwise",
+      "unit": "human_5vote_pairwise_proxy_strict_accuracy"
+    }
+  ]
+}
