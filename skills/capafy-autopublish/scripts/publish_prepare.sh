@@ -146,13 +146,20 @@ if (str(request.get("agent_id")) != sys.argv[3]
     raise SystemExit(1)
 PY
 fi
-read -r CAPAFY_HOSTED_MODEL_ID CAPAFY_HOSTED_MAX_TOKENS < <(
-  python3 - "$CFG_ONE" <<'PY'
+HOSTED_MODEL_FIELDS="$(python3 - "$CFG_ONE" <<'PY'
 import json, sys
 config = json.load(open(sys.argv[1], encoding="utf-8"))
 print(config["model_id"] or "", config["max_tokens"] or "")
 PY
-)
+)" || die "could not read hosted model contract from listing config"
+# No process substitution (< <(...)) here: it needs /dev/fd, which the
+# tenant agent's sandboxed shell does not provide (live failure 2026-11-07:
+# "line 149: /dev/fd/63: No such file or directory" killed the factory inside
+# an otherwise healthy tenant publish cycle). A heredoc over the captured
+# fields works in fd-less shells and leaves $@ untouched.
+read -r CAPAFY_HOSTED_MODEL_ID CAPAFY_HOSTED_MAX_TOKENS <<EOF
+$HOSTED_MODEL_FIELDS
+EOF
 export CAPAFY_HOSTED_MODEL_ID CAPAFY_HOSTED_MAX_TOKENS
 
 # Download-mode listings (pricing_mode=download, e.g. a one-time-fee update) have
