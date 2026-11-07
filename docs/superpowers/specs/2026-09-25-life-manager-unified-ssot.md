@@ -26323,12 +26323,18 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 Supportへの既存thread `1a1aea83d8dfde35` は読み取り時点で送信済み質問のみ・返信0。agent-operated Publisher credentialの正式手順を尋ねるfollow-up `1a1b359db51aa7a4` を同threadへ送信し、Gmail再読取で`SENT`を確認した。これは運営側の問い合わせで、Naïve agentのCapafy login/登録ではない。返信を待つ間もNHC-02の既存成果物作業は継続し、新Publisherや人間のGoogle/login credentialを使わない。
 
+2026-11-07の追加実測: 公式SDKで`capafy` v5の一つのread-only market sessionを実行した。session `ses_kp0nknhv8en0wa21tzknfs12ra` は30 browser calls/134秒/$0.393832で`budget_paused`。公式browser eventの`computer_id`は空、sessionの`computer_id=null`、browser close eventあり。並列呼出しで同一pageへ遷移する競合も発生し、途中から直列化した。Capafyの公開表示では[HookAce](https://capafy.ai/agent/hooklab-first-6-second-retention-predictor/3264203863)がRating 4.3/Sold 1,200、週10回$9.99・月25回$19.99・年360回$239.88、[AI Video Ad Planner](https://capafy.ai/agent/ai-video-ad-planner-scripts-prompts/2344738211)がSold 37、月200回$25.99・週50回$11.99・年2,520回$129.99、[ViralShorts](https://capafy.ai/agent/viralshorts-ai-short-video-script-creator/5586511485)がRating 1.9/Sold 240、[ShortsForge](https://capafy.ai/agent/shortsforge-ai/3697513470)がSold 52。これらは商品ページに表示されたカウンターであり、購入件数・純売上・順位の独立証明ではない。公開ページの読取だけで、signup/login/投稿/購入/公開/売上effectは0。商品候補は「完成動画/台本の冒頭6秒を診断し、秒ごとの離脱要因と改善案を出す」だが、既存商品所有者との関係・実純利益・より上位の販売商品は未確認。
+
+同日のruntime公式readback: 現行orgのdeploymentは9件すべてdisabled。既存`capafy` deployment `dep_05dp2yv4mwgabp1gssxbqy45kv`もcron停止/pausedで、inputは既存listingのtitle/description改善を指示するため新商品販売のloopとしては使わない。13 agentsのうち現在使える`capafy`はv5、月cap$10/task cap$2、Identity `anicca`、MCPなし。Computer `cmp_01a1b3454fda7ad1b8ba63fb3e820fac`はpaused、`browser=null`、volume/snapshotなし。live Appsは2件のみで、過去のCapafy専用browser Appは現組織に存在しない。したがって常時実行・VM上のログイン済みbrowserは未構築。
+
+公式[Runtime docs](https://vetta.sh/docs/concepts/runtime.md)ではNaïveはwake→一回のbounded turn→transcript/cursor commit→sleepを永続実行し、Computerもagent sleep中はpauseして次turnで復帰する。常時起動VMを人手で維持する設計ではなく、Naïve runtimeがscheduler/commit/sleepを担う。公式[Browser docs](https://vetta.sh/docs/computer/browser.md)ではcomputerのmanaged browserは作成時に任意で接続し、agent sessionが終了/一時停止するとbrowserは閉じる。`keep_alive`は短い切断時の維持、`persist_context`は名前付きcontextへcookie/local storageを書き戻して次sessionで再利用する機能で、VM自体を常時起動する設定ではない。保存loginのcontextはidentity-scoped/default-denyで、agent id/roleへの明示grantが必要。公式[Limits & billing](https://vetta.sh/docs/computer/limits-and-billing.md)ではComputer作成料なし、paused時はcompute課金なし、1vCPU/1GiB稼働時$0.0666/時、browserは開いている間$0.001667/分（最低1分）+model action費。よって一時browserを見た事実を「Naïve computer上の永続runtime」と呼ばない。既存paused Computerにはbrowserが無く、computer update schemaではbrowser attach不可。実行費は既存残高内で個別run capを置き、常時起動を有効化しない。新規Computerは次に既存SDKのagent結合・context grantを公式確認してから作成する。
+
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
 | NHC-00・完了 | main由来immutable releaseのNaïve Appを稼働させ、専用agentから固定ComputerでCapafy公開画面を一度読む | PR #9216/main SHA `288e867668a00ead4de80efd2ebb1f4c54866ef2`、App `active/ready`、key metadataのscopeは`computers:write`（App permission一覧`[]`）、専用agent v2の単一App/tool binding、公式goto/extract eventと見出し、browser closed/Computer paused、ledger合計6,715 micro-USDを照合。これはcloud-browser動作の証拠で売上ではない |
 | NHC-01・進行中 | Capafyの既存認証済みPublisherに、Dais申告のautomation許可を使った正式agent/team委任経路・専用認証・販売/精算権限があるかを読み取りで確定する | 公式guide/Terms/UIを読み、専用agent credential経路は公開資料で未確認。Naïve agent-owned browserはログイン画面。既存Publisherの認証情報を使わず、問い合わせ返信またはprovider readbackで経路を確定する。重複account・代理本人確認・KYC回避をしない |
-| NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
-| NHC-03・再開 | 選んだCapafy業務を現行Naïve設定/定期inputへ反映し、live targetとmain sourceを一致させる | 旧PR9196/main b412c1c0cdのagent25一致は履歴として保持。現行公式orgには`capafy` v5があり、専用`anicca-browser-operator`/v25は一覧にない。現行Agent/deployment/source一致を再readbackする。予算増額なし |
+| NHC-02・一部完了 | Capafyの短尺動画分野の商品需要・成果物・表示価格を比較し、販売候補と未確認事項を確定する | 4商品を読み、HookAceを候補として記録。表示Sold/Ratingを実売上へ換算しない。残り: 同一カテゴリ全件の価格取得、所有者/既存商品重複確認、実費対価格、既存自社素材との商品選定。売れている既存商品は変更しない |
+| NHC-03・現在cursor | 現行Naïve runtimeのsource/liveを揃え、既存official browser機能で再開可能なCapafy sessionを作る | 9 deployments disabled、対象deployment paused/old input、Computer paused/browser null、専用App不在を解消する。まず公式のbrowser/contextとComputerの作成・費用・grant契約を確定し、source/specを合わせてから最小設定を反映し、2つの別sessionでcontext再利用を公式readbackする。人のlogin/credential・CAPTCHA/KYC回避なし。設定受理だけで登録・公開・売上完了としない |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
 | NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
 | NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |
@@ -26361,7 +26367,7 @@ self-owned sourceのsystem末尾には、Daisの許可取得済み申告後も�
 
 変更の受入はJSON妥当性、agentのmodel/window/system末尾以外の構造差分0、deploymentのpin/window/enabled以外0、source-boundary/diff、必要なreview/CI、main由来の固定source→expected_version26部分更新→公式不変readback。まだ反映前candidateで、current officialは26/pi。次の一手はこの矛盾修正を反映して専用メール認証を一件だけ進めること。確認待ちが再発すればprovider境界の再現証拠とし、許可済みというユーザー情報を再質問しない。別harnessの比較は既存Agentでは未適用のため、必要なら別途boundedな診断資源/同Identity grant/総費用を明示し、予算回避や新Publisher作成へ使わない。個人Google依存・業務script/API botへの置換はしない。
 
-現在cursor=NHC-01、NHC-02の原稿修正/一回試用/クラウド永続保管は上記の範囲で完了。公開価格・Publisher権限・Capafy公開・第三者注文/納品/支払・デモ・自社/外部MRRは未達。Grok/Muse向けSlack既存threadへ許可取得済みと技術経路の質問を送信し、親thread readbackも更新する。AGMSG codex-money-printerへの同趣旨の照会は送信済みだが、返答や着手は未確認。
+現在cursor=NHC-03。NHC-01はCapafyの正式な既存Publisher委任経路についてsupport返答待ちだが、問い合わせ再送はしない。NHC-02は公開カタログの一部比較のみで、商品確定/公開ではない。Capafy login/登録/公開/第三者注文/納品/支払/売上/動画・デモ/自社MRRは未達。Grok/Muse向けSlack既存threadとAGMSG codex-money-printerへの質問は送信済みだが、返信や着手は未確認。
 
 #### 一次資料と調査の限界
 
