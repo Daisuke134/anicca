@@ -130,19 +130,28 @@ def prompt_from_text_only(context: str, desc_a: str, desc_b: str) -> str:
     )
 
 
-def parse_llama_reply(stdout: str) -> str | None:
-    """Score only the GENERATED answer, including --no-display-prompt mode.
+def parse_llama_reply(stdout: str, expected_prompt: str | None = None) -> str | None:
+    """Accept one standalone generated A/B, never score echoed prompt text.
 
-    Never scrape the A/B choices from the echoed Japanese context. A bare
-    generated A/B line is valid in noninteractive, hidden-prompt CLI mode.
+    b12137 llama-cli sometimes echoes ChatML input *without* echoing the
+    assistant boundary even with --no-display-prompt. We know the exact prompt
+    sent to this runner and reject prompts with a standalone A/B line; no
+    prompt-derived A/B label can then enter the generated-answer score.
+    Ambiguous multiple letters are invalid, not silently repaired.
     """
     marker = "<|im_start|>assistant\n"
     text = re.sub(r"\x1b\[[0-9;]*m", "", stdout)
+    if expected_prompt is not None:
+        if any(re.fullmatch(r"[ABab][\s\.\u3002\u3001]*", x.strip())
+               for x in expected_prompt.splitlines()):
+            raise ValueError("standalone A/B in prompt risks label leakage")
     if marker in text:
         generated = text.rsplit(marker, 1)[-1]
     else:
-        # Fail closed if the response is an echoed prompt (not model output).
-        if any(s in text for s in ("Aのコマの描写:", "Bのコマの描写:", "回答（A/Bの一文字）:")):
+        # When prompt source isn't supplied, do not parse a whole echoed
+        # Japanese text-context transcript as a generated output.
+        if expected_prompt is None and any(s in text for s in (
+                "Aのコマの描写:", "Bのコマの描写:", "回答（A/Bの一文字）:")):
             return None
         generated = text
     choices = []
@@ -268,7 +277,7 @@ def perform_live_model(cases: list[dict], cli: Path, gguf: Path) -> list[dict]:
         started=time.monotonic()
         cmd=build_llama_command(str(cli), str(gguf), row["_prompt"])
         proc=subprocess.run(cmd,text=True,encoding="utf-8",errors="replace",stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=75)
-        response=parse_llama_reply(proc.stdout) if proc.returncode==0 else None
+        response=parse_llama_reply(proc.stdout, expected_prompt=row["_prompt"]) if proc.returncode==0 else None
         item={k:v for k,v in row.items() if k!="_prompt"}
         item.update({"model":response,"exit_code":proc.returncode,"seconds":round(time.monotonic()-started,3)})
         results.append(item)
