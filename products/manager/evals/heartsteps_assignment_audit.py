@@ -19,7 +19,6 @@ import random
 from collections import defaultdict
 from typing import Mapping
 
-import numpy as np
 
 from heartsteps_v1_real_mrt import (
     SOURCE_SHA256, SOURCE_URL, load_pinned_source,
@@ -97,24 +96,48 @@ def make_eligible_rows(rows: list[Mapping[str, str]]) -> list[dict]:
     return result
 
 
-def fit_assignment_model(records: list[dict]) -> dict:
-    """Centered OLS / constant-probability WCLS-style regression of log steps.
+def _solve_normal_equations(features: list[list[float]], responses: list[float]) -> list[float]:
+    """Fixed-dimension dependency-free least squares using pivoted elimination."""
+    if not features or len(features) != len(responses):
+        raise ValueError("missing aligned design")
+    width = len(features[0])
+    if width != 5 or any(len(x) != width for x in features):
+        raise ValueError("unexpected design dimension")
+    mat = [[0.0] * (width + 1) for _ in range(width)]
+    for row, y in zip(features, responses):
+        for i in range(width):
+            mat[i][-1] += row[i] * y
+            for j in range(width):
+                mat[i][j] += row[i] * row[j]
+    for col in range(width):
+        pivot_row = max(range(col, width), key=lambda k: abs(mat[k][col]))
+        if abs(mat[pivot_row][col]) < 1e-10:
+            raise ValueError("insufficient full-rank treatment and time variation")
+        mat[col], mat[pivot_row] = mat[pivot_row], mat[col]
+        pivot = mat[col][col]
+        for j in range(col, width+1):
+            mat[col][j] /= pivot
+        for row_idx in range(width):
+            if row_idx == col:
+                continue
+            factor = mat[row_idx][col]
+            for j in range(col, width+1):
+                mat[row_idx][j] -= factor * mat[col][j]
+    return [mat[i][-1] for i in range(width)]
 
-    The original manuscript uses GEE/WCLS and a precisely filtered 6061-decision
-    cohort; this code is only a structural near-replication for accessible data.
-    """
+
+def fit_assignment_model(records: list[dict]) -> dict:
+    """Centered OLS of log steps; not original 6061-decision GEE/WCLS."""
     if len(records) < 6:
         raise ValueError("insufficient available decisions for fit")
-    design = np.array([
+    design = [
         [1.0, math.log(r["steps_pre"] + .5), r["day_scaled"],
          r["assignment"] - P_ASSIGNED,
          (r["assignment"] - P_ASSIGNED) * r["day_scaled"]]
         for r in records
-    ])
-    response = np.log(np.array([r["steps"] + .5 for r in records], dtype=float))
-    betas, _, rank, _ = np.linalg.lstsq(design, response, rcond=None)
-    if rank < design.shape[1]:
-        raise ValueError("insufficient full-rank treatment and time variation")
+    ]
+    response = [math.log(r["steps"] + .5) for r in records]
+    betas = _solve_normal_equations(design, response)
     b = float(betas[3])
     interaction = float(betas[4])
     return {
@@ -191,10 +214,10 @@ def aggregate_report(rows: list[Mapping[str, str]], *,
         "empirical_assignment_rate": len(assign_groups[1]) / len(selected),
         "assignment_probability_used": P_ASSIGNED,
         "assignment_delivery_disagreement": disagreement,
-        "assignment_mean_steps_no": float(np.mean(assign_groups[0])),
-        "assignment_mean_steps_yes": float(np.mean(assign_groups[1])),
+        "assignment_mean_steps_no": (sum(assign_groups[0]) / len(assign_groups[0])),
+        "assignment_mean_steps_yes": (sum(assign_groups[1]) / len(assign_groups[1])),
         "unadjusted_assigned_mean_difference_steps": (
-            float(np.mean(assign_groups[1])) - float(np.mean(assign_groups[0]))
+            (sum(assign_groups[1]) / len(assign_groups[1])) - (sum(assign_groups[0]) / len(assign_groups[0]))
         ),
         "fit": fit,
         "cluster_bootstrap_95ci_ratio_day0": [

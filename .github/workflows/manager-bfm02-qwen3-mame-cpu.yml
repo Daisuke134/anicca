@@ -6,6 +6,8 @@ on:
       - ".github/workflows/manager-bfm02-qwen3-mame-cpu.yml"
       - "products/manager/evals/qwen3_mame_text_eval.py"
       - "products/manager/evals/test_qwen3_mame_text_eval.py"
+      - "products/manager/evals/heartsteps_assignment_audit.py"
+      - "products/manager/evals/test_heartsteps_assignment_audit.py"
       - "products/manager/evals/data/mame_fixed_context_splits_v1.json"
   workflow_dispatch:
 
