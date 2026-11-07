@@ -53,8 +53,28 @@ function parseTenantBinding(value, { tenantId, platformId } = {}) {
 function tenantPlatformStatePath(stateHome, platformId) {
   return path.join(stateHome, platformFor(platformId).stateDir, 'signup-state.json');
 }
+const TENANT_UID = 10001;
+function hostIsRoot() { return process.platform === 'linux' && process.getuid?.() === 0; }
+function handDirectoryToTenant(fsImpl, directory) {
+  // Mirror runtime-env.js fixed-directory handling: open through a no-follow
+  // directory fd so ownership changes never chase a symlink.
+  const constants = fsImpl.constants || fs.constants;
+  const flags = constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW;
+  const fd = fsImpl.openSync(directory, flags);
+  try { fsImpl.fchownSync(fd, TENANT_UID, TENANT_UID); fsImpl.fchmodSync(fd, 0o700); } finally { fsImpl.closeSync(fd); }
+}
 function atomicJson(target, value, fsImpl) {
   const directory = path.dirname(target);
+  // Directories this write creates belong to the tenant uid when the root
+  // host writes them, not just the file: a root-owned 0700 directory leaves
+  // the dropped-privilege cycle unable to even stat the files inside it
+  // (the first bound cycle crashed exactly there, on the session manifest).
+  const created = [];
+  if (hostIsRoot()) {
+    let cursor = directory;
+    while (!fsImpl.existsSync(cursor)) { created.push(cursor); cursor = path.dirname(cursor); }
+    if (!created.includes(directory)) created.push(directory);
+  }
   fsImpl.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const temporary = path.join(directory, `.signup-state-${randomUUID()}.json`);
   try {
@@ -62,11 +82,12 @@ function atomicJson(target, value, fsImpl) {
     try {
       // Mirror runtime-env.js: files the root host writes into a tenant home
       // belong to the dropped-privilege tenant uid.
-      if (process.platform === 'linux' && process.getuid?.() === 0) fsImpl.fchownSync(fd, 10001, 10001);
+      if (hostIsRoot()) fsImpl.fchownSync(fd, TENANT_UID, TENANT_UID);
       fsImpl.writeFileSync(fd, JSON.stringify(value, null, 2) + '\n');
     } finally { fsImpl.closeSync(fd); }
     fsImpl.renameSync(temporary, target);
   } finally { if (fsImpl.existsSync(temporary)) fsImpl.unlinkSync(temporary); }
+  for (const dir of created) handDirectoryToTenant(fsImpl, dir);
 }
 function loadTenantPlatformState({ stateHome, tenantId, platformId, fsImpl = fs } = {}) {
   if (typeof stateHome !== 'string' || !stateHome || typeof tenantId !== 'string' || !UID.test(tenantId)) invalidState();
