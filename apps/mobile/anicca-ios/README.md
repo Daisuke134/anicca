@@ -61,8 +61,12 @@ the credential SSOT. Never commit the encoded value or print it in build logs.
 
 The executable `ci_scripts/ci_post_clone.sh` writes
 `Configs/Production.xcconfig` with mode `0600` before the Release archive.
-Missing, malformed, or empty input fails the hook and preserves an existing
-configuration. Staging builds still require their separate private input.
+When the secret is not set, the hook falls back to the committed
+`Configs/Production.xcconfig.fallback`, which holds the same client
+configuration (public API keys, project tokens, and identifiers only) so a
+build never depends on a web-console-only setting. Malformed or empty input
+fails the hook and preserves an existing configuration. Staging builds still
+require their separate private input.
 This follows Apple's [custom build script placement](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts).
 
 The RevenueCat package lock uses `5.78.0`, which includes the official

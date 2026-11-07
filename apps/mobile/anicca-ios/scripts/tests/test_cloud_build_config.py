@@ -71,6 +71,36 @@ class CloudBuildConfigTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assert_preserved()
 
+    def write_fallback(self, contents):
+        fallback = self.target.parent / "Production.xcconfig.fallback"
+        fallback.write_bytes(contents)
+        return fallback
+
+    def test_missing_secret_uses_committed_fallback(self):
+        fallback_config = (
+            b"REVENUECAT_API_KEY = fallback-fixture-key\nRESET_ON_LAUNCH = NO\n"
+        )
+        self.write_fallback(fallback_config)
+        result = self.run_hook(None)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.target.read_bytes(), fallback_config)
+        self.assertEqual(self.target.stat().st_mode & 0o777, 0o600)
+        self.assertNotIn("fallback-fixture-key", result.stdout + result.stderr)
+        self.assertEqual(list(self.target.parent.glob(".Production.xcconfig.*")), [])
+
+    def test_secret_takes_precedence_over_fallback(self):
+        self.write_fallback(b"REVENUECAT_API_KEY = fallback-fixture-key\n")
+        config = b"REVENUECAT_API_KEY = secret-fixture-key\n"
+        result = self.run_hook(base64.b64encode(config).decode())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.target.read_bytes(), config)
+
+    def test_empty_fallback_fails_and_preserves_existing_config(self):
+        self.write_fallback(b"")
+        result = self.run_hook(None)
+        self.assertNotEqual(result.returncode, 0)
+        self.assert_preserved()
+
 
 if __name__ == "__main__":
     unittest.main()
