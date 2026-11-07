@@ -6,7 +6,7 @@
 
 **順序・TODO・状態の唯一の正本:** [統合SSOTの ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。この文書は詳細な要求・契約、[実装計画](../plans/2026-11-06-anicca-ios-product-growth.md)は実行手順。進捗を別台帳へ二重管理しない。
 
-現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、証拠承認後にASC CLIで提出）**。1.9.8/build 818の審査提出は取り消した。画面別の離脱、Mixpanelの本番受信、Openへの集計、全画面E2Eがすべて同じ候補releaseで実証されるまで再提出しない。証拠一式をユーザーへ提示し、明示承認を得るまで提出・本番公開・main統合を行わない。この提出禁止ルールはAniccaの本specに適用する。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
+現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、全受入条件の後にASC CLIで提出）**。ユーザーはすべての受入条件と動画の確認後に提出するよう指示している。画面別の離脱、Mixpanelの本番受信、Openへの集計、全画面E2Eが同じ候補releaseで実証されるまで再提出しない。提出コマンドの前に証拠一式をチャットで提示し、その後、完了条件を満たしていれば提出する。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
 
 ## 出所と現在の観測
 
@@ -14,7 +14,7 @@
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
-| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818=`VALID`。最新read-only statusはsubmission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`=`WAITING_FOR_REVIEW`、`inFlight=true`。直前に取消readbackした別submission `d584f304-8581-4b11-b803-f8289b804e35`は`COMPLETE`/`REMOVED` | 現行submissionが製品ゲート未完了と矛盾する。source actorはこのreadbackだけでは特定していない。G2/G4/G4.1/E2E証拠を揃え、ユーザーへ提示し明示承認を得るまで新規submitしない |
+| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818=`VALID`。最新read-only statusではsubmission `21ceac8a-7ed3-4661-afc5-b521e6c04e6c`=`COMPLETE`、`inFlight=false`、version=`DEVELOPER_REJECTED` | 取消は公式readback済み。提出可能状態ではない。製品ゲート・新candidate・metadataを完了してから新規提出する |
 | 計測 | build 818の`AnalyticsManager.swift`はMixpanelへ送信し、PostHog設定時には同じeventも送信。`PlanSelectionStepView.swift`に直接PostHog capture/flag経路がある。Package.resolvedはMixpanel `master` revision `6e2a786b…`とPostHog 3.49.0 | **選定はMixpanel一本**。イベント受信・ID/property・PostHogとの重複実測・Mixpanel実験プランは未確認。SDK導入は本番受信の証拠ではない |
 | Onboarding | 9つの列挙stepと別の2段paywallが存在 | コメントの「10/20-step」と実際の画面数を混同しない |
 | 課金 | 閉じると無料利用へ進めるsoft paywall。`variant: "b"` 呼び出し | フラグの存在だけでA/B稼働としない |
@@ -23,7 +23,7 @@
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
 | 設定 | 現在の `ReminderSchedule.slots(isPro:)` はFree 09:00/14:00/20:00、Pro 08:00/12:30/17:30/21:30を表示し、端末タイムゾーンも表示する。APNs token登録ではtimezone/langを送る。`Daisuke134/anicca-products` の確認済み `origin/main` (`0f2cd20b`) のaffirmation senderも同じFree/Pro枠を定義し、remote APNsを単一送信元として記述する | ソース上の予定時刻は一致。稼働中deploymentのcommit/readback、実端末APNs、Free/Pro実配信、登録/送信receiptは未確認 |
 | 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
-| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 2026-11-07 13:07 JSTのlive `data.json`に`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は存在しない。既存Open自体は更新中だが、AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
+| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 直近live snapshotに`product_analytics`/`anicca_ios`はなく、Mixpanel取得/画面別離脱/Open表示は未実証。既存dashboardを拡張し、別dashboardを作らない |
 | 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | Mixpanel API収集元ではなくOpenにも未接続。collector・snapshot・公開deployの実稼働は別々に証明する |
 
 公開feedの観測例: `https://aniccaai.com/open/data.json` の期間10/29〜11/04、Aniccaは新規3件、JP2/CO1、取得行はApp Store検索。download coverageは7日中4日。米国0・SNS0や「全期間3件」とは断定しない。取得期間と欠測を保持し、別collectorの「行無し→0」と不整合があれば集計境界を直す。
@@ -156,11 +156,11 @@ build 818はsource SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`で、PR #9289�
 
 公開UI ownerは`Daisuke134/anicca-products`。現行`apps/landing/public/open/index.html`は`data.json`,`metrics.json`,`capafy.json`等のsnapshotを読み、ASC store discovery/downloadと会社/RevenueCat指標を表示する。screen-level Mixpanel funnelは存在しない。`apps/landing/scripts/open-app-store-analytics.mjs`はASC公開データを`data.json`へまとめ、Netlify workflowで公開する。`scripts/open-startup/build_open_metrics.py`/`update_open.sh`は別のcompany/portfolio `metrics.json`経路。これらは現在Mixpanel eventを取らない。
 
-Life Manager側の`apps/life-manager/scripts/marketing-product-summary.js`は`tenants/dais-local/product-packs/metrics/product-analytics/{productId}.json`を読み、activation/retention等を日次summary化するが、Mixpanel collectorではなく、現在Openへの公開経路も確認できない。新規collectorを作る前にこの入力をMixpanelの公式export/API取得へ接続できるか、snapshot ownerと既存Netlify contractを確認する。API secretは公開JSONやbrowserへ含めない。公開用は日次・app aggregateのみとし、source ref/observed_at/data_from/data_to/status/coverage/numerator/denominatorを表示する。
+Life Manager側の`apps/life-manager/scripts/marketing-product-summary.js`はproduct-packを読むが、Mixpanel collectorではなく、Openへの公開経路もない。G4.1はOpen snapshot ownerの`anicca-products`で、既存の hourly Netlify workflowからMixpanel Raw Event Export APIを取得し、既存`data.json`へ集計する。認証はGitHub Actionsの`MIXPANEL_SERVICE_ACCOUNT` secretだけを使い、project IDとregionはprovider APIで検証して設定する。API secretやevent-level dataは公開JSON/browserへ含めない。
 
-Aniccaの既存Open画面に、①onboarding/activation/paywall/paidのfunnel、②各screen到達者・次step未到達率・分母、③D1/D7/D30成熟cohort、④国/storefront・locale・campaign・release・experiment variant、⑤通知許可→open→destination、⑥取得時刻と欠測理由を加える。全体dashboard改修(G6/G7)と分け、G4.1でAniccaの提出前に必要な一画面/既存sectionだけを統合する。公開cohortは個人を識別できない集約サイズを維持する。
+Aniccaの既存Open画面に、各screenの観測view数、次screenへ進んだ数、24時間の成熟窓で次screen eventが観測されなかった数、率、分母、取得期間、release/locale/国のaggregateを表示する。開始/完了、通知、購入eventはG4のevent contractを保持し、G4.1の最初のsliceはscreen-level view/transitionへ絞る。単一screen unloadや離脱の瞬間を観測したとは表現しない。全体dashboard改修(G6/G7)と分け、別dashboardを作らない。個人ID・本文・少数cohortを公開しない。
 
-G4/G4.1完了条件は、隔離test eventと同じtest identityでMixpanelにevent名・property・時刻・releaseをreadbackし、重複0を確認、同じ日次aggregateが既存Openへ表示され、source freshness・coverage・分母が一致すること。SDK設定、PR、集計JSON生成だけでは完了にしない。provider account/権限やsnapshot ownerが不明なら、不足するservice/repo/pathをcursorとして残し、0や成功へ置き換えない。
+G4/G4.1完了条件は、candidate appからのtest eventをMixpanelでreadbackし、event名・property・時刻・releaseと重複なしを確認すること。Open collectorの取得値とMixpanel aggregate、Open preview/live readbackの数・期間・denominator・freshnessを照合する。SDK設定、PR、fixture JSONだけでは完了にしない。Production、sandbox、simulatorのeventは環境を分け、test trafficをproduction cohortへ混ぜない。provider account/権限が不明なら具体的な不足物を記録し、0や成功へ置き換えない。
 
 ## G5 — 検証・実製品動画・提出
 
