@@ -22,16 +22,17 @@ Mac Mini上のChromeはNaïve UIの表示・録画端末として使える。実
 - Identity `idn_75df9rsb9ehyym3z92sjwz5wat` has an active inbox owned by the target agent. The existing agent tool config does not include `email.inboxes` or `email.read`; add those before a signup flow needs agent email. The prior session did not use the identity.
 - CAPAFY is excluded for this demo: its publisher certification has a $0.99 fee and identity-verification requirements. No CAPTCHA/KYC bypass, signup, fee, listing, sale, or delivery was performed.
 - Screenity 4.7.2 is available in the isolated local Chrome profile and recorded a 29-second x402 endpoint clip. That clip is not a Naïve run and is not the requested demo. No valid Naïve demo has been recorded or uploaded.
+- Demo acceptance does not require a customer payment yet. It does require a real customer-valued business artifact completed and published or delivered by the Naïve SDK agent. The Naïve Computer is the work computer when browser/filesystem work is needed; Mac Mini Chrome only displays and records the Naïve run.
 
 ## 次の作業（正本は上記spec）
 
-1. LC60: 前払い・人間の本人確認を要求しない、利用規約上agent利用可能な公開先を一つ選び、条件を確認する。CAPAFYは再試行しない。
-2. signupが必要なら既存のagent identityをsessionの`identity`に渡し、Naïveの`email.inboxes`/`email.read`を追加してagent inboxを利用可能にする。人間のcredentialsを使わず、CAPTCHA/KYCは迂回しない。
-3. Naïve SDK agentで一つの実成果を作成・公開し、provider readbackでURLと内容を確認する。公開物は売上と混同しない。
-4. LC60a: その後、独立顧客の注文・支払・settlement・納品が確認できる事業経路を実証する。Naïve creditsは費用。
-5. LC61: 公開成果と同じNaïve SDK runをScreenityでMac MiniのNaïve UIから録画し、YouTubeで公開後URLを確認する。Mac Miniは画面表示・録画だけに使う。
-6. LC62: イベントが求めるlive demoを再現できる状態にする。追加の動画提出先は公式readbackできた場合のみ記録する。
+1. LC60: 前払い・人間の本人確認なしで規約上使える公開先を一つ選ぶ。CAPAFYは再試行しない。
+2. Naïve SDK Agent/Sessionから実際の事業処理を行い、顧客価値のある成果物を公開または納品する。必要なbrowser/filesystem操作はNaïve Computerで行い、providerから成果URLと状態を確認する。
+3. LC60b: 同一runの判断、tool events、費用、Computer、実際の人の介入を記録する。
+4. LC61: ScreenityでMac Mini上のNaïve UIを録画し、成果物までのend-to-endをYouTubeへ公開してURLを確認する。Mac Miniでは事業処理を行わない。
+5. LC62: 会場のlive demoで同じ成果・判断・人の介入箇所を再現する。
+6. LC60a: demo後に独立顧客の注文・支払・settlement・納品を実証する。Naïve creditsは費用であり売上ではない。
 
 ## Resume context
 
-No valid Life Manager business artifact, customer revenue, delivery receipt, or Naïve run video exists yet. Current cursor remains LC60: choose one legitimate no-upfront route that can produce a customer-valued public deliverable, then execute it with a new Naïve SDK session. The interrupted Telegraph field-note session is resumable but has a field-note output schema; do not reuse it for the business run. Preserve the local x402 clip as unrelated historical evidence. Update this file and the canonical spec after every verified milestone.
+No valid Life Manager business artifact or Naïve run video has been published. Customer revenue is not required for the first hackathon demo. Current cursor remains LC60: choose one legitimate no-upfront route that can produce a customer-valued artifact, then finish and publish/deliver it through a new Naïve SDK session. The interrupted Telegraph field-note session is not a business run; do not reuse it. Preserve the local x402 clip as unrelated historical evidence. Update this file and the canonical spec after every verified milestone.
