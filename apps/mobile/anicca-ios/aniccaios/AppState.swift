@@ -32,9 +32,6 @@ final class AppState: ObservableObject {
     @Published private(set) var cachedOfferingStorefrontCountryCode: String?
     @Published private(set) var currentStorefrontCountryCode: String?
     @Published private(set) var storefrontRevision = 0
-    /// PostHog feature flags がサーバーから到着済みか（初回起動時の nil 防止）
-    /// Source: https://posthog.com/docs/libraries/ios/usage — "Ensuring flags are loaded before usage"
-    @Published var featureFlagsReady: Bool = false
 
     // MARK: - Proactive Agent: NudgeCard
     @Published var pendingNudgeCard: NudgeContent? = nil

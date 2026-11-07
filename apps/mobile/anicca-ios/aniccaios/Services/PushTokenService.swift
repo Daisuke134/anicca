@@ -27,6 +27,10 @@ final class PushTokenService {
         let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
         guard hex.count == 64 else {
             logger.error("Invalid device token length: \(hex.count, privacy: .public)")
+            AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                "result": "invalid_device_token",
+                "source": "apns",
+            ])
             return
         }
 
@@ -49,7 +53,15 @@ final class PushTokenService {
 
         do {
             let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
-            guard let http = response as? HTTPURLResponse else { return }
+            guard let http = response as? HTTPURLResponse else {
+                await restoreLocalProblemNotifications()
+                AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                    "result": "failed",
+                    "source": "server",
+                    "error_code": "non_http_response",
+                ])
+                return
+            }
             if (200..<300).contains(http.statusCode) {
                 // Backend must confirm remote delivery is enabled. Otherwise disabling local
                 // scheduling can cause a notification blackout.
@@ -58,6 +70,13 @@ final class PushTokenService {
                 // the user is actually eligible for remote Problem nudges (entitlement-gated).
                 // This avoids a "free user blackout" if APNs config is OK but server won't send.
                 let isRemoteEnabled = (json?["remoteProblemNudgesEnabled"] as? Bool) == true
+                AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                    "result": json?["remoteProblemNudgesEnabled"] is Bool ? "registered" : "response_unrecognized",
+                    "source": "server",
+                    "server_status_code": http.statusCode,
+                    "remote_enabled": isRemoteEnabled,
+                    "plan_tier": AppState.shared.subscriptionInfo.isEntitled ? "pro" : "free",
+                ])
                 if isRemoteEnabled {
                     defaults.set(true, forKey: registeredKey)
                     // Remove any locally scheduled problem notifications to avoid duplicates once
@@ -80,10 +99,20 @@ final class PushTokenService {
             }
             // Fail-safe: if registration fails, do not keep remote-only mode enabled.
             await restoreLocalProblemNotifications()
+            AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                "result": "failed",
+                "source": "server",
+                "server_status_code": http.statusCode,
+            ])
             logger.error("Push token register failed http=\(http.statusCode, privacy: .public)")
         } catch {
             // Fail-safe: network errors should not keep remote-only mode enabled.
             await restoreLocalProblemNotifications()
+            AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                "result": "failed",
+                "source": "server",
+                "error_code": String((error as NSError).code),
+            ])
             logger.error("Push token register failed: \(error.localizedDescription, privacy: .public)")
         }
     }

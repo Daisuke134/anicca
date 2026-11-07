@@ -25,6 +25,7 @@ struct SettingsSheet: View {
                 NavigationLink {
                     ThemePickerView()
                         .environmentObject(themeStore)
+                        .analyticsScreen(.feedThemes, flowID: "feed")
                 } label: {
                     HStack {
                         Label(String(localized: "settings_theme"), systemImage: "paintpalette")
@@ -37,6 +38,7 @@ struct SettingsSheet: View {
 
                 NavigationLink {
                     NotificationsSettingsView()
+                        .analyticsScreen(.feedReminders, flowID: "feed")
                 } label: {
                     Label(String(localized: "settings_notifications"), systemImage: "bell")
                 }
@@ -44,6 +46,7 @@ struct SettingsSheet: View {
                 NavigationLink {
                     LikedQuotesView()
                         .environmentObject(likedStore)
+                        .analyticsScreen(.feedSaved, flowID: "feed")
                 } label: {
                     HStack {
                         Label(String(localized: "settings_liked_quotes"), systemImage: "heart")
@@ -66,6 +69,7 @@ struct SettingsSheet: View {
                     RevenueCatUI.CustomerCenterView()
                         .navigationTitle(String(localized: "settings_subscription"))
                         .navigationBarTitleDisplayMode(.inline)
+                        .analyticsScreen(.settingsSubscription, flowID: "settings")
                 } label: {
                     Label(String(localized: "settings_subscription"), systemImage: "creditcard")
                 }
@@ -92,8 +96,13 @@ struct SettingsSheet: View {
                 onPurchaseSuccess: { customerInfo in
                     AppState.shared.updateSubscriptionInfo(from: customerInfo)
                     showPurchasePlans = false
+                    AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feedSettings, flowID: "feed")
                 },
-                onDismiss: { showPurchasePlans = false }
+                onDismiss: {
+                    showPurchasePlans = false
+                    AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feedSettings, flowID: "feed")
+                },
+                flowID: "settings_subscription"
             )
             .environmentObject(AppState.shared)
         }
@@ -227,6 +236,7 @@ struct NotificationsSettingsView: View {
                         let settings = await UNUserNotificationCenter.current().notificationSettings()
                         permissionLogger.notice("permission prior status=\(settings.authorizationStatus.rawValue, privacy: .public)")
                         if settings.authorizationStatus == .notDetermined {
+                            AnalyticsManager.shared.track(.notificationPermissionRequested, properties: ["source": "settings"])
                             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
                             notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts()
                             permissionLogger.notice("permission prompt completed alerts=\(notificationsAllowed, privacy: .public)")

@@ -100,6 +100,7 @@ struct NotificationPermissionStepView: View {
     private func requestNotifications() {
         guard !isRequesting else { return }
         isRequesting = true
+        AnalyticsManager.shared.track(.notificationPermissionRequested, properties: ["source": "onboarding"])
         Task {
             let granted = await NotificationScheduler.shared.requestAuthorization()
             await MainActor.run {
@@ -107,7 +108,10 @@ struct NotificationPermissionStepView: View {
                 notificationDenied = !granted
                 isRequesting = false
                 hasAttemptedPermission = true
-                AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["result": granted ? "allowed" : "denied"])
+                AnalyticsManager.shared.track(.notificationPermissionResult, properties: [
+                    "source": "onboarding",
+                    "result": granted ? "allowed" : "denied",
+                ])
                 if granted {
                     // v1.8.7: notifications are remote-only (APNs). Register now that
                     // the user granted permission so the device token reaches the backend.
