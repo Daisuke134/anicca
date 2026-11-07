@@ -6,16 +6,16 @@
 
 **順序・TODO・状態の唯一の正本:** [統合SSOTの ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。この文書は詳細な要求・契約、[実装計画](../plans/2026-11-06-anicca-ios-product-growth.md)は実行手順。進捗を別台帳へ二重管理しない。
 
-現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、全受入条件の後にASC CLIで提出）**。ユーザーは完了後の提出を明示している。画面別の離脱、Mixpanelの本番受信、Openへの集計、同一candidate E2Eが実証されるまで再提出しない。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
+現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、全受入条件の後にASC CLIで提出）**。ASC公式readbackでは1.9.8/build 818は既に`WAITING_FOR_REVIEW`だが、これはPR #9289のscreen funnelを含まない旧source候補であり、再提出可能な完成証拠ではない。画面別の離脱、Mixpanelの本番受信、Openへの集計、同一candidate E2Eが実証されるまで追加提出しない。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
 
 ## 出所と現在の観測
 
-コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。最新main=`2f89767877f6266b77d1734bacaec704976c1979`。OpenのHTML/静的公開物は`Daisuke134/anicca-products`が所有し、PR #905統合後のmain=`6aea3804295aea27addab0f3c81582fc56c16587`。build 818は旧source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`で、PR #9289 candidateは未統合。
+コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。最新main=`2f89767877f6266b77d1734bacaec704976c1979`。OpenのHTML/静的公開物は`Daisuke134/anicca-products`が所有し、PR #905統合後のmain=`6aea3804295aea27addab0f3c81582fc56c16587`。build 818はsource `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`（PR #9282 merge SHA）で、PR #9289 candidate head `aaabdd019b9825f4a9a6e7ffcebc055d023bb619`は未統合。
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
-| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818=`VALID`。latest submission `a0d5a164-95fd-4f5b-9088-d3b56e753af2`=`COMPLETE`、`inFlight=false`、version=`DEVELOPER_REJECTED`。doctorはblocking 1（旧submission removed-items-only）とwarning 15 | RevenueCat current=`anicca_live_20261030`は`.monthly.b`/`.yearly.b`、ASCは両方`APPROVED`・$14.99/月・$59.99/年。warning対象IAP `ai.anicca.app.ios`とsubscription `Anicca`はcurrent offering外。新candidate提出前にdoctor/metadataを再照合する |
-| 計測 | build 818はMixpanelとPostHog両方へ送信。PR #9289 candidateではMixpanel Swift 7.1.0一本にし、PostHog経路を外して18 screen IDを配線する。candidate sourceのanalytics contract testはlocal PASS | **選定はMixpanel一本**。PR #9289は未統合で、event受信・identity/property・重複0・実験plan/region/MEUは未確認。SDK導入や静的テストは本番受信の証拠ではない |
+| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818=`VALID`、version=`WAITING_FOR_REVIEW`、submission `9fa35898-1eee-44ce-942b-630780d9133b`=`WAITING_FOR_REVIEW`、`inFlight=true`（ASC CLI公式readback 2026-11-07） | build 818はPR #9282 sourceでありPR #9289の変更は含まない。現在の審査中submissionを重複作成しない。後続候補の提出可否は現審査状態と新candidateを照合して判断する |
+| 計測 | build 818はMixpanelとPostHog両方へ送信し、`screen_viewed`はonboarding step/feed/saved/reminders/themes/settingsの一部に配線される。PR #9289 candidateではMixpanel Swift 7.1.0一本にし、PostHog経路を外して18 screen IDとScreenVisitLedgerを配線する。 | **選定はMixpanel一本**。PR #9289は未統合。build 818で一部eventを送るコードはあるが、実receipt・identity/property・重複0・next-screen離脱の本番確認は未完了。candidate sourceの静的testは実受信証拠ではない |
 | Onboarding | 9つの列挙stepと別の2段paywallが存在 | コメントの「10/20-step」と実際の画面数を混同しない |
 | 課金 | 閉じると無料利用へ進めるsoft paywall。`variant: "b"` 呼び出し | フラグの存在だけでA/B稼働としない |
 | 価格 | 事前調査の米国公開IAP一覧は月$14.99・年$59.99・買切$59.99。週$6.99も登録 | 公開一覧・現行Offering・対象国・無料体験資格を別に照合。モック値を本番へ固定しない |
@@ -23,7 +23,7 @@
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
 | 設定 | 現在の `ReminderSchedule.slots(isPro:)` はFree 09:00/14:00/20:00、Pro 08:00/12:30/17:30/21:30を表示し、端末タイムゾーンも表示する。APNs token登録ではtimezone/langを送る。`Daisuke134/anicca-products` の確認済み `origin/main` (`0f2cd20b`) のaffirmation senderも同じFree/Pro枠を定義し、remote APNsを単一送信元として記述する | ソース上の予定時刻は一致。稼働中deploymentのcommit/readback、実端末APNs、Free/Pro実配信、登録/送信receiptは未確認 |
 | 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
-| Open | PR #904でMixpanel collector・screen table・validator、PR #905でmissing-credential fail-safeを実装してmainへ統合。#905のlocal 41/41とLanding CI 2/2がPASS。main deploy run `42361224893`もSUCCESS | 公開JSONの最新readbackは`updated_at=2026-11-07 20:37 JST`、`observed_at=2026-11-07T11:46:20.291Z`。`product_analytics.anicca_ios.status=unavailable`, `error_code=missing_service_account`、`screens=[]`, `breakdowns=[]`。画面別の実数は未取得で、0件ではない。hydrated pageの実画面readbackも未実施 |
+| Open | PR #904でMixpanel collector・screen table・validator、PR #905でmissing-credential fail-safeを実装してmainへ統合。#905のlocal 41/41とLanding CI 2/2がPASS。main deploy run `42361224893`もSUCCESS | 公開JSONの最新readbackは`updated_at=2026-11-07 21:07 JST`、`observed_at=2026-11-07T12:21:11.292Z`。`product_analytics.anicca_ios.status=unavailable`, `error_code=missing_service_account`、`screens=[]`, `breakdowns=[]`。画面別実数は未取得で0ではない。hydrated pageの実表示も未確認 |
 | 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | G4.1 collectorはOpen ownerのanicca-products側に実装中。実データ取得・snapshot・公開deployを別々にreadbackする |
 
 公開feedの観測例: `https://aniccaai.com/open/data.json` の期間10/29〜11/04、Aniccaは新規3件、JP2/CO1、取得行はApp Store検索。download coverageは7日中4日。米国0・SNS0や「全期間3件」とは断定しない。取得期間と欠測を保持し、別collectorの「行無し→0」と不整合があれば集計境界を直す。

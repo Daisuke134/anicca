@@ -100,18 +100,18 @@
 
 ## Task 5: 同一候補buildの全画面E2E動画と審査提出（G5）
 
-**状態:** 最新ASC read-only readback（2026-11-07 17:50 JST）はversion 1.9.8=`DEVELOPER_REJECTED`、build 818=`VALID`、submission `a0d5a164-95fd-4f5b-9088-d3b56e753af2`=`COMPLETE`、`inFlight=false`。review doctorはblocking 1件（旧submissionの全review item削除）とwarning 15件。RevenueCat current offering=`anicca_live_20261030`のproduct IDsは`.monthly.b`/`.yearly.b`で、ASCは両SKUを`APPROVED`、$14.99/月・$59.99/年と返す。doctor warningの`Anicca` subscriptionと`ai.anicca.app.ios` consumable IAPはcurrent offering外。Simulator build 819のMaestro 6 flowsは6/6 PASSだが署名candidateとのsource一致は未証明。G4実受信/Open live readbackと同一candidate E2E/videoは未完了。状態の正本は統合SSOT。
+**状態:** ASC CLI公式readback（2026-11-07 21:19 JST）はversion 1.9.8/build 818=`VALID`、version/submission `9fa35898-1eee-44ce-942b-630780d9133b`=`WAITING_FOR_REVIEW`、`inFlight=true`。build 818 sourceはPR #9282 merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`で、PR #9289のMixpanel一本化と18画面funnelは含まれない。現submissionを重複させない。Openは`unavailable/missing_service_account`、Mixpanel実receiptと同一candidate E2E/videoは未完了。状態の正本は統合SSOT。
 
-**Build経路:** Xcode UIは使わずASC CLIを使う。`asc xcode doctor`はXcode 26.6 command-line toolをPASS。`asc xcode build/archive/export`と`asc builds upload`が利用可能で、これらは署名candidate作成/アップロード用のASC CLI経路。過去のXcode Cloud build 819はworkflowへ`ANICCA_PRODUCTION_XCCONFIG_B64`が渡らず失敗したため、Cloud workflowを前提にせず、ローカル設定と署名をASC CLIから検証して同一candidateを作成する。候補buildは未作成。
+**Build経路:** ローカルXcode/`xcodebuild`は使わず、既存のXcode CloudをASC CLIから起動する。`asc xcode-cloud workflows --app 6755129214`のreadbackでは`Default` workflow=`755B36A7-4BD1-4B42-85F0-B3D30D49588A`がenabled・main限定・編集lock。PR #9289をmainへ統合した後、`asc xcode-cloud run --app 6755129214 --workflow "Default" --branch main --wait`でArchiveを作り、run/build/source SHAを公式readbackする。候補buildは未作成。過去build 819 runは`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で失敗しているため、次runのfailure boundaryと環境受け渡しを確認する。
 
 **過去のG5失敗・資源記録:** candidate run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`が`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で終了しartifactなし。過去のbrowser preflightは12 GiBを要求し、当時の空き容量は7.4 GiBだった。これは過去の測定で現在値ではなく、現在cursorでもない。G5再開時にtask所有・再生成可能なartifactを確認して整理し、作業を続ける。稼働中process、登録worktree、運用state、求人/納品証拠は保持する。
 
-- [x] ASC CLI read-onlyで現行状態を再確認: 1.9.8/build 818=`VALID`、version=`DEVELOPER_REJECTED`、latest submission=`COMPLETE`、`inFlight=false`。
+- [x] ASC CLI read-onlyで現行状態を再確認: 1.9.8/build 818=`VALID`、version/submission `9fa35898-1eee-44ce-942b-630780d9133b`=`WAITING_FOR_REVIEW`、`inFlight=true`。
 - [x] ASC review doctorを実行。唯一のblocking項目は旧submissionのreview item削除。15 warningsのうちsubscription `6758591116`（productId `Anicca`）とconsumable IAP `6755617833`（productId `ai.anicca.app.ios`）が`MISSING_METADATA`。
 - [x] RevenueCat read-only APIのcurrent offering=`anicca_live_20261030`が`.monthly.b`/`.yearly.b`を使い、ASCで両SKUが`APPROVED`・$14.99/月・$59.99/年であることを照合。missing-metadataの`Anicca` subscriptionと`ai.anicca.app.ios` consumable IAPはcurrent offeringに含まれないため、ASC商品設定は変更しない。
 - [ ] `asc review doctor`を最終candidate/metadata準備後に再実行し、blockingを0にする。optional promotional-image/keyword warningsと本番審査を妨げるmetadata不足を区別する。
 - [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
-- [ ] PR #9289のcandidate sourceを最新mainへ統合後、ASC CLIのbuild/archive/export/upload経路で署名candidateを作る。ASC CLIでbuild/sourceをreadbackする。Xcode UIは使わない。
+- [ ] PR #9289のcandidate sourceを最新mainへ統合後、`asc xcode-cloud`で既存Default workflowを起動して署名candidateを作る。ASC CLIでrun/build/source SHAをreadbackする。ローカルXcode/`xcodebuild`は使わない。
 - [x] Mac Mini Simulatorのbuild 819でMaestro 6 flows 6/6 PASS。JUnitは`/tmp/anicca-g4-simulator-20261107/maestro-full-e2e.xml`。これは署名candidateとのsource一致を証明しない。
 - [x] YouTube限定公開動画を公式readback。初回UX（1:50）https://www.youtube.com/watch?v=n6nFFNuO2wg、通知routing（0:27）https://www.youtube.com/watch?v=LXw6enH20c0、6-flow E2E（4:20）https://www.youtube.com/watch?v=Wr0YQv0Gblk。3本ともSimulator build 819で、署名candidate一致は未証明。
 - [ ] 全screen/flow inventoryを署名candidateで実行・録画し、動画/screenshots/JUnitを同一build/source SHAへ結び、録画を再生確認する。
