@@ -1,0 +1,133 @@
+{
+  "actual_shared_BFM_training": "NOT_PERFORMED",
+  "benchmark_card": {
+    "baseline": "oracle known from data generating process",
+    "claim_id": "P12-1-SYNTHETIC-BANDIT-OPE-V1",
+    "code_commit_sha": "0c236f249ac4503764770135a86e2026cd37fec9",
+    "dataset_revision_sha256": "0c52ec29959de750140804ece10cf963d3c06a464b375698f83915f9893a4188",
+    "evaluation_time_cutoff": "synthetic-seed-1101",
+    "human_outcome_claim": false,
+    "kind": "SYNTHETIC",
+    "license_status": "SELF_AUTHORED_SYNTHETIC",
+    "metric": "DR_reward_value",
+    "metric_direction": "higher",
+    "model_revision": "toy-conditional-probabilities-v1",
+    "raw_outcome_status": "SYNTHETIC_NO_HUMAN_DATA",
+    "sample_count": 20000,
+    "seeds": [
+      1101
+    ],
+    "split_unit": "synthetic_decision",
+    "test_groups": [
+      "source-sim-heldout"
+    ],
+    "train_groups": [
+      "source-sim-train"
+    ]
+  },
+  "evidence_level": "SAME_AUTHOR_ALTERNATE_CALCULATION",
+  "external_independent_reviewer": "NOT_PERFORMED",
+  "limits": [
+    "No real human data accessed",
+    "No third-party reproduction",
+    "No actual model weights trained",
+    "No commercial use of gated datasets",
+    "No live intervention, account mutation, money transfer or paid API",
+    "No published ACM badge, no final scientific peer review"
+  ],
+  "p11_bandit_replay": {
+    "alternate_dr": 0.4353910555555555,
+    "alternate_ips": 0.43550888888888883,
+    "dataset_hash_sha256": "0c52ec29959de750140804ece10cf963d3c06a464b375698f83915f9893a4188",
+    "maximum_numeric_difference": 4.324318680914985e-14,
+    "reference_dr": 0.43539105555555907,
+    "reference_ips": 0.4355088888888712,
+    "synthetic_oracle": 0.43499999999999994
+  },
+  "p11_negative_transfer_alternate_fit": {
+    "alternate": {
+      "actual_trained_shared_bfm": false,
+      "alternate_fit": "smoothed_group_logit_closed_form",
+      "pooled": {
+        "A": 0.677186768502405,
+        "B": 0.7171975208471901
+      },
+      "same_source_generator": true,
+      "seed": 1104,
+      "specialists": {
+        "A": 0.3943909092151107,
+        "B": 0.43230686559448117
+      }
+    },
+    "p11_gradient_descent_reference": {
+      "data_kind": "SYNTHETIC_NEGATIVE_TRANSFER_DEMONSTRATION",
+      "model_weight_release": false,
+      "not_a_trained_BFM": true,
+      "pooled_test_logloss": {
+        "A": 0.6771405242739207,
+        "B": 0.7172814964791064
+      },
+      "pooled_weight": 0.05818179450107816,
+      "specific_test_logloss": {
+        "A": 0.3953399263329083,
+        "B": 0.43324321785890724
+      },
+      "task_specific_weights": {
+        "A": 2.228832024439747,
+        "B": -1.966175352466907
+      }
+    }
+  },
+  "real_human_study_replication": "NOT_PERFORMED",
+  "report_schema": "manager.p12-1.same-author-repro-audit.v1",
+  "source_code_sha256": "4a3c76b12f7423c575af526a35906e6d7d1ac2b5f6ef9d1b1db895c6a91f4818",
+  "source_commit_sha": "0c236f249ac4503764770135a86e2026cd37fec9",
+  "synthetic_group_leakage_check": {
+    "data_kind": "SYNTHETIC_ONLY",
+    "no_human_data": true,
+    "row_wise_split": "REJECTED_PERSON_LEAKAGE",
+    "study_holdout": {
+      "disjoint_groups": true,
+      "disjoint_rows": true,
+      "evaluation_grain": "study",
+      "testing_groups": [
+        "study-3"
+      ],
+      "training_groups": [
+        "study-0",
+        "study-1",
+        "study-2"
+      ]
+    }
+  },
+  "synthetic_seed_variance": {
+    "between_seed_sd": 0.009381333350441107,
+    "mean_dr": 0.43583129629629624,
+    "n_per_seed": 3000,
+    "seed_dr_values": [
+      0.4330792592592592,
+      0.43521740740740733,
+      0.45172185185185176,
+      0.4441737037037036,
+      0.42340259259259255,
+      0.44044555555555553,
+      0.43201666666666666,
+      0.4230529629629629,
+      0.4447485185185185,
+      0.4304544444444444
+    ],
+    "seeds": [
+      1101,
+      1102,
+      1103,
+      1104,
+      1105,
+      1106,
+      1107,
+      1108,
+      1109,
+      1110
+    ],
+    "uncertainty_claim": "DESCRIPTIVE_SIMULATED_SEED_VARIATION_NOT_REAL_HUMAN_CI"
+  }
+}
