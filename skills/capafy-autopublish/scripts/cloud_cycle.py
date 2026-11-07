@@ -193,10 +193,15 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
         final = result('effect_unknown', 'occurrence_workspace_unavailable')
         _save(receipt, dict(initial, result=final))
         return final
-    # Only the tenant model key crosses this boundary; founder/provider secrets do not.
+    # Only tenant-scoped keys cross this boundary; founder/provider secrets
+    # do not. CAPAFY_HOST_OPENROUTER_KEY here is the tenant's OWN host key,
+    # provisioned into this computer's own environment (e.g. the Maritime
+    # agent env): it funds the tenant's own run_online listings, and the
+    # pre-publish funding gate reads process env only on maritime hosts —
+    # without this pass-through the gate can never pass on a tenant.
     child = {key: context[key] for key in (
         'PATH', 'LANG', 'LC_ALL', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
-        'LM_CLOUD_MODEL_API_KEY',
+        'LM_CLOUD_MODEL_API_KEY', 'CAPAFY_HOST_OPENROUTER_KEY',
     ) if key in context}
     # Image-owned binary only; never inherit another user's browser/profile/CDP.
     browser = '/usr/local/bin/lm-cloud-chromium'

@@ -261,12 +261,18 @@ class CloudCycleTest(unittest.TestCase):
         self.env.update(FOUNDER_SECRET='fixture-private', SUPABASE_SERVICE_ROLE_KEY='fixture-db',
                         ANICCA_USAGE_LEDGER='/parent/usage.jsonl',
                         ANICCA_TOKEN_BUDGET_LEDGER='/parent/budget.jsonl',
-                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model')
+                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model',
+                        CAPAFY_HOST_OPENROUTER_KEY='fixture-tenant-host-key')
         self.run_cycle()
         child = self.calls[0][1]['env']
         self.assertNotIn('FOUNDER_SECRET', child)
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', child)
         self.assertEqual(child['LM_CLOUD_MODEL_API_KEY'], 'fixture-tenant-model')
+        # The tenant-scoped Capafy host key provisioned into THIS computer's
+        # own environment crosses to its own agent (the run_online funding
+        # gate reads process env only on maritime); it is the tenant's key
+        # for the tenant's own listings, not a founder-host value.
+        self.assertEqual(child['CAPAFY_HOST_OPENROUTER_KEY'], 'fixture-tenant-host-key')
         # The Capafy duplicate gate judges through the tenant's own cloud
         # model route, never the founder's claude CLI login (absent here by
         # design); cloud_cycle wires the CLI-shaped runner into the child env.
