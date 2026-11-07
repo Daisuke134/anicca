@@ -14,8 +14,8 @@
 
 ## Global Constraints
 
-- 現在順はG2残件→G4 Mixpanel一本化→G4.1 Anicca funnelをOpenへ表示→G5同一candidate E2E/動画/審査提出。G1/G3は検証済みとして再利用する。
-- G1〜G4/G4.1と全画面同一build E2Eが実証されるまでApp Review submissionを作らない。全条件PASS後は最新のユーザー指示に従い、追加承認待ちを挟まずASC CLIで提出し公式readbackを確認する。実装順/状態の唯一の正本は統合SSOT `ANICCA-PRODUCT-GROWTH`。
+- 現在順はG2完了→G4 build 820由来Mixpanel実受信→G4.1 Open実集計/鮮度/表示→G5同一build E2E動画と既存審査状態の整合。G1/G3は検証済みとして再利用する。
+- 1.9.8/build 820は既にApp Reviewで`WAITING_FOR_REVIEW`。この確認では取り消し・追加提出をしない。G4/G4.1と同一build E2Eの未完了を完了扱いせず、既存submissionを重複作成しない。実装順/状態の唯一の正本は統合SSOT `ANICCA-PRODUCT-GROWTH`。
 - G6/G7全アプリ展開とG8〜G10自動改善はその後へ保持する。G4.1はAniccaだけの提出前必須slice。
 - source=`Daisuke134/life-manager`、app=`apps/mobile/anicca-ios`、既存private configとowner/leaseを使用。
 - 最小回帰のRED→GREEN、正本mainから署名build、公式readback。アプリのPackage.swiftはmacOS card生成用でありiOS検証の代替にしない。
@@ -24,7 +24,7 @@
 - 容量不足は所有者を確認した再生成可能な不要物を整理して解消し、保存/pushを完遂する。
 - App Store Connectの提出/取消/状態確認はASC CLIで行う。署名済みartifactの作成は既存Xcode Cloud、Maestro実行/録画はMac MiniのSimulatorを使い、Xcode UIは開かない。
 - 現在の限定公開YouTube動画3本はSimulator build 819で、署名candidateとのsource/build一致は未証明。全screenを含み同一の署名candidateへ結び付いた録画は別途必要。
-- 最新ASC read-only readback（2026-11-07 17:50 JST）は1.9.8/build 818=`VALID`、version=`DEVELOPER_REJECTED`、submission `a0d5a164-95fd-4f5b-9088-d3b56e753af2`=`COMPLETE`、`inFlight=false`。現在submission中ではない。分析/Open/同一candidate条件未達のため、現時点では提出しない。状態の正本は統合SSOT。
+- ASC read-only readback（2026-11-08 03:05 JST）は1.9.8/build 820=`VALID`、review submission `46f41ee2-5e57-4b09-8dd6-98a890b7a0f7`=`WAITING_FOR_REVIEW`。前submission `9fa35898-1eee-44ce-942b-630780d9133b`は`COMPLETE`。現在の審査対象が存在するため、新しいsubmissionは作らない。状態の正本は統合SSOT。
 
 ## Review Focus
 
@@ -85,38 +85,37 @@
 
 **Consumes:** Mixpanel aggregate、App Store Connect/RevenueCatの公式cohort/収益、app/date/locale/campaign/release/experiment dimensions。**Produces:** 公開個人データを含まないAnicca screen funnel panelと日次snapshot。
 
-**実装readback:** PR [#904](https://github.com/Daisuke134/anicca-products/pull/904)と[#905](https://github.com/Daisuke134/anicca-products/pull/905)はmain統合済み。#905 local 41/41、Landing CI 2/2 PASS。collector/UI/fail-safeは稼働し、missing credentialを`unavailable`として公開する。新しいmain run [`42365669499`](https://github.com/Daisuke134/anicca-products/actions/runs/42365669499)では`MIXPANEL_SERVICE_ACCOUNT`のruntime値が空で`no export request was made`。live `/open/data.json`は`status=unavailable`/`missing_service_account`/空screens・breakdownsを返す。secret名は存在するがproviderから値を再表示できず、空値の保存理由は未確定。
+**最新実装readback（2026-11-08 02:52 JST）:** PR [#904](https://github.com/Daisuke134/anicca-products/pull/904)と[#905](https://github.com/Daisuke134/anicca-products/pull/905)はmain統合済み。最新Landing run [`42397787829`](https://github.com/Daisuke134/anicca-products/actions/runs/42397787829)はSUCCESSし、Mixpanel Raw Event Export API queryは`no_events, 0 screens, 2026-10-30–2026-11-05`を返した。公開`/open/data.json`もview/exit 0、screens/breakdowns空を返す。これは最新の成功queryで、以前の`missing_service_account`ではない。ただしwindowはbuild 820の2026-11-07 upload前なので、build 820の実event到達を証明しない。JSON `updated_at=02:37 JST`と`observed_at=02:52 JST`の差も残る。
 
-- [x] 公式[`mixpanel/mixpanel-headless`](https://github.com/mixpanel/mixpanel-headless) CLI v0.4.0を発見。初回`--no-browser`はPTYなしで起動したためstdinが閉じ、`OAUTH_PASTE_ERROR: Empty paste`で終了。新しいPTY付きCLIはOAuth URLを表示し、`127.0.0.1:19284`でcallback待受中。`mp session`はAccount/Project none、認証・数値取得は未完了。URL/PKCE stateはrepoへ保存しない。OAuth tokenが生成された場合はcredential SSOTへ直ちに保管し、CLI既定`~/.mp`側の重複を除く。公式GitHub orgにMixpanel-owned MCPは見つからず、現セッションにcallable Mixpanel toolなし。
-- [ ] 実行中のGoogle OAuthを既存Anicca Mixpanel project `3970220`へ完了し、exact identity/project/region/event visibilityと閲覧権限をreadbackする。`browser-guard.sh status/acquire interactive:dais`は`reachable=false`/exit 10で、Google Promptは未表示、メール送信なし。別profile/accountへ切り替えず、登録routeが利用可能になった時に同じMacでcallbackする。ユーザー報告のMuse VMもproject/region/event visibilityを公式readbackしてから使う。
-- [ ] 既存read-only Export service accountを確認し、無い場合はproject `3970220`限定・Export read-only権限で作成する。credential SSOTへ直ちに保存し、GitHub Actions secret `MIXPANEL_SERVICE_ACCOUNT`へ登録。Raw Event Export APIはBasic Authorizationを要求する。
-- [ ] candidate eventをMixpanelでreadbackし、production以外のtest trafficを分離したうえでproject/region、`app_id`, `app_environment`, event/property, timestamp, release、permission、重複0を照合する。
+- [x] 過去の個別`mixpanel-headless` CLI/OAuth preflightはこの実行環境ではAccount/Project noneで未完了。ただし、最新Open production run `42397787829`のExport API queryは成功し、既存のcollector認証経路でproject `3970220`のquery結果を取得した。Open収集のためのGoogle OAuthやservice account新設は現在のblockerではない。
+- [ ] build 820由来のscreen eventを利用可能な配布/検証経路で発生・readbackし、project/region、`app_id`, `app_environment`, `app_build`, event/property, timestamp, identity、重複0を照合する。simulator/sandbox trafficをproduction eventと混ぜない。
 - [x] 既存hourly Netlify workflowへcollectorを1 step追加し、`screen_viewed`/`screen_exited`を`app_id`, app environment, date windowで絞り、`screen_instance_id`単位で重複排除するコードをPRに実装。
 - [x] `product_analytics.anicca_ios`のstatus, observed_at, source, data window, maturity, coverage, numerator/denominator, app/build/locale/country, nullable ratesを実装。raw user ID、個人event、affirmation本文を出力しない。
 - [x] `check-open-data`/collector testsでmissing/invalid analytics、denominator、successful empty export、aggregation/filter/privacyを検証。PR内の関連39 testsはPASS。
 - [x] `index.html`へscreen view数、next-screen観測、成熟24時間後の未観測数/率、分母/期間/buildを表示するtableを実装し、未観測をchurn確定と呼ばない。
 - [x] credential欠落時に`status=unavailable`を返し、Open UIにunknownと表示するfail-safeを実装・mainへ統合。coverageをゼロに置換しない。
-- [ ] Mixpanel real receiptを使ってpreviewのcollector aggregate→HTML値を照合し、production JSONは既にunknown状態をreadbackしたため、実集計値/source freshness/mobile layoutとhydrated Open画面の表示を再確認する。deployment成功だけでは実データ表示の完了にしない。
+- [ ] build 820由来のMixpanel receiptが取れた後、preview aggregate→HTML値→production JSON→hydrated Open画面を同じ期間・分母で照合する。現行production JSONは`no_events`（0 view/exit、window 2026-10-30〜11-05）で、windowはbuild 820 upload前。`updated_at=02:37 JST`と`observed_at=02:52 JST`の鮮度差も解消する。deployment成功だけでは実データ表示の完了にしない。
 
 ## Task 5: 同一候補buildの全画面E2E動画と審査提出（G5）
 
-**状態:** ASC CLI公式readback（2026-11-07 21:19 JST）はversion 1.9.8/build 818=`VALID`、version/submission `9fa35898-1eee-44ce-942b-630780d9133b`=`WAITING_FOR_REVIEW`、`inFlight=true`。build 818 sourceはPR #9282 merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`で、PR #9289のMixpanel一本化と18画面funnelは含まれない。現submissionを重複させない。Openは`unavailable/missing_service_account`、Mixpanel実receiptと同一candidate E2E/videoは未完了。状態の正本は統合SSOT。
+**現在の状態（2026-11-08 03:05 JST）:** ASC CLI readbackは1.9.8/build 820=`VALID`、versionにbuild 820が紐付き、最新review submission `46f41ee2-5e57-4b09-8dd6-98a890b7a0f7`=`WAITING_FOR_REVIEW`。Xcode Cloud run #820 source `1555a020ece274ee68bc2587d161f44f019e1ac4`はPR #9272の祖先を含み、PR #9289のMixpanel一本化・18画面funnelを含む。Xcode Cloud Archive action成功、TestFlight External Testing actionはApple beta review submission errorで失敗。最終App Store export IPAのInfo.plistはbundle=`ai.anicca.app.ios`、version=`1.9.8`、build=`820`で、Mixpanel resourceあり。Open latest export windowはbuild 820 upload前で`no_events`。Mixpanel実receiptと同一build E2E/videoは未完了。状態の正本は統合SSOT。
 
-**Build経路:** ローカルXcode/`xcodebuild`は使わず、既存のXcode CloudをASC CLIから起動する。`asc xcode-cloud workflows --app 6755129214`のreadbackでは`Default` workflow=`755B36A7-4BD1-4B42-85F0-B3D30D49588A`がenabled・main限定・編集lock。PR #9289をmainへ統合した後、`asc xcode-cloud run --app 6755129214 --workflow "Default" --branch main --wait`でArchiveを作り、run/build/source SHAを公式readbackする。候補buildは未作成。過去build 819 runは`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で失敗しているため、次runのfailure boundaryと環境受け渡しを確認する。
+**Build経路・実測:** ローカルXcode/`xcodebuild`を使わず、既存のXcode Cloud run #820（ID `22633fcf-fc26-4247-b86d-64b18c5c0c97`）をASC CLIでreadbackした。source SHAは`1555a020ece274ee68bc2587d161f44f019e1ac4`、Archive action=`SUCCEEDED`、build 820=`VALID`。同runのfinal App Store export IPAはASC build 820とbundle/version/buildが一致し、Mixpanel resourceと非空・非placeholderの`MIXPANEL_TOKEN`設定を含む（値は表示しない）。中間xcarchiveはInfo.plist=`817`だが、final ExportOptionsとIPA/ASCは`820`。buildは存在するが、同一build E2E動画は未作成。
 
-**過去のG5失敗・資源記録:** candidate run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`が`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で終了しartifactなし。過去のbrowser preflightは12 GiBを要求し、当時の空き容量は7.4 GiBだった。これは過去の測定で現在値ではなく、現在cursorでもない。G5再開時にtask所有・再生成可能なartifactを確認して整理し、作業を続ける。稼働中process、登録worktree、運用state、求人/納品証拠は保持する。
+**過去のG5失敗・資源記録:** candidate run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`が`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で終了しartifactなし。過去のbrowser preflightは12 GiBを要求し、当時の空き容量は7.4 GiBだった。これは過去の測定で現在値ではなく、現在cursorでもない。現在の公式candidateはbuild 820。
 
-- [x] ASC CLI read-onlyで現行状態を再確認: 1.9.8/build 818=`VALID`、version/submission `9fa35898-1eee-44ce-942b-630780d9133b`=`WAITING_FOR_REVIEW`、`inFlight=true`。
+- [x] ASC CLI read-onlyで現行状態を再確認: 1.9.8/build 820=`VALID`、review submission `46f41ee2-5e57-4b09-8dd6-98a890b7a0f7`=`WAITING_FOR_REVIEW`、前submission `9fa35898-1eee-44ce-942b-630780d9133b`=`COMPLETE`。
 - [x] ASC review doctorを実行。唯一のblocking項目は旧submissionのreview item削除。15 warningsのうちsubscription `6758591116`（productId `Anicca`）とconsumable IAP `6755617833`（productId `ai.anicca.app.ios`）が`MISSING_METADATA`。
 - [x] RevenueCat read-only APIのcurrent offering=`anicca_live_20261030`が`.monthly.b`/`.yearly.b`を使い、ASCで両SKUが`APPROVED`・$14.99/月・$59.99/年であることを照合。missing-metadataの`Anicca` subscriptionと`ai.anicca.app.ios` consumable IAPはcurrent offeringに含まれないため、ASC商品設定は変更しない。
 - [ ] `asc review doctor`を最終candidate/metadata準備後に再実行し、blockingを0にする。optional promotional-image/keyword warningsと本番審査を妨げるmetadata不足を区別する。
 - [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
-- [ ] PR #9289のcandidate sourceを最新mainへ統合後、`asc xcode-cloud`で既存Default workflowを起動して署名candidateを作る。ASC CLIでrun/build/source SHAをreadbackする。ローカルXcode/`xcodebuild`は使わない。
+- [x] PR #9289 merge sourceからXcode Cloud run #820を作成し、ASC CLIでrun/build/source SHAをreadback。latest build 820=`VALID`、source SHA=`1555a020ece274ee68bc2587d161f44f019e1ac4`。
+- [x] Xcode Cloud App Store export IPAを取得し、bundle/version/build=`ai.anicca.app.ios`/1.9.8/820、Mixpanel resource、非空・非placeholderの`MIXPANEL_TOKEN`設定を確認。中間archiveのInfo.plist build 817はExportOptions/IPA/ASCの820と異なるため、最終packageにはApp Store export IPAとASC readbackを採用。
 - [x] Mac Mini Simulatorのbuild 819でMaestro 6 flows 6/6 PASS。JUnitは`/tmp/anicca-g4-simulator-20261107/maestro-full-e2e.xml`。これは署名candidateとのsource一致を証明しない。
 - [x] YouTube限定公開動画を公式readback。初回UX（1:50）https://www.youtube.com/watch?v=n6nFFNuO2wg、通知routing（0:27）https://www.youtube.com/watch?v=LXw6enH20c0、6-flow E2E（4:20）https://www.youtube.com/watch?v=Wr0YQv0Gblk。3本ともSimulator build 819で、署名candidate一致は未証明。
 - [ ] 全screen/flow inventoryを署名candidateで実行・録画し、動画/screenshots/JUnitを同一build/source SHAへ結び、録画を再生確認する。
 - [ ] Mixpanel candidate receipt、Open preview/live aggregate、same-candidate video、ASC metadata/IAP/privacyを揃える。実端末APNs試験はユーザー指示で省略し、Simulator routingと区別する。purchase/trial/restoreの到達範囲と限界も記録する。
-- [ ] 全受入条件PASS後、追加承認待ちを挟まずASC CLIでversion/buildをvalidate・submitし、submission/version/buildの公式readbackを確認する。`WAITING_FOR_REVIEW`以降のApple判断は別状態。
+- [ ] G4/G4.1/G5の未完受入条件を満たす。review submission `46f41ee2-5e57-4b09-8dd6-98a890b7a0f7`は既に`WAITING_FOR_REVIEW`なので、この作業で取消し/重複提出をせず、実測と既存審査対象buildを照合して結果をSSOTへ残す。Appleの審査結果は別状態。
 
 ## Task 6: 全アプリ計測とOpen全体（日次履歴・国・流入・課金）（G6/G7）
 
