@@ -124,6 +124,18 @@ describe('x402-agents discovery surface', () => {
     expect(res.text).toContain('/funding-rates');
   });
 
+  it('GET /.well-known/402index-verify.txt serves only the 402index verification hash', async () => {
+    const { createApp } = await import('../server.js');
+    const app = await createApp();
+
+    const res = await request(app).get('/.well-known/402index-verify.txt');
+    expect(res.status).toBe(200);
+    expect(res.type).toMatch(/text\/plain/);
+    // Hash issued by POST /api/v1/claim on 402index.io for this hostname;
+    // the claim instructions require the file to contain only this hash.
+    expect(res.text.trim()).toBe('4886e2fe03089311796e0447f4802daab00c0f3e57df2149d8488c0d1fdfcb36');
+  });
+
   it('GET / returns the service index instead of 404', async () => {
     const { createApp } = await import('../server.js');
     const app = await createApp();
@@ -139,7 +151,7 @@ describe('x402-agents discovery surface', () => {
     const { createApp } = await import('../server.js');
     const app = await createApp();
 
-    for (const path of ['/.well-known/x402', '/.well-known/agent.json', '/llms.txt', '/']) {
+    for (const path of ['/.well-known/x402', '/.well-known/agent.json', '/.well-known/402index-verify.txt', '/llms.txt', '/']) {
       const res = await request(app).get(path);
       expect(res.status).toBe(200);
     }

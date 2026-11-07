@@ -28,6 +28,12 @@ import intentRouterRouter from './routes/intentRouter.js';
 import promptSanitizerRouter from './routes/promptSanitizer.js';
 import fundingRatesRouter from './routes/fundingRates.js';
 
+// 402index domain ownership proof: POST /api/v1/claim on 402index.io issued
+// this verification hash for the production hostname. The claim endpoint
+// instructs: place a text file at /.well-known/402index-verify.txt
+// containing only this hash. It is a public ownership token, not a secret.
+const INDEX402_VERIFICATION_HASH = '4886e2fe03089311796e0447f4802daab00c0f3e57df2149d8488c0d1fdfcb36';
+
 const REQUIRED_ENV = ['X402_WALLET_ADDRESS', 'OPENAI_API_KEY', 'DATABASE_URL'];
 
 function checkRequiredEnv() {
@@ -58,6 +64,7 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
     skip: (req) => req.path === '/openapi.json'
       || req.path === '/.well-known/x402'
       || req.path === '/.well-known/agent.json'
+      || req.path === '/.well-known/402index-verify.txt'
       || req.path === '/llms.txt'
       || req.path === '/'
       || req.path === '/favicon.ico',
@@ -80,6 +87,13 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
     const configuredOrigin = process.env.PUBLIC_ORIGIN;
     const requestOrigin = `${req.protocol}://${req.get('host')}`;
     return res.json(buildAgentCardDocument({ origin: configuredOrigin || requestOrigin }));
+  });
+
+  // 402index domain ownership proof (see INDEX402_VERIFICATION_HASH above):
+  // the body must contain only the verification hash.
+  app.get('/.well-known/402index-verify.txt', (req, res) => {
+    res.type('text/plain; charset=utf-8');
+    return res.send(`${INDEX402_VERIFICATION_HASH}\n`);
   });
 
   app.get('/llms.txt', (req, res) => {
@@ -218,6 +232,7 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
         || req.path === '/openapi.json'
         || req.path === '/.well-known/x402'
         || req.path === '/.well-known/agent.json'
+        || req.path === '/.well-known/402index-verify.txt'
         || req.path === '/llms.txt'
         || req.path === '/'
         || req.path === '/favicon.ico') return next();
