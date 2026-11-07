@@ -26313,12 +26313,22 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 2026-11-05のNHC-00公式readback: main由来App deployment `apd_j8nn7p6vjs682cq87mb6txate4` は`ready`、Appは`active`。App permission一覧は`[]`のままだが、組織scopeが正確に`computers:write`のserver API keyをwrite-only secret `NAIVE_API_KEY`へ保存した。専用agent v2はdefault deny、対象App一つとそのbrowser MCP toolだけallow。Naïve公式eventは同agent sessionから`goto https://capafy.ai/`と`extract h1`を`performed=true`で記録し、Capafy公開ページの見出しを返した。browser sessionは`closed`、Computerは`paused`。model 3,382 + browser 3,333 = 6,715 micro-USD（$0.006715）。今回の実行では注文・販売・支払・payoutがなく売上は$0。Capafy account全体の過去売上は未照合。録画は作成していない。private receipt: `/Users/anicca/.local/state/naive-browser-company/naive-cloud-browser-proof-20261105.json`。現在cursor=NHC-01。
 
+**2026-11-07 live readback:** Vetta SDKの正しいAPI baseは`https://api.vetta.sh`。Credential SSOTの`url`はportal host `app.usenaive.ai`であり、これをSDK baseに使った初回read-only GETはnull応答のschema errorとなった。書き込みは0。SDK READMEのbaseへ直して公式readbackを完了した。`priority`は現行modelで`window_unavailable`となりsession作成前に拒否されたため、window指定を外して実行した。
+
+現行Anicca orgには13 agentsがあり、業務対象`capafy`はv5 / `anthropic/claude-sonnet-5` / 月cap10USD / task cap2USD / MCPなし。enabled toolsはbash、browser、web_fetch、email.read/send/inboxes、read_skill、web_search、project_context。browserはCapafy domain限定、`solve_captchas=false`、明示的な`persist_context`/`keep_alive`は未設定。Identity `anicca`にはactive inboxが1個あり、`owning_agent_id`はこのagentと一致する。metadata/source targetの`anicca-browser-operator`/v25は現行orgのagent一覧に存在しないため、NHC-03を再開する。
+
+読み取りsession `ses_br2ny1zgb3j63mrdspz9txq54b` は$0.132741でAgreementとDeveloper Guide URLまで進み、次のmodel request時にbudget_paused。`ses_anwt7qbpb0s69m26qnq15hhttp` は$0.056382でend_turnし、agent-owned browserに`Welcome to Capafy`とGoogle/GitHub/Emailのlogin選択肢が表示された。ログイン/登録/フォーム送信/credential入力/公開/購入は0。現行Computer `cmp_01a1b3454fda7ad1b8ba63fb3e820fac` はpaused、browser=null、browser sessionなし、対象agentのactive sessionは0。別ComputerへBrowserが恒久的に接続することや保存済みloginは未実証。最新公式spendは1,213,559 micro-USD、organization creditは17,643,862 micro-USD。creditsは売上ではなく、このprobeの売上は0。Capafy全体のsalesはこのreadbackでは照合していない。
+
+現行[Publisher Agreement](https://capafy.ai/publisher-agreement/)は§2.7でPublisher accountをnon-transferable/non-assignable、§2.9で同一Publisher一account（追加は書面承認）と規定する。[Terms](https://capafy.ai/terms-of-service) §3.4は一人一account（追加は事前の書面承認）、§6はautomation/bot/scriptに事前の書面許可を要求する。[Publisher Guide](https://capafy.ai/developer/doc/2.1)と[Publishing Flow](https://capafy.ai/developer/doc/2.2)はAgent Client経路を説明するが、既存Publisherへのagent-owned service credential/team roleは公開文書で確認できない。[Certification](https://capafy.ai/developer/doc/1.3)は初回公開に$0.99の返金不可fee、business registration details、権限ある担当者のidentity documentを記載する。既存publisher certificationを再度求める根拠とはしない。
+
+Supportへの既存thread `1a1aea83d8dfde35` は読み取り時点で送信済み質問のみ・返信0。agent-operated Publisher credentialの正式手順を尋ねるfollow-up `1a1b359db51aa7a4` を同threadへ送信し、Gmail再読取で`SENT`を確認した。これは運営側の問い合わせで、Naïve agentのCapafy login/登録ではない。返信を待つ間もNHC-02の既存成果物作業は継続し、新Publisherや人間のGoogle/login credentialを使わない。
+
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
 | NHC-00・完了 | main由来immutable releaseのNaïve Appを稼働させ、専用agentから固定ComputerでCapafy公開画面を一度読む | PR #9216/main SHA `288e867668a00ead4de80efd2ebb1f4c54866ef2`、App `active/ready`、key metadataのscopeは`computers:write`（App permission一覧`[]`）、専用agent v2の単一App/tool binding、公式goto/extract eventと見出し、browser closed/Computer paused、ledger合計6,715 micro-USDを照合。これはcloud-browser動作の証拠で売上ではない |
-| NHC-01 | Capafyの既存認証済みPublisherに、Dais申告のautomation許可を使った正式agent/team委任経路・専用認証・販売/精算権限があるかを読み取りで確定する | Agent Clientの公式publish guideとTermsを分けて扱い、Capafy公式UI/docで既存Publisherと専用agentの権限をreadbackする。login credentialを共有せず、新規account・重複Publisher・本人書類の代理利用・KYC回避をしない。経路が未確認なら無人適合を未確認として順位2へ進む |
+| NHC-01・進行中 | Capafyの既存認証済みPublisherに、Dais申告のautomation許可を使った正式agent/team委任経路・専用認証・販売/精算権限があるかを読み取りで確定する | 公式guide/Terms/UIを読み、専用agent credential経路は公開資料で未確認。Naïve agent-owned browserはログイン画面。既存Publisherの認証情報を使わず、問い合わせ返信またはprovider readbackで経路を確定する。重複account・代理本人確認・KYC回避をしない |
 | NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
-| NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
+| NHC-03・再開 | 選んだCapafy業務を現行Naïve設定/定期inputへ反映し、live targetとmain sourceを一致させる | 旧PR9196/main b412c1c0cdのagent25一致は履歴として保持。現行公式orgには`capafy` v5があり、専用`anicca-browser-operator`/v25は一覧にない。現行Agent/deployment/source一致を再readbackする。予算増額なし |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
 | NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
 | NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |
@@ -26777,7 +26787,7 @@ flowchart TD
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
 | LC58 | 未・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | 公式原文と参加状態。今回YC event本文は取得不十分、賞品はTBDなので旧YC interview記載を確定扱いしない |
-| LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
+| LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 2026-11-07のlive確認では実org/既存`capafy` v5のowner/tools/月cap/task cap/Identity/Inboxは読めたが、sourceに記録したv25専用Agentとの一致は未達。現行targetを固定し、本番非接続をGETで確認。勝手なtop-upなし |
 | LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
 | LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
 | LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
