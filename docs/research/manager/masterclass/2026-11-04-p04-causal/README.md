@@ -1,5 +1,9 @@
 # Manager Masterclass｜P00〜P12の全講義と製品実装（唯一のロードマップへ）
 
+
+**2026-11-07 P10-1教材（研究ブランチ）：** [仕事単位のUnit Economics講義](P10-1_JA.md)、[監査可能なread-only projection仕様](../../../../../products/manager/docs/specs/2026-11-07-manager-p10-1-unit-economics-projection.md)、[日本語記事草稿](articles/2026-11-07_p10_1_manager_unit_economics_JA.md)、[8枚補足スライド＋話者ノート](journal_club/P10-1_UNIT_ECONOMICS_SLIDES_NOTES_JA.md)、[架空台帳の再計算](experiments/p10_1_unit_economics.py)、[19件の単体テスト](experiments/test_p10_1_unit_economics.py)、[合成証拠](evidence/P10-1_UNIT_ECONOMICS_SYNTHETIC_AUDIT.json)を追加。**講義・合成計算のみ、実会計照合・実増分利益・実心理的便益は未実施。** 既存34枚本番発表・118枚詳細版はこの変更では置換しない。最新進捗は常に[唯一のロードマップ](ROADMAP_STATUS_JA.md)を参照。学習の次はP10-2、BFM-01/02・INT-02の実証未完は継続。
+
+
 **最新版：2026-11-05 America/Los_Angeles。** 先頭から読める唯一のカリキュラム・製品開発順は **[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)**。元のP07-3／P07-4／P07-5とP08〜P12は消えていない。以前の「P04〜P07-2」「次はP05-2」などは過去の作業時点に書かれた履歴で、現在の指示ではない。
 
 **Phase 7（P07-1〜P07-6）の講義・観察専用／安全ソフトウェア実装は完了。** [P07-3 COM-B](P07-3_JA.md)、[P07-4 CBT・ACT](P07-4_JA.md)、[P07-5 ヴィパッサナー・無常・苦・無我](P07-5_JA.md)、[P07-6 生活の質・自律性・瞑想有害事象](P07-6_JA.md)の資料・FAQを保存。P07-4の15ソフトテスト、P07-5/6の25ソフトテスト、統合の10ソフトテストを実行。詳細研究用118枚の編集可能な英語スライド、118ページPDF、日本語スピーカーノートをクラウドで検証。**人間への治療・苦痛軽減の実際の効果は未実証**。P08〜P12の全講義番号も廃止せず、唯一の[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)に保持する。**『モデル開発の次』と『学習の次』を別々に置かず、唯一の現在TODOはBFM-01。**
