@@ -26776,10 +26776,10 @@ flowchart TD
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC58 | 未・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | 公式原文と参加状態。今回YC event本文は取得不十分、賞品はTBDなので旧YC interview記載を確定扱いしない |
+| LC58 | 部分・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | ユーザー共有の公式イベント本文では2026-11-07–08、全チームNaïve SDK利用、live demoで実際の成果・判断・人の介入箇所を示す。参加承認はユーザー申告、公式ticket receiptは未readback |
 | LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
 | LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
-| LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
+| LC61 | 部分（映像のみ、LC60未完） / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 公開x402 endpointの29秒録画だけ作成。Naïve agentのrun・成果物作成・人の介入・購入・決済・収益は映像で証明していない。一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分けて記録する |
 | LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
 
 #### Maritime大会・YCの事業証拠
@@ -26794,3 +26794,5 @@ flowchart TD
 **現在cursor:** LC04（sourceと本番配備の対応を公式readbackで棚卸し）→LC05（契約内の必要機能）→LC06（提供の適用範囲）。Naïve担当はLC58、Maritime大会参加の確認はLC63を独立して進められる。顧客課金はLC27以降、外部顧客の有料成果はLC54以降で未完。文書上のLC01–03のみ完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
+
+**Naïve録画チェックポイント (2026-11-07 JST):** Screenity 4.7.2を隔離Chrome profile `Naive Demo Recorder` で使用。公開中の `https://life-manager-funding-rates-s5n2hqva.vercel.app/api/index` → `/.well-known/x402.json` → `/funding-rates?symbol=BTC` を画面収録し、最後の実リクエストが `Payment Required` / x402 challengeを返すことを確認。29秒のMP4を `docs/evidence/naive/screenity-live-x402-endpoint-proof-2026-11-07.mp4` に保存（SHA-256 `18d86ee7d4610a3e0ca71a5dfb79cce443dcabea0df4813c33de853e539008a8`）。元39秒録画の冒頭に入ったScreenity権限案内11秒をローカル編集で除き、QuickTimeで再生を確認した。これは公開商品endpointの動作映像であり、Naïve agentが商品を作成/公開した証拠ではない。購入者、x402 settlement、実売上、利益も確認していない。録画のためNaïve account/API key/Computerを操作していない。YouTube/Postizへの公開は未実施。Naïve sublane cursorはLC59（組織・agent・budget・Computer/browserの最新readback）、次にLC60（一つの成果物をagentが実際に公開）とし、そのprovider receiptに結びつく2–4分映像を取り直してLC61を完了する。
