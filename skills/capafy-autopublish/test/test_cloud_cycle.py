@@ -15,12 +15,13 @@ TENANT = 'lm_11111111-1111-4111-8111-111111111111'
 class CloudCycleTest(unittest.TestCase):
     def test_cloud_binary_is_image_owned_and_parent_profile_is_not_inherited(self):
         from unittest.mock import patch
-        self.env.update(CAPAFY_CHROMIUM='/parent/browser', CLOAKBROWSER_BINARY_PATH='/parent/browser', CAPAFY_BROWSER_PROFILE='/parent/profile')
+        self.env.update(CAPAFY_CHROMIUM='/parent/browser', CLOAKBROWSER_BINARY_PATH='/parent/browser', CAPAFY_BROWSER_PROFILE='/parent/profile', CLOAK_CDP_BASE_URL='http://parent.invalid:9222')
         with patch.object(self.module.os, 'access', return_value=True):
             self.run_cycle()
         child = self.calls[0][1]['env']
         self.assertEqual(child['CAPAFY_CHROMIUM'], '/usr/local/bin/lm-cloud-chromium')
         self.assertEqual(child['CLOAKBROWSER_BINARY_PATH'], '/usr/local/bin/lm-cloud-chromium')
+        self.assertEqual(child['CLOAK_CDP_BASE_URL'], 'http://127.0.0.1:9229')
         self.assertNotIn('CAPAFY_BROWSER_PROFILE', child)
 
     def test_linux_browser_owner_uses_existing_binary_headlessly(self):
