@@ -1,6 +1,6 @@
 # Manager — ONE Roadmap: Learn × Build × Evaluate × Ship × Publish
 
-**正本：Managerの「唯一の順番付き実装TODO・現在のNEXT」は [Life Manager統合SSOTのMANAGER MG-01〜MG-18](../../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md#manager唯一の順番付き実装todop00p12を全統合2026-11-07) です。** この資料はP00〜P12の学習内容と履歴を示す索引であり、実装の別TODO/別カーソルではありません。旧文中の「次」「NOW」は当該日付の履歴で、最新の実行順を変更しません。現在のMG-01はP00-3/P05-5/G3の実務Shadowに相当し、オンライン公開サイトのGET・SHA照合までは実測済み、モデル対既存方式の実比較は未達。
+**正本：Managerの「唯一の順番付き実装TODO・現在のNEXT」は [Life Manager統合SSOTのMANAGER MG-01〜MG-18](../../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md#manager唯一の順番付き実装todop00p12を全統合2026-11-07) です。** この資料はP00〜P12の学習内容と履歴を示す索引であり、実装の別TODO/別カーソルではありません。旧文中の「次」「NOW」は当該日付の履歴で、最新の実行順を変更しません。現在のMG-02はP00/P02の本番権限・データの目的・撤回/停止の契約である。MG-01は公開サイトの限定S1実モデル比較を実行して技術受入済み。ただしQwenと現行ルールは不一致、モデルの価値は未証明。
 
 ## 2026-11-07｜P12-1独立再現研究（教材・同一チームの別計算法・出版準備）
 

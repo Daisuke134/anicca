@@ -1,0 +1,140 @@
+name: Manager MG-01 | Real public host Qwen3-4B S1 shadow (NO WRITE)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-mg01-s1-qwen-public-host.yml"
+      - "products/manager/evals/manager_mg01_s1_live.py"
+      - "products/manager/evals/test_manager_mg01_s1_live.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-mg01-public-s1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-owned-public-s1-model-vs-incumbent:
+    name: Real Qwen3-4B forward on same independently verified public company site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 23
+    env:
+      GGUF_SHA256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e"
+      GGUF_SIZE: "2497280736"
+      ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pinned Python 3.11 for public site snapshot and unit tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact original source and same-snapshot S1 safety tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The canonical Mac root check is local-only; on isolated GitHub
+          # hosted runners verify the exact remote/checkout identity instead.
+          test "$GITHUB_REPOSITORY" = "Daisuke134/life-manager"
+          test "$(git rev-parse --show-toplevel)" = "$GITHUB_WORKSPACE"
+          REMOTE="$(git remote get-url origin)"
+          case "$REMOTE" in
+            https://github.com/Daisuke134/life-manager|https://github.com/Daisuke134/life-manager.git) ;;
+            *) echo "invalid source origin for research workflow" >&2; exit 2 ;;
+          esac
+          ( cd products/manager/evals && PYTHONPATH=.. python -m unittest -v test_manager_mg01_s1_live )
+          ( cd products/manager && PYTHONPATH=. python -m unittest -v tests.test_zero_ui_host_shadow_v1 tests.test_single_cursor )
+          python -m py_compile products/manager/evals/manager_mg01_s1_live.py
+
+      - name: Verify standard PUBLIC repo gives zero listed GitHub Actions compute charge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY" --jq .private)" = "false"
+          echo "GitHub public standard hosted runner: published compute list rate USD 0/minute. This does not establish invoice-level billing."
+          echo "Official source: https://docs.github.com/en/actions/concepts/billing-and-usage"
+
+      - name: Preflight real owned public six-page GET+hash and frozen model prompt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          PYTHONPATH=products/manager python products/manager/evals/manager_mg01_s1_live.py \
+            --dry-run --llama-cli /dev/null --model /dev/null \
+            --output artifacts/manager-mg01-source-preflight.json
+          python - <<'PY'
+          import json
+          x=json.load(open("artifacts/manager-mg01-source-preflight.json"))
+          assert x["status"]=="REAL_PUBLIC_SITE_SOURCE_ONLY_NO_MODEL"
+          assert x["model_forward_pass_verified"] is False
+          print("Source-only preflight SHA:",x["manifest_sha256"])
+          PY
+
+      - name: Download checksum-pinned llama.cpp b12137 CPU release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mg01-s1/bin"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 240 \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" \
+            -o "$RUNNER_TEMP/mg01-s1/llama.tar.gz"
+          echo "$ARCHIVE_SHA256  $RUNNER_TEMP/mg01-s1/llama.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/mg01-s1/llama.tar.gz" -C "$RUNNER_TEMP/mg01-s1/bin"
+          CLI="$(find "$RUNNER_TEMP/mg01-s1/bin" -type f -name llama-cli | head -n 1)"
+          test -f "$CLI"
+          chmod +x "$CLI"
+          echo "$CLI" > "$RUNNER_TEMP/mg01-s1/cli.txt"
+
+      - name: Download checksum-pinned Qwen3-4B-Instruct-2507 GGUF Q4_K_M
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL="$RUNNER_TEMP/mg01-s1/qwen3.gguf"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 750 \
+            "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf" \
+            -o "$MODEL"
+          echo "$GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
+          test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
+
+      - name: Run Qwen real forward against LIVE public owned site and independent re-read
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/mg01-s1/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/mg01-s1/bin/lib:${LD_LIBRARY_PATH:-}"
+          PYTHONPATH=products/manager:products/manager/evals \
+            python products/manager/evals/manager_mg01_s1_live.py \
+              --llama-cli "$CLI" --model "$RUNNER_TEMP/mg01-s1/qwen3.gguf" \
+              --output artifacts/manager-mg01-s1-real-qwen-vs-incumbent.json
+          python - <<'PY'
+          import json
+          r=json.load(open("artifacts/manager-mg01-s1-real-qwen-vs-incumbent.json"))
+          assert r["status"]=="ACTUAL_PUBLIC_HOST_MODEL_SHADOW_TECHNICAL"
+          assert r["model_decision"] in ("NO_ACTION","REVIEW_ONLY")
+          assert r["model_forward_pass_verified"] is True
+          assert r["model_invocations"]==1
+          assert r["provider_writes"]==0 and r["notifications_sent"]==0
+          assert r["independent_readback"]["status"]=="SAME_PUBLIC_SNAPSHOT"
+          assert r["proves_business_value_or_human_welfare"] is False
+          print("Official real-model S1 decision comparison:",{
+            k:r[k] for k in (
+              "baseline_decision","model_decision","agreement_with_incumbent",
+              "baseline_latency_seconds","model_latency_seconds","host_latency_seconds",
+              "runner_standard_public_list_price_usd","actual_provider_invoice_usd")})
+          PY
+
+      - name: Upload model/host comparison evidence only; no weights or user data
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manager-mg01-real-public-host-s1-qwen-model-vs-incumbent
+          path: |
+            artifacts/manager-mg01-source-preflight.json
+            artifacts/manager-mg01-s1-real-qwen-vs-incumbent.json
+          retention-days: 30

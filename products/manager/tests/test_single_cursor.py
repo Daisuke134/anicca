@@ -26,10 +26,23 @@ class SingleManagerCursorTests(unittest.TestCase):
     def test_reads_only_one_real_current_manager_task(self):
         info=read_current_manager_task(SSOT)
         self.assertEqual(info["schema"],"manager.single_cursor.v1")
-        self.assertEqual(info["current_id"],"MG-01")
+        self.assertEqual(info["current_id"],"MG-02")
         self.assertEqual(info["total_ordered_items"],18)
-        self.assertIn("G3",info["task"])
+        self.assertIn("P00/P02",info["task"])
         self.assertEqual(info["done"],False)
+
+    def test_previous_MG01_completion_has_real_model_and_billing_receipts(self):
+        import json
+        receipt=ROOT/"docs/research/manager/verification/MG01_TECHNICAL_S1_ACCEPTANCE_20261107.json"
+        x=json.loads(receipt.read_text())
+        self.assertEqual(x["status"],"TECHNICAL_S1_ACCEPTED_MODEL_NOT_PROMOTED")
+        self.assertEqual(x["completed_mg_id"],"MG-01")
+        self.assertEqual(x["next_mg_id"],"MG-02")
+        self.assertTrue(all(x["all_technical_acceptance_conditions"].values()))
+        self.assertEqual(x["official_billable_ubuntu_ms"],0)
+        self.assertFalse(x["one_snapshot_comparison"]["agreement"])
+        self.assertFalse(x["model_production_approved"])
+        self.assertFalse(x["human_outcome_measured"])
 
     def test_duplicate_now_is_invalid(self):
         bad=toy().replace("| MG-02 |","| MG-02 ← NOW |")
