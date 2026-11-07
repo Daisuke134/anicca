@@ -105,7 +105,7 @@ jobs:
           command=build_llama_command(exe,weights,prompt)
           result=subprocess.run(command,capture_output=True,timeout=100,check=False)
           raw=result.stdout.decode("utf-8",errors="replace")+"\n"+result.stderr.decode("utf-8",errors="replace")
-          answer=parse_llama_reply(raw)
+          answer=parse_llama_reply(raw, expected_prompt=prompt)
           import re
           sanitized=raw.replace(prompt,"[PUBLIC_CONTEXT_AND_DESCRIPTION_REDACTED]")
           sanitized=re.sub(r"(?m)^.*(?:状況:|Aのコマの描写:|Bのコマの描写:|回答（A/Bの一文字）:).*$",
