@@ -1,0 +1,31 @@
+{
+  "baseline": {
+    "context_sha256": "bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff",
+    "decision": "NO_ACTION"
+  },
+  "candidate": {
+    "authorized_execution": false,
+    "context_sha256": "bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff",
+    "decision": "NO_ACTION",
+    "human_model_forward_pass": false,
+    "rule": "existing_manager_owned_catalog_planner"
+  },
+  "external_writes": 0,
+  "full_s1_model_vs_incumbent_proven": false,
+  "human_benefit_measured": false,
+  "notifications_sent": 0,
+  "observed_at": "2026-11-07T15:51:57.600275+00:00",
+  "outcome": "NOT_MEASURED",
+  "page_count": 6,
+  "personal_data_accessed": false,
+  "public_manifest_sha256": "bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff",
+  "public_source_url": "https://daisuke134.github.io/life-manager/manager-support/",
+  "real_world_provider_admission": false,
+  "reason": "PUBLIC_HOST_READBACK_ONLY",
+  "requires_ui_or_recurring_prompt": false,
+  "schema": "manager.zero_ui.public_host_readonly.v1",
+  "source_commit": "f8e11d27b9f98b511d6fdc55e2781cacbe26f8a5",
+  "status": "PUBLIC_HOST_READONLY_VERIFIED",
+  "technical_proof": "P2_ARTIFACT_ONLY",
+  "world_action": "NO_ACTION"
+}

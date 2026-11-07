@@ -212,7 +212,15 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     # Image-owned binary only; never inherit another user's browser/profile/CDP.
     browser = '/usr/local/bin/lm-cloud-chromium'
     if os.access(browser, os.X_OK):
-        child.update(CAPAFY_CHROMIUM=browser, CLOAKBROWSER_BINARY_PATH=browser)
+        # The tenant's registered Capafy browser (capafy:kosuke) is owned by
+        # scripts/browser-owner on this computer's fixed port 9229. The factory
+        # browser health check (skills/browser/ensure_browser.sh) and the CDP
+        # tab GC resolve their endpoint from CLOAK_CDP_BASE_URL and default to
+        # the founder host's daily-driver port 9222, which no tenant browser
+        # ever listens on: every tenant CP1 pass therefore failed its health
+        # check before starting. Pin the cycle env to the tenant endpoint.
+        child.update(CAPAFY_CHROMIUM=browser, CLOAKBROWSER_BINARY_PATH=browser,
+                     CLOAK_CDP_BASE_URL='http://127.0.0.1:9229')
     # The Capafy duplicate gate's model judge runs on this computer's own
     # cloud model route (AGENT_RUNNER_CONFIG + LM_CLOUD_MODEL_API_KEY above).
     # The founder's claude CLI login is not a tenant dependency: inside this

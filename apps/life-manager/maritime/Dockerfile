@@ -1,6 +1,6 @@
 FROM node:22.23.3-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip bash ca-certificates curl git jq util-linux passwd \
+    python3 python3-pip bash ca-certificates curl git jq util-linux passwd lsof \
     libnss3 libatk-bridge2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 \
     libxrandr2 libgbm1 libasound2 libgtk-3-0 fonts-liberation \
     && rm -rf /var/lib/apt/lists/*

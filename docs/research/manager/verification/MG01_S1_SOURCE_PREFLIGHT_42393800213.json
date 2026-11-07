@@ -1,0 +1,7 @@
+{
+  "manifest_sha256": "bd670bee1cdb6dda2cd90f35352ba1b820eb181650521759e578fa4b8ac83dff",
+  "model_forward_pass_verified": false,
+  "no_personal_data": true,
+  "prompt_sha256": "eac1a1396e3911b7c12bbfbb97b8878f91c62c57a2e21e588c62e326d31ca770",
+  "status": "REAL_PUBLIC_SITE_SOURCE_ONLY_NO_MODEL"
+}

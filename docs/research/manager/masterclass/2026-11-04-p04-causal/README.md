@@ -1,5 +1,11 @@
 # Manager Masterclass｜P00〜P12の全講義と製品実装（唯一のロードマップへ）
 
+**2026-11-07 P12-1｜再現性研究の教育・検算成果。** [日本語講義](P12-1_JA.md)、[別計算の完全合成検算](experiments/p12_1_reproducibility_audit.py)と[37テスト](experiments/test_p12_1_reproducibility_audit.py)、[SHA固定の証拠JSON](evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json)、[外部Reviewer用の空テンプレート](examples/P12-1_INDEPENDENT_REVIEW_REPORT_TEMPLATE_JA.md)、研究用16枚スライド/日本語発表ノート、公式メディア用日英2本と独自図を追加。元P11のOPE・負の転移を同一チーム内で別方式で検算しただけであり、外部第三者の再現・実人間の便益・独自行動FMの実証ではない。学習の次はP12-2。進捗正本は[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)。
+
+
+**2026-11-07 Phase11：P11-1〜5 講義・合成演習・研究公開準備。** [P11-1 OPE](P11-1_JA.md)、[P11-2社会](P11-2_JA.md)、[P11-3分散認知](P11-3_JA.md)、[P11-4行動FM](P11-4_JA.md)、[P11-5領域移植](P11-5_JA.md)、[38件の合成テスト](experiments/test_p11_1_5_research_labs.py)、[再現結果](evidence/P11-1_TO_P11-5_SYNTHETIC_RUN_20261107.json)、研究用33枚PPTX/PDFと日本語ノートを追加。公式メディア用日英10記事と図5点は正本パッケージへ登録。公開後のreadbackが済むまで未公開とみなす。次の講義はP12-1。**研究/製品/人間便益の本番実証は別Gate**。唯一の進捗正本は[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)。
+
+
 **最新版：2026-11-05 America/Los_Angeles。** 先頭から読める唯一のカリキュラム・製品開発順は **[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)**。元のP07-3／P07-4／P07-5とP08〜P12は消えていない。以前の「P04〜P07-2」「次はP05-2」などは過去の作業時点に書かれた履歴で、現在の指示ではない。
 
 **Phase 7（P07-1〜P07-6）の講義・観察専用／安全ソフトウェア実装は完了。** [P07-3 COM-B](P07-3_JA.md)、[P07-4 CBT・ACT](P07-4_JA.md)、[P07-5 ヴィパッサナー・無常・苦・無我](P07-5_JA.md)、[P07-6 生活の質・自律性・瞑想有害事象](P07-6_JA.md)の資料・FAQを保存。P07-4の15ソフトテスト、P07-5/6の25ソフトテスト、統合の10ソフトテストを実行。詳細研究用118枚の編集可能な英語スライド、118ページPDF、日本語スピーカーノートをクラウドで検証。**人間への治療・苦痛軽減の実際の効果は未実証**。P08〜P12の全講義番号も廃止せず、唯一の[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)に保持する。**『モデル開発の次』と『学習の次』を別々に置かず、唯一の現在TODOはBFM-01。**
@@ -15,7 +21,7 @@
 
 **更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**P00〜P12の学習内容と過去の実行証拠は `ROADMAP_STATUS_JA.md` で参照。Managerの唯一の現行実装TODOは統合SSOT `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` のMG-01〜MG-18。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値

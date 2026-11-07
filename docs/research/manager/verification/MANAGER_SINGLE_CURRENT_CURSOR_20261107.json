@@ -1,0 +1,10 @@
+{
+  "acceptance": "最小権限・データ来歴・アクセス拒否/撤回テストと既存host公式readback。許可のない個人は対象に含めない。",
+  "current_id": "MG-02",
+  "current_status": "進行中・残",
+  "done": false,
+  "historical_learning_and_G_phase_aliases_are_not_other_cursors": true,
+  "schema": "manager.single_cursor.v1",
+  "task": "P00/P02：本番で扱う支援対象・データ源・目的・観測時刻を定義し、既存ホストの適切な同意・権限・撤回/停止の実装を確認。ユーザーごとに毎日UIを要求しない。",
+  "total_ordered_items": 18
+}

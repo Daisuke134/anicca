@@ -1,0 +1,58 @@
+name: Manager P12-1 reproducibility contract
+
+on:
+  pull_request:
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/P12-1_JA.md'
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p11_1_5_research_labs.py'
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12_1_*'
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/evidence/P12-1_*'
+      - '.github/workflows/manager-p12-1-reproduction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12_1_*'
+      - '.github/workflows/manager-p12-1-reproduction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-cross-check:
+    name: Verify P12-1 same-author synthetic replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run original and alternate-method contract checks (no network API)
+        working-directory: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
+        run: |
+          python -m unittest -v test_p11_1_5_research_labs test_p12_1_reproducibility_audit
+          python p12_1_reproducibility_audit.py \
+            --source-sha 0c236f249ac4503764770135a86e2026cd37fec9 > p12-1-run.json
+      - name: Compare frozen checksums and P12 evidence boundary
+        working-directory: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          got=json.loads(Path("p12-1-run.json").read_text())
+          evidence=json.loads(Path("../evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json").read_text())
+          assert got["source_code_sha256"]==evidence["source_code_sha256"]
+          assert got["p11_bandit_replay"]["dataset_hash_sha256"]==evidence["p11_bandit_replay"]["dataset_hash_sha256"]
+          assert abs(got["p11_bandit_replay"]["alternate_dr"]-evidence["p11_bandit_replay"]["alternate_dr"])<1e-12
+          assert got["external_independent_reviewer"]=="NOT_PERFORMED"
+          assert got["real_human_study_replication"]=="NOT_PERFORMED"
+          print("P12-1 deterministic source, dataset and result frozen checks passed")
+          PY
+      - name: Upload synthetic report for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-p12-1-synthetic-repro-report
+          path: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12-1-run.json
+          if-no-files-found: error
+          retention-days: 30

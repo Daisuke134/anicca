@@ -1,0 +1,23 @@
+{
+  "schema": "manager.zero_ui.shadow.v0",
+  "status": "SHADOW_ONLY",
+  "reason": "PUBLIC_AGGREGATE_RESEARCH_ONLY",
+  "world_action": "NO_ACTION",
+  "requires_extra_ui_or_prompt": false,
+  "notifications_sent": 0,
+  "provider_writes": 0,
+  "personal_profile_created": false,
+  "real_world_intervention": false,
+  "no_live_authority_from_fixture": true,
+  "reference_type": "PUBLIC_AGGREGATE_NO_PERSONAL_DATA",
+  "source_sha256": "eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b",
+  "model_sha256": "a555054355038b8dc0072cb3f1999829ad8bd7a81128322d0ad68f0dfd1c36a7",
+  "aggregate_n": 971,
+  "comparison": {
+    "candidate": 23.12131830813698,
+    "baseline": 16.176124818577648,
+    "unit": "study_arm_cessation_percentage_points"
+  },
+  "prediction_is_not_intervention": true,
+  "model_promoted_for_real_users": false
+}
