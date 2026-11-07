@@ -1,5 +1,7 @@
 # Manager — ONE Roadmap: Learn × Build × Evaluate × Ship × Publish
 
+**正本：Managerの「唯一の順番付き実装TODO・現在のNEXT」は [Life Manager統合SSOTのMANAGER MG-01〜MG-18](../../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md#manager唯一の順番付き実装todop00p12を全統合2026-11-07) です。** この資料はP00〜P12の学習内容と履歴を示す索引であり、実装の別TODO/別カーソルではありません。旧文中の「次」「NOW」は当該日付の履歴で、最新の実行順を変更しません。現在のMG-01はP00-3/P05-5/G3の実務Shadowに相当し、オンライン公開サイトのGET・SHA照合までは実測済み、モデル対既存方式の実比較は未達。
+
 ## 2026-11-07｜G0〜G3 Zero-UI研究実装の最新受入（製品実利用は未完成）
 
 **G0:** #9292 / #9303 をGithubの必要CI PASS後に正式mainへ統合。**G1:** [四領域共通の実データ評価結果](../../verification/MANAGERBENCH_V1_FOUR_REAL_TRACKS_20261107.json)を実行し、Nature/MaMe-Re/HBCP/QwenをSHA固定で比較。単位の異なる世界共通Accuracyは作らない。**G2:** [実際に学習したHBCP Ridge Headの重み](../../verification/HBCP_TRAINED_HEAD_V0_20261107.json)を保存、283/40/82研究の完全研究holdout。MAE10.719で訓練平均10.128より悪化→**研究専用、不採用**。**G3:** [Zero-UI研究Shadowのレシート](../../verification/ZERO_UI_G3_OFFLINE_REAL_MODEL_SHADOW_20261107.json)、同意境界を模したoffline fixtureだけで公開集約研究特徴を読取り、NO_ACTION・通知0・provider書込0を確認。専用UIを設けない設計は採用するが、無断収集/秘密の個人介入はしない。全詳細は [G0〜G3実行報告](../../verification/G0_G3_ZERO_UI_REAL_EXECUTION_20261107_JA.md)。基盤BFM多領域学習、実ホスト同意接続、実ユーザーの便益RCT、収益化は**未完了**。正式NEXTは既存ロードマップG1拡張→G2共通モデル再設計→G3正式host Shadow→製品Pilot/効果検証。
@@ -86,7 +88,7 @@
 
 ## 0. 管理規則
 
-1. **製品・モデル・講義・記事・公開の順序を含む実行TODOは、このファイルだけを編集する。** 新しい版別ロードマップ、別の学習TODO、別の会社TODOを作らない。
+1. **この資料はP00〜P12の講義ID・教育履歴と研究結果の索引。製品・モデル・研究実装・実利用の唯一の順序付きTODOは統合SSOTのMANAGER MG表だけを編集し、ここで第二のNEXTを作らない。** 新しい版別ロードマップ、別の学習TODO、別の会社TODOを作らない。
 2. `P01-1` 形式を唯一の講義IDとする。旧 `W01L01` はP01-1、`W01L02` はP01-2、`W01L03` はP01-3という検索用別名だけで、別講義ではない。
 3. `learning_state.json` と `MANAGER_MASTER_PLAN_DRAFT_v03_JA.md` はarchive内の廃止履歴。過去添付のv01/v02/v03も現行の進捗指示として扱わない。
 4. 各記事は内容、出典、固定された計算例を持つ。別の進捗表を持たせない。実行ログは計算事実を保存するだけで、次の講義を決めない。
@@ -238,7 +240,7 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | P12-3 | 記事を編集して書籍にまとめる | **残** | 各講の下書きは学習と並行して作る。 |
 | P12-4 | 汎用的な行動・介入知能を継続検証 | **継続目標** | 単一指標で全苦の終結・万能性を認定しない。 |
 
-## 唯一のNEXT TODO・実装と学習の一体化（2026-11-06）
+## 2026-11-06当時のNEXT履歴（現在の実装TODOではない。正本は統合SSOTのMG表）
 
 **会社の主語は研究でなく、使われるAIモデル・製品である。** ManagerはBehavioral Foundation Model（行動基盤モデル）を構築・配布していくモデル企業。ManagerBenchは別事業に分離した競争用の独自評価器ではなく、既存BehaviorBench/HBCP/HeartSteps/RCT Bench/UpliftBenchを再利用して不足部分だけ補う外部評価契約。**モデルが実際に役立つことが成功指標。**
 

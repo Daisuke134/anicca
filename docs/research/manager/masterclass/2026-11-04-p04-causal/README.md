@@ -15,7 +15,7 @@
 
 **更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**P00〜P12の学習内容と過去の実行証拠は `ROADMAP_STATUS_JA.md` で参照。Managerの唯一の現行実装TODOは統合SSOT `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` のMG-01〜MG-18。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
