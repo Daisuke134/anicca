@@ -89,6 +89,30 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
                 raise ValueError()
         except (ValueError, TypeError):
             raise ValueError('provider_binding_invalid') from None
+    signup = None
+    if binding is None and context.get('LM_TENANT_SIGNUP_JSON'):
+        # Host-issued directive (maritime-tenant-binding.js): this cycle is the
+        # tenant self-signup. Every path must stay inside this tenant's home and
+        # the references must be the canonical tenant-vault references.
+        try:
+            signup = json.loads(context['LM_TENANT_SIGNUP_JSON'])
+            if not isinstance(signup, dict) or signup.get('tenantId') != tenant_id or signup.get('platformId') != 'capafy':
+                raise ValueError()
+            if set(signup) - {'tenantId', 'platformId', 'identityRef', 'identityPath', 'credentialRef',
+                              'credentialPath', 'browserSessionRef', 'browserSessionPath', 'stateFile'}:
+                raise ValueError()
+            if signup.get('identityRef') != 'tenant-home/vault/agent-mail':
+                raise ValueError()
+            if signup.get('credentialRef') != 'tenant-home/vault/capafy/credential':
+                raise ValueError()
+            if signup.get('browserSessionRef') != 'tenant-home/vault/capafy/browser-session':
+                raise ValueError()
+            for key in ('identityPath', 'credentialPath', 'browserSessionPath', 'stateFile'):
+                candidate = Path(os.path.abspath(signup[key]))
+                if not candidate.is_absolute() or not candidate.is_relative_to(home):
+                    raise ValueError()
+        except (ValueError, TypeError, KeyError, AttributeError):
+            raise ValueError('signup_directive_invalid') from None
     base = {'tenantId': tenant_id, 'occurrenceId': occurrence_id, 'artifactRefs': [],
             'providerSnapshotRef': None, 'providerReceiptRefs': [], 'nextEligibleAt': None}
     def result(status, error=None, artifacts=None):
@@ -196,8 +220,23 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     }
     schema_path = receipt.parent / 'pass.schema.json'
     _save(schema_path, schema)
-    account_context = ('No provider account is connected. Create an original product and listing offline; do not publish or call commerce mutation APIs.'
-                       if binding is None else 'Use only this tenant provider binding: ' + json.dumps(binding))
+    if binding is not None:
+        account_context = 'Use only this tenant provider binding: ' + json.dumps(binding)
+        manifest = child_paths['CAPAFY_PUBLISHER_STATE_HOME'] / 'sessions' / binding['provider'] / 'session.json'
+        if manifest.is_file():
+            account_context += f' Resolved publisher session manifest: {manifest}.'
+    elif signup is not None:
+        account_context = ' '.join([
+            'No provider account is connected yet. Perform the tenant self-signup for Capafy in this cycle:',
+            f"1) Read your own agent mail identity from {signup['identityPath']} (create it under your tenant home vault first if absent; it is your own agent mail, never a founder or company account).",
+            '2) Using the image-owned browser, register a NEW Capafy publisher account with that identity and complete any email confirmation sent to that mailbox.',
+            f"3) Save the credential material ONLY to {signup['credentialPath']} (file mode 0600) and the browser session ONLY under {signup['browserSessionPath']}; never print credential values in artifacts, evidence, or output.",
+            f"4) Record completion in {signup['stateFile']}: advance the state none -> signed_up -> bound and store the references-only binding "
+            f"{{tenantId, provider: 'capafy', subjectId: <your Capafy publisher subject id>, credentialRef: '{signup['credentialRef']}', browserSessionRef: '{signup['browserSessionRef']}'}}.",
+            'Do not publish listings in the signup cycle; publication starts in a later bound cycle.',
+        ])
+    else:
+        account_context = ('No provider account is connected. Create an original product and listing offline; do not publish or call commerce mutation APIs.')
     prompt = '\n'.join([
         f'You are Life Manager for tenant {tenant_id}, occurrence {occurrence_id}, date {date_key}.',
         'Choose and complete one useful revenue-oriented action from actual feedback. No user goal or budget input is required.',

@@ -159,6 +159,59 @@ class CloudCycleTest(unittest.TestCase):
             self.run_cycle()
         self.assertEqual(self.calls, [])
 
+    def signup_directive(self, **overrides):
+        directive = {'tenantId': TENANT, 'platformId': 'capafy',
+                     'identityRef': 'tenant-home/vault/agent-mail',
+                     'identityPath': str(self.home / 'vault/agent-mail'),
+                     'credentialRef': 'tenant-home/vault/capafy/credential',
+                     'credentialPath': str(self.home / 'vault/capafy/credential'),
+                     'browserSessionRef': 'tenant-home/vault/capafy/browser-session',
+                     'browserSessionPath': str(self.home / 'vault/capafy/browser-session'),
+                     'stateFile': str(self.home / 'state/capafy-autopublish/signup-state.json')}
+        directive.update(overrides)
+        return json.dumps(directive)
+
+    def test_signup_directive_turns_the_cycle_into_a_self_signup(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        result = self.run_cycle()
+        self.assertEqual(result['status'], 'completed')
+        prompt = self.calls[0][1]['input']
+        self.assertIn('tenant self-signup for Capafy', prompt)
+        self.assertIn(str(self.home / 'vault/capafy/credential'), prompt)
+        self.assertIn(str(self.home / 'state/capafy-autopublish/signup-state.json'), prompt)
+        self.assertIn('tenant-home/vault/capafy/credential', prompt)
+        self.assertNotIn('Create an original product and listing offline', prompt)
+
+    def test_signup_directive_for_a_foreign_tenant_is_rejected(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive(tenantId='lm_22222222-2222-4222-8222-222222222222')
+        with self.assertRaisesRegex(ValueError, 'signup_directive_invalid'):
+            self.run_cycle()
+        self.assertEqual(self.calls, [])
+
+    def test_signup_directive_paths_must_stay_inside_the_tenant_home(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive(credentialPath='/etc/capafy-credential')
+        with self.assertRaisesRegex(ValueError, 'signup_directive_invalid'):
+            self.run_cycle()
+        self.assertEqual(self.calls, [])
+
+    def test_binding_wins_over_a_signup_directive(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a'})
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        self.assertIn('Use only this tenant provider binding', prompt)
+        self.assertNotIn('tenant self-signup for Capafy', prompt)
+
+    def test_bound_cycle_names_the_resolved_publisher_session_manifest(self):
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a'})
+        manifest = self.home / 'runtime/capafy-publisher/sessions/capafy/session.json'
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text('{}')
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        self.assertIn('Use only this tenant provider binding', prompt)
+        self.assertIn('Resolved publisher session manifest: ' + str(manifest), prompt)
+
     def test_provider_reference_must_be_metadata_not_a_secret_object(self):
         self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a', 'credentialRef': {'secret': 'fixture'}})
         with self.assertRaisesRegex(ValueError, 'binding'):
