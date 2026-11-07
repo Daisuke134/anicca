@@ -147,6 +147,27 @@ class CloudCycleTest(unittest.TestCase):
         self.assertEqual(replay, result)
         self.assertEqual(self.calls, [])
 
+    def test_binding_cycle_exports_tenant_browser_env_and_resume_prompt(self):
+        from unittest.mock import patch
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({
+            'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-2',
+            'credentialRef': 'capafy-publisher-slot:v1',
+            'browserSessionRef': 'tenant-browser:v1'})
+        with patch.object(self.module, '_resolve_publisher',
+                          return_value={'accountVerified': True}) as resolve:
+            result = self.run_cycle()
+        self.assertEqual(result['status'], 'completed')
+        self.assertEqual(resolve.call_count, 1)
+        child = self.calls[0][1]['env']
+        self.assertEqual(child['CAPAFY_BROWSER_IDENTITY'], 'tenant-browser:v1')
+        self.assertEqual(child['CLOAK_PYTHON'], '/usr/bin/python3')
+        self.assertEqual(child['CLOAKBROWSER_CACHE_DIR'], '/opt/cloakbrowser')
+        prompt = self.calls[0][1]['input']
+        self.assertIn('inventory_status.py', prompt)
+        self.assertIn('resume_draft', prompt)
+        self.assertIn('CAPAFY_BROWSER_IDENTITY', prompt)
+        self.assertNotIn('Publish exactly one new Agent', prompt)
+
     def test_workspace_escape_is_rejected_before_execution(self):
         self.env['LIFE_MANAGER_BUILD_WORKSPACE'] = str(self.root / 'other-user')
         with self.assertRaisesRegex(ValueError, 'workspace'):

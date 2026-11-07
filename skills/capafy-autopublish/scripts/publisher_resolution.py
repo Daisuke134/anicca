@@ -10,6 +10,9 @@ already consumes:
   - <CAPAFY_PUBLISHER_STATE_HOME>/config.json            (vendor token store shape)
   - <LIFE_MANAGER_STATE_HOME>/.env                        (CAPAFY_* entries the factory sources)
   - <CAPAFY_PUBLISHER_STATE_HOME>/browser-auth-state.json (when the slot carries one)
+  - <agent HOME>/.config/ai/registry/browsers.toml       (when the slot carries one:
+    registers the tenant-browser:v1 identity so the browser guard can lease it,
+    pointing the Linux tenant owner at the materialized browser-auth-state.json)
   - <CAPAFY_PUBLISHER_STATE_HOME>/resolution.json         (secret-free receipt)
 
 Fail closed: any mismatch or unverifiable account removes the materialized
@@ -142,14 +145,31 @@ def resolve_publisher(binding, *, state_home, publisher_home, owner=None,
                  'CAPAFY_HOST_OPENROUTER_KEY=' + slot['hostOpenRouterKey']]
     if isinstance(slot.get('openRouterManagementKey'), str) and slot['openRouterManagementKey']:
         env_lines.append('CAPAFY_OPENROUTER_MANAGEMENT_KEY=' + slot['openRouterManagementKey'])
-    targets = [publisher_home / 'config.json', state_home / '.env']
+    writes = [(publisher_home / 'config.json',
+               json.dumps(token_store, ensure_ascii=False, indent=2) + '\n'),
+              (state_home / '.env', '\n'.join(env_lines) + '\n')]
+    registry_path = None
     if slot.get('browserAuthState') is not None:
-        targets.append(publisher_home / 'browser-auth-state.json')
+        state_file = publisher_home / 'browser-auth-state.json'
+        writes.append((state_file,
+                       json.dumps(slot['browserAuthState'], ensure_ascii=False) + '\n'))
+        # The factory leases browsers by identity through the registry in the
+        # agent HOME (<state_home>/home). Register the tenant identity and tell
+        # the Linux tenant owner which materialized state seeds its profile.
+        registry_path = (state_home / 'home' / '.config' / 'ai' / 'registry'
+                         / 'browsers.toml')
+        registry_text = (
+            '# Materialized by publisher_resolution.py for this tenant only.\n'
+            '[[identity]]\n'
+            'id = "' + BROWSER_SESSION_REF + '"\n'
+            'profile = "~/.cloak/profiles/tenant-browser"\n'
+            'owner = "maritime-tenant"\n'
+            'storage_state = "' + str(state_file) + '"\n')
+        writes.append((registry_path, registry_text))
+    targets = [path for path, _payload in writes]
     try:
-        _save_private(targets[0], json.dumps(token_store, ensure_ascii=False, indent=2) + '\n')
-        _save_private(targets[1], '\n'.join(env_lines) + '\n')
-        if len(targets) > 2:
-            _save_private(targets[2], json.dumps(slot['browserAuthState'], ensure_ascii=False) + '\n')
+        for path, payload in writes:
+            _save_private(path, payload)
     except OSError:
         for target in targets:
             try:
@@ -163,7 +183,8 @@ def resolve_publisher(binding, *, state_home, publisher_home, owner=None,
                'browserSessionRef': BROWSER_SESSION_REF, 'resolvedAt': stamp,
                'accountVerified': True,
                'materials': [str(target) for target in targets],
-               'browserSeeded': slot.get('browserAuthState') is not None}
+               'browserSeeded': slot.get('browserAuthState') is not None,
+               'browserRegistry': str(registry_path) if registry_path else None}
     _save_private(publisher_home / 'resolution.json',
                   json.dumps(receipt, ensure_ascii=False, indent=2) + '\n')
     return receipt

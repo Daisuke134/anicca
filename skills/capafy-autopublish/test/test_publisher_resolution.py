@@ -76,6 +76,35 @@ class PublisherResolutionTest(unittest.TestCase):
         self.assertTrue(receipt['accountVerified'])
         self.assertTrue(receipt['browserSeeded'])
 
+    def test_browser_state_also_materializes_tenant_browser_registry(self):
+        self.write_slot()
+        receipt = self.resolve()
+        registry = (self.home / 'home' / '.config' / 'ai' / 'registry'
+                    / 'browsers.toml')
+        self.assertTrue(registry.is_file())
+        text = registry.read_text()
+        self.assertIn('id = "tenant-browser:v1"', text)
+        self.assertIn('profile = "~/.cloak/profiles/tenant-browser"', text)
+        self.assertIn('storage_state = "' + str(self.publisher
+                                                / 'browser-auth-state.json') + '"',
+                      text)
+        self.assertEqual(receipt['browserRegistry'], str(registry))
+        self.assertIn(str(registry), receipt['materials'])
+        self.assertEqual(stat.S_IMODE(registry.lstat().st_mode), 0o600)
+
+    def test_no_browser_state_means_no_registry(self):
+        slot = {'accessToken': TOKEN, 'userId': SUBJECT,
+                'email': 'publisher@example.com', 'name': 'Fixture',
+                'hostOpenRouterKey': 'sk-or-fixture'}
+        path = self.home / 'secrets/capafy-publisher.json'
+        path.write_text(json.dumps(slot))
+        path.chmod(0o600)
+        receipt = self.resolve()
+        self.assertFalse(receipt['browserSeeded'])
+        self.assertIsNone(receipt['browserRegistry'])
+        self.assertFalse((self.home / 'home' / '.config' / 'ai' / 'registry'
+                          / 'browsers.toml').exists())
+
     def test_subject_mismatch_fails_closed(self):
         self.write_slot(userId='999')
         with self.assertRaisesRegex(self.module.ResolutionError, 'binding_subject_mismatch'):

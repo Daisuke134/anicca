@@ -201,6 +201,14 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     browser = '/usr/local/bin/lm-cloud-chromium'
     if os.access(browser, os.X_OK):
         child.update(CAPAFY_CHROMIUM=browser, CLOAKBROWSER_BINARY_PATH=browser)
+    if binding is not None:
+        # The tenant browser lease is part of the binding contract: the factory
+        # leases exactly the binding's browser identity, the browser tooling
+        # runs on the image python (the macOS venv path does not exist in the
+        # image), and CloakBrowser resolves its image-owned binary cache.
+        child.update(CAPAFY_BROWSER_IDENTITY=binding['browserSessionRef'],
+                     CLOAK_PYTHON='/usr/bin/python3',
+                     CLOAKBROWSER_CACHE_DIR='/opt/cloakbrowser')
     child.update({key: str(path) for key, path in child_paths.items() if key != 'EVIDENCE_DIR'})
     child.update(AGENT_RUNNER_CONFIG=str(config), AGENT_RUNNER_WORKDIR=str(occurrence_workspace),
                  LM_RUNTIME_HOST='maritime', LM_RUNTIME_TENANT_ID=tenant_id,
@@ -223,7 +231,7 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
                        if binding is None else 'Use only this tenant provider binding: ' + json.dumps(binding)
                        + '. Publisher state was resolved and the account verified for this tenant; the secret-free resolution receipt is at '
                        + str(home / 'runtime/capafy-publisher/resolution.json')
-                       + '. Publish exactly one new Agent through the existing factory flow (publish_prepare.sh, CP1, publish_finish.sh, CP2, CP3), verify it with publish-remote-status, and include the remote status output in your evidence.')
+                       + '. Run the factory inventory first (skills/capafy-autopublish/scripts/inventory_status.py) and follow its verdict exactly. When the verdict is resume_draft for an existing draft, resume that exact draft through the existing factory flow: publish_prepare.sh with the draft agent id as the fourth argument, CP1 via cp1_agent.py under the browser identity already exported as CAPAFY_BROWSER_IDENTITY (never substitute another identity), then publish_finish.sh for CP2 and CP3. Create a new Agent only when the inventory verdict allows it and a free submission slot exists. Verify the outcome with publish-remote-status and include the remote status output in your evidence.')
     prompt = '\n'.join([
         f'You are Life Manager for tenant {tenant_id}, occurrence {occurrence_id}, date {date_key}.',
         'Choose and complete one useful revenue-oriented action from actual feedback. No user goal or budget input is required.',
