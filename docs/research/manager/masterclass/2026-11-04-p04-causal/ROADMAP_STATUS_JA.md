@@ -6,7 +6,7 @@
 
 ## 2026-11-07｜P10-1 教育・完全合成経済台帳 / 学習はP10-2へ
 
-**P10-1「売上・費用・利益・人の介助の台帳」の講義と完全架空の再現可能な計算コードを作成し、Mac miniで19/19単体テスト成功。** [講義](P10-1_JA.md)・[研究用の読み取り専用設計仕様](../../../../products/manager/docs/specs/2026-11-07-manager-p10-1-unit-economics-projection.md)・[日本語記事ドラフト](articles/2026-11-07_p10_1_manager_unit_economics_JA.md)・[8枚の研究補足スライド原稿と発表ノート](journal_club/P10-1_UNIT_ECONOMICS_SLIDES_NOTES_JA.md)・[合成デモ](experiments/p10_1_unit_economics.py)・[テスト](experiments/test_p10_1_unit_economics.py)を作成。記事公開・本番運用・会社の実会計取引の読み出しは行っていない。
+**P10-1「売上・費用・利益・人の介助の台帳」の講義と完全架空の再現可能な計算コードを作成し、Mac miniで19/19単体テスト成功。** [講義](P10-1_JA.md)・[研究用の読み取り専用設計仕様](../../../../../products/manager/docs/specs/2026-11-07-manager-p10-1-unit-economics-projection.md)・[日本語記事ドラフト](articles/2026-11-07_p10_1_manager_unit_economics_JA.md)・[8枚の研究補足スライド原稿と発表ノート](journal_club/P10-1_UNIT_ECONOMICS_SLIDES_NOTES_JA.md)・[合成デモ](experiments/p10_1_unit_economics.py)・[テスト](experiments/test_p10_1_unit_economics.py)を作成。記事公開・本番運用・会社の実会計取引の読み出しは行っていない。
 
 完全架空3仕事：認識収益$5.00、変動費$3.30、貢献利益$1.70、独立確認済み成功1件なので成功1件当たり費用$3.30、介助時間120秒。実収益・実利益、心理的便益、臨床効果、真の完全自律成功率の証拠ではない。売上は会計認識、原価は推論・ツール・介助・その他変動費、Outcomeは独立したreadback、便益・害は別測定する。重複ID、通貨混在、未確認収益、返金、欠測、介助時間と金銭の単位をテスト。実会計とのreconciliation/増分利益の対照実験は未実施。
 
