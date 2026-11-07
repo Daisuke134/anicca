@@ -6,7 +6,7 @@
 
 ## 2026-11-07｜P10-2・P10-3・P10-4：講義・研究仕様・完全合成41テスト完了。教育はPhase 11へ
 
-**学習カリキュラムのPhase 10（P10-1〜P10-4）の講義は全4講実施**。P10-2/3/4について、一次資料調査と現行Manager Coreのauthority/outbox/reconcile/verifier/audit再利用設計、完全人工の資本配分・権限deny・UNKNOWN再送禁止・SLO・財務照合プログラムを追加。**Mac miniで41/41テスト PASS**（新規P10-2/3/4 suite、先行P10-1 19件との総数60件は異なるsuite）。人工の現金1,000 cents、reserve450 cents、実験cap500 cents、計画費用480 cents、仮定ネット価値340 cents、架空エラーバジェット残2件、キャッシュrunway4か月、未配賦費用20 cents。これらは全て**完全架空の技術演習**であり、実際のAnicca資産・入金・利益・信頼性・投資収益・利用者便益のデータではない。
+**学習カリキュラムのPhase 10（P10-1〜P10-4）の講義は全4講実施**。P10-2/3/4について、一次資料調査と現行Manager Coreのauthority/outbox/reconcile/verifier/audit再利用設計、完全人工の資本配分・権限deny・UNKNOWN再送禁止・SLO・財務照合プログラムを追加。**Mac miniで新規41/41テスト PASS、さらにP10-1先行19件を含む統合60/60テスト PASS**（両suiteを同時に再実行）。人工の現金1,000 cents、reserve450 cents、実験cap500 cents、計画費用480 cents、仮定ネット価値340 cents、架空エラーバジェット残2件、キャッシュrunway4か月、未配賦費用20 cents。これらは全て**完全架空の技術演習**であり、実際のAnicca資産・入金・利益・信頼性・投資収益・利用者便益のデータではない。
 
 教材：[P10-2](P10-2_JA.md)／[P10-3](P10-3_JA.md)／[P10-4](P10-4_JA.md)。実験：[計算コード](experiments/p10_2_4_control_plane_synthetic.py)、[41件テスト](experiments/test_p10_2_4_control_plane_synthetic.py)。[既存正本を置換しない設計仕様](../../../../../products/manager/docs/specs/2026-11-07-manager-p10-2-to-p10-4-control-plane.md)。記事草稿：[P10-2](articles/2026-11-07_p10_2_manager_capital_allocation_JA.md)、[P10-3](articles/2026-11-07_p10_3_manager_governance_JA.md)、[P10-4](articles/2026-11-07_p10_4_manager_autonomous_operations_JA.md)。[合計33枚（P10-1既存8＋追加25）研究用講義の発表ノート・構成](journal_club/P10-2_TO_P10-4_SLIDES_NOTES_JA.md)。本番用34枚と既存詳細118枚は変更しない。独立した33枚研究用デッキを生成したが、実本番公開やサイト記事公開は行わない。
 
