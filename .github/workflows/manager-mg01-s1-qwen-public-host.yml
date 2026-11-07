@@ -36,7 +36,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/verify-source-boundary.sh
+          # The canonical Mac root check is local-only; on isolated GitHub
+          # hosted runners verify the exact remote/checkout identity instead.
+          test "$GITHUB_REPOSITORY" = "Daisuke134/life-manager"
+          test "$(git rev-parse --show-toplevel)" = "$GITHUB_WORKSPACE"
+          REMOTE="$(git remote get-url origin)"
+          case "$REMOTE" in
+            https://github.com/Daisuke134/life-manager|https://github.com/Daisuke134/life-manager.git) ;;
+            *) echo "invalid source origin for research workflow" >&2; exit 2 ;;
+          esac
           ( cd products/manager/evals && PYTHONPATH=.. python -m unittest -v test_manager_mg01_s1_live )
           ( cd products/manager && PYTHONPATH=. python -m unittest -v tests.test_zero_ui_host_shadow_v1 tests.test_single_cursor )
           python -m py_compile products/manager/evals/manager_mg01_s1_live.py
