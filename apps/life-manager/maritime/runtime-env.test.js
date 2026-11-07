@@ -41,6 +41,15 @@ test('startup reuses the existing runner schema and preserves the automation mod
   assert.equal(fs.statSync(result.env.AGENT_RUNNER_CONFIG).mode & 0o777, 0o600);
   assert.equal(input.env.AGENT_RUNNER_CONFIG, '/fixture/personal/config.json');
 });
+test('per-tenant model override replaces the candidate model and invalid values fail closed', t => {
+  const input = fixture(t); input.env.LM_CLOUD_MODEL_ID = 'openai/gpt-5.6-terra';
+  const result = prepareMaritimeRuntime(input);
+  const saved = JSON.parse(fs.readFileSync(result.env.AGENT_RUNNER_CONFIG, 'utf8'));
+  assert.equal(saved.task_classes['application-lane-agent'].candidates[0].model, 'openai/gpt-5.6-terra');
+  assert.equal(saved.task_classes['application-lane-agent'].candidates[0].profile_alias, 'cloud');
+  const bad = fixture(t); bad.env.LM_CLOUD_MODEL_ID = 'bad model\nid';
+  assert.throws(() => prepareMaritimeRuntime(bad), /maritime_runtime_model_invalid/);
+});
 test('missing per-agent key or base URL stays unready and never reads personal config', t => {
   for (const name of ['OPENAI_API_KEY', 'OPENAI_BASE_URL']) {
     const input = fixture(t); delete input.env[name];
