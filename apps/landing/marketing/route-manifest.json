@@ -38,19 +38,13 @@
       "source": "pages/life-manager-en.html",
       "public_route": "/lm",
       "export_path": "lm.html",
-      "sha256": "6ba473b9c12509601bc1c49cd0a8468876740132bc3da337ad60d3f24c8fc99d"
+      "sha256": "ebcda10d748be217a644c890ad54a5719980fbb8a27dba0a803c77e3a52f6c86"
     },
     {
       "source": "pages/life-manager.html",
       "public_route": "/lm/ja",
       "export_path": "lm/ja.html",
-      "sha256": "26b26349e19951620272b35563ea7f1fab419d9332a2008df2244e022f5649b0"
-    },
-    {
-      "source": "pages/maritime-en.html",
-      "public_route": "/maritime",
-      "export_path": "maritime.html",
-      "sha256": "b0b07e5d462a88d772c8114315fb7cdba46acd997bf0bd9b245a4e43ac784f35"
+      "sha256": "65de56027d45fbb1281d9da4c05bc3954ce6e6cf2065558ab15f79139b820a2a"
     },
     {
       "source": "assets/styles.css",
