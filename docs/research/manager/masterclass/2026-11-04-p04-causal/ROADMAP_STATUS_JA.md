@@ -1,5 +1,10 @@
 # Manager — ONE Roadmap: Learn × Build × Evaluate × Ship × Publish
 
+## 2026-11-07｜G0〜G3 Zero-UI研究実装の最新受入（製品実利用は未完成）
+
+**G0:** #9292 / #9303 をGithubの必要CI PASS後に正式mainへ統合。**G1:** [四領域共通の実データ評価結果](../../verification/MANAGERBENCH_V1_FOUR_REAL_TRACKS_20261107.json)を実行し、Nature/MaMe-Re/HBCP/QwenをSHA固定で比較。単位の異なる世界共通Accuracyは作らない。**G2:** [実際に学習したHBCP Ridge Headの重み](../../verification/HBCP_TRAINED_HEAD_V0_20261107.json)を保存、283/40/82研究の完全研究holdout。MAE10.719で訓練平均10.128より悪化→**研究専用、不採用**。**G3:** [Zero-UI研究Shadowのレシート](../../verification/ZERO_UI_G3_OFFLINE_REAL_MODEL_SHADOW_20261107.json)、同意境界を模したoffline fixtureだけで公開集約研究特徴を読取り、NO_ACTION・通知0・provider書込0を確認。専用UIを設けない設計は採用するが、無断収集/秘密の個人介入はしない。全詳細は [G0〜G3実行報告](../../verification/G0_G3_ZERO_UI_REAL_EXECUTION_20261107_JA.md)。基盤BFM多領域学習、実ホスト同意接続、実ユーザーの便益RCT、収益化は**未完了**。正式NEXTは既存ロードマップG1拡張→G2共通モデル再設計→G3正式host Shadow→製品Pilot/効果検証。
+
+
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
