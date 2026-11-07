@@ -1,7 +1,7 @@
 """Synthetic contract tests; these do not themselves measure human effects."""
 import math
 import unittest
-from heartsteps_assignment_audit import make_eligible_rows, fit_assignment_model, aggregate_report
+from heartsteps_assignment_audit import make_eligible_rows, fit_assignment_model, aggregate_report, reconstruct_author_cohort, fit_average_assignment_model
 
 def row(user, j, assigned, delivered=None, pre=10.0, outcome=5.0, available=True):
     return {
@@ -24,6 +24,48 @@ def synthetic_rows():
     return result
 
 class HeartStepsAuditTests(unittest.TestCase):
+    def test_author_cohort_uses_local_study_days_and_source_anomaly_rules(self):
+        import datetime
+        data = []
+        for person in ("1", "2", "3"):
+            for day in range(44):
+                r = row(person, day, day % 2 == 0)
+                # In UTC this timestamp falls the next day; local day comes
+                # from the original per-row UTC offset, not timezone-less text.
+                t = datetime.datetime(2026, 1, 1, 3) + datetime.timedelta(days=day)
+                r["sugg.select.utime"] = str(t)
+                r["sugg.gmtoff"] = "-18000.0"
+                r["send.active"] = "False"
+                r["send.sedentary"] = "False"
+                data.append(r)
+        travel = dict(data[0])
+        travel["decision.index.nogap"] = ""
+        data.append(travel)
+        # Two original source-guard anomalies within 42 study days.
+        data[0]["avail"]="False";data[0]["send"]="True"
+        data[45]["send.active"]=""
+        clean, audit = reconstruct_author_cohort(data)
+        self.assertEqual(audit["travel_or_technical_unindexed"], 1)
+        self.assertEqual(audit["after_study_day_42"], 6)
+        self.assertEqual(audit["anomaly_rows"], 2)
+        self.assertEqual(len(clean), 124)
+        self.assertTrue(all(r["decision.index.nogap"] for r in clean))
+
+    def test_author_cohort_keeps_startup_unavailable_row_with_no_timestamp(self):
+        data=synthetic_rows()
+        for r in data:
+            r["sugg.select.utime"]="2026-01-01 05:00:00"
+            r["sugg.gmtoff"]="-18000.0"
+            r["send.active"]="False"
+            r["send.sedentary"]="False"
+        missing=row("startup",0,False,available=False)
+        missing.update({"sugg.select.utime":"","sugg.gmtoff":"",
+                        "send":"","is.randomized":"",
+                        "send.active":"False","send.sedentary":"False"})
+        cohort,audit=reconstruct_author_cohort(data+[missing])
+        self.assertEqual(len(cohort),len(data)+1)
+        self.assertEqual(audit["startup_undated_rows"],1)
+
     def test_eligibility_and_missing_indexes(self):
         rows=synthetic_rows()
         rows.extend([row("extra",210,True),row("extra2",5,True,available=False),row("extra3","",True)])
@@ -38,6 +80,15 @@ class HeartStepsAuditTests(unittest.TestCase):
         self.assertEqual(out["assignment_delivery_disagreement"],1)
         self.assertEqual(out["assignment_probability_used"],.6)
         self.assertEqual(out["causal_status"],"ASSIGNMENT_ANALYSIS_NOT_ORIGINAL_PAPER_REPLICATION")
+
+    def test_recovers_constant_assignment_ratio(self):
+        rows=make_eligible_rows(synthetic_rows())
+        for r in rows:
+            # Fixture with known constant log ratio irrespective of study day
+            r["steps"]=math.exp(1.1+.12*math.log(r["steps_pre"]+.5)+
+                                .18*r["day_scaled"]+.17*(r["assignment"]-.6))-.5
+        est=fit_average_assignment_model(rows)
+        self.assertAlmostEqual(est["average_log_ratio"], math.exp(.17),delta=1e-6)
 
     def test_recovers_known_log_effect(self):
         fit=fit_assignment_model(make_eligible_rows(synthetic_rows()))

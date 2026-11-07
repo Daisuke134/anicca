@@ -17,6 +17,7 @@ import json
 import math
 import random
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Mapping
 
 
@@ -50,6 +51,101 @@ def _number(value: str) -> float:
     if not math.isfinite(ans) or ans < 0:
         raise ValueError("nonfinite or negative step count")
     return ans
+
+
+def reconstruct_author_cohort(rows: list[Mapping[str, str]]) -> tuple[list[dict], dict]:
+    """Rebuild the paper's reported 7,540 decision-point cohort from public CSV.
+
+    Primary authors excluded 390 corrupt/travel decisions, 340 beyond their
+    first 42 *local study days* (excluding gap days), and four anomalous
+    records. Published source code documents the anomaly conditions:
+    (avail == FALSE & send == TRUE) or missing send.active.
+    An undated first unavailable decision is preserved by its non-gap index.
+    The final *counts* can be audited against the original paper without
+    claiming exact original GEE/WCLS rows or adjusted treatment effects.
+    """
+    if not rows:
+        raise ValueError("no rows")
+    needed = {
+        "user.index", "decision.index.nogap", "sugg.select.utime",
+        "sugg.gmtoff", "avail", "send", "send.active",
+        "send.sedentary", "is.randomized",
+    }
+    if not needed.issubset(rows[0]):
+        raise ValueError("missing original HeartSteps source columns")
+    by_user: dict[str, list[tuple[object, dict]]] = defaultdict(list)
+    unindexed = 0
+    startup = []
+    for source in rows:
+        row = dict(source)
+        uid = row["user.index"]
+        if not uid:
+            raise ValueError("missing participant identity")
+        index = row["decision.index.nogap"]
+        if not index:
+            unindexed += 1
+            continue
+        try:
+            j = float(index)
+        except ValueError as exc:
+            raise ValueError("invalid non-gap index") from exc
+        if not j.is_integer() or j < 0:
+            raise ValueError("invalid non-gap index")
+        stamp = row["sugg.select.utime"]
+        if not stamp:
+            if j == 0 and row["avail"] == "False" and row["send"] == "":
+                startup.append(row)
+                continue
+            raise ValueError("cannot establish study day for indexed row")
+        try:
+            local_day = (datetime.fromisoformat(stamp) +
+                         timedelta(seconds=float(row["sugg.gmtoff"]))).date()
+        except (ValueError, OverflowError) as exc:
+            raise ValueError("invalid UTC stamp or original UTC offset") from exc
+        by_user[uid].append((local_day, row))
+    kept = list(startup)
+    beyond = 0
+    for uid, entries in by_user.items():
+        study_days = set(sorted({day for day, _ in entries})[:42])
+        for day, row in entries:
+            if day in study_days:
+                kept.append(row)
+            else:
+                beyond += 1
+    anomalous = [
+        row for row in kept
+        if (row["avail"] == "False" and row["send"] == "True")
+        or not row["send.active"]
+    ]
+    cohort = [
+        row for row in kept
+        if not ((row["avail"] == "False" and row["send"] == "True")
+                or not row["send.active"])
+    ]
+    eligible = [row for row in cohort if row["avail"] == "True"]
+    receipt = {
+        "source_records": len(rows),
+        "travel_or_technical_unindexed": unindexed,
+        "after_study_day_42": beyond,
+        "anomaly_rows": len(anomalous),
+        "startup_undated_rows": len(startup),
+        "cohort_included": len(cohort),
+        "cohort_available": len(eligible),
+        "cohort_unavailable": len(cohort) - len(eligible),
+        "send_true_available": sum(r["send"] == "True" for r in eligible),
+        "walking_suggestion": sum(r["send.active"] == "True" for r in eligible),
+        "antisedentary_suggestion": sum(r["send.sedentary"] == "True" for r in eligible),
+        "cohort_counts_match_paper": (
+            len(rows) == 8274 and unindexed == 390 and beyond == 340
+            and len(anomalous) == 4 and len(cohort) == 7540
+            and len(eligible) == 6061
+            and sum(r["send"] == "True" for r in eligible) == 3594
+            and sum(r["send.active"] == "True" for r in eligible) == 2015
+            and sum(r["send.sedentary"] == "True" for r in eligible) == 1579
+        ),
+        "scope": "exact published aggregate inclusion counts reconstructed; original individual row identities and GEE estimates not independently verified",
+    }
+    return cohort, receipt
 
 
 def make_eligible_rows(rows: list[Mapping[str, str]]) -> list[dict]:
@@ -101,7 +197,7 @@ def _solve_normal_equations(features: list[list[float]], responses: list[float])
     if not features or len(features) != len(responses):
         raise ValueError("missing aligned design")
     width = len(features[0])
-    if width != 5 or any(len(x) != width for x in features):
+    if width not in (4, 5) or any(len(x) != width for x in features):
         raise ValueError("unexpected design dimension")
     mat = [[0.0] * (width + 1) for _ in range(width)]
     for row, y in zip(features, responses):
@@ -124,6 +220,29 @@ def _solve_normal_equations(features: list[list[float]], responses: list[float])
             for j in range(col, width+1):
                 mat[row_idx][j] -= factor * mat[col][j]
     return [mat[i][-1] for i in range(width)]
+
+
+
+def fit_average_assignment_model(records: list[dict]) -> dict:
+    """Secondary study-day-adjusted binary assignment contrast without interaction.
+
+    This is a *linearized analogue* of the paper's primary WCLS model,
+    without its robust GEE covariance and full randomization protocol.
+    """
+    if len(records) < 6:
+        raise ValueError("insufficient records")
+    design = [
+        [1.0, math.log(r["steps_pre"] + .5), r["day_scaled"],
+         r["assignment"] - P_ASSIGNED]
+        for r in records
+    ]
+    response = [math.log(r["steps"] + .5) for r in records]
+    beta = _solve_normal_equations(design, response)
+    return {
+        "log_beta": beta[3],
+        "average_log_ratio": math.exp(beta[3]),
+        "method": "four-variable centered OLS; not exact original GEE/WCLS",
+    }
 
 
 def fit_assignment_model(records: list[dict]) -> dict:
@@ -220,6 +339,7 @@ def aggregate_report(rows: list[Mapping[str, str]], *,
             (sum(assign_groups[1]) / len(assign_groups[1])) - (sum(assign_groups[0]) / len(assign_groups[0]))
         ),
         "fit": fit,
+        "average_binary_assignment_no_interaction": fit_average_assignment_model(selected),
         "cluster_bootstrap_95ci_ratio_day0": [
             _quantile(c0,.025),_quantile(c0,.975)],
         "cluster_bootstrap_95ci_ratio_day21": [
@@ -259,7 +379,13 @@ def main():
     rows, sha = load_pinned_source()
     if sha != SOURCE_SHA256 or len(rows) != 8274:
         raise ValueError("source hash or record count mismatch")
-    report = aggregate_report(rows, bootstrap_reps=args.bootstrap_reps)
+    author_cohort, author_counts = reconstruct_author_cohort(rows)
+    if not author_counts["cohort_counts_match_paper"]:
+        raise ValueError("source cohort totals do not reconcile to original HeartSteps report")
+    report = aggregate_report(author_cohort, bootstrap_reps=args.bootstrap_reps)
+    report["source_n_rows"] = len(rows)
+    report["author_cohort_count_reconstruction"] = author_counts
+    report["author_protocol_reported_numbers_reconciled"] = True
     with open(args.output,"w",encoding="utf-8") as f:
         json.dump(report,f,ensure_ascii=False,indent=2)
         f.write("\n")
@@ -268,6 +394,7 @@ def main():
         "decisions":report["eligible_decision_count"],
         "paper_decisions":PAPER_AVAILABLE,
         "assignment_delivery_disagreements":report["assignment_delivery_disagreement"],
+        "average_binary_assignment_ratio": report["average_binary_assignment_no_interaction"]["average_log_ratio"],
         "day0_ratio":report["fit"]["log_steps_ratio_day0"],
         "day21_ratio":report["fit"]["log_steps_ratio_day21"],
         "daily_ratio":report["fit"]["per_study_day_ratio_change"],
