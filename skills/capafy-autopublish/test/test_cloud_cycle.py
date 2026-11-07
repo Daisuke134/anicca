@@ -262,12 +262,23 @@ class CloudCycleTest(unittest.TestCase):
                         ANICCA_USAGE_LEDGER='/parent/usage.jsonl',
                         ANICCA_TOKEN_BUDGET_LEDGER='/parent/budget.jsonl',
                         LM_CLOUD_MODEL_API_KEY='fixture-tenant-model',
-                        CAPAFY_HOST_OPENROUTER_KEY='fixture-tenant-host-key')
+                        CAPAFY_HOST_OPENROUTER_KEY='fixture-tenant-host-key',
+                        CAPAFY_REQUEST_HEADROOM_USD='2',
+                        CAPAFY_KEY_DAILY_HARD_CAP_USD='10',
+                        CAPAFY_OPENROUTER_MANAGEMENT_KEY='fixture-founder-management-key')
         self.run_cycle()
         child = self.calls[0][1]['env']
         self.assertNotIn('FOUNDER_SECRET', child)
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', child)
         self.assertEqual(child['LM_CLOUD_MODEL_API_KEY'], 'fixture-tenant-model')
+        # The OpenRouter management (provisioning) key NEVER crosses into a
+        # tenant: it controls the founder's whole account. The tenant gate
+        # must pass with the tenant's own key alone.
+        self.assertNotIn('CAPAFY_OPENROUTER_MANAGEMENT_KEY', child)
+        # Tenant-scoped funding-gate tuning values (founder-proven settings,
+        # not secrets) cross so the tenant gate evaluates the same contract.
+        self.assertEqual(child['CAPAFY_REQUEST_HEADROOM_USD'], '2')
+        self.assertEqual(child['CAPAFY_KEY_DAILY_HARD_CAP_USD'], '10')
         # The tenant-scoped Capafy host key provisioned into THIS computer's
         # own environment crosses to its own agent (the run_online funding
         # gate reads process env only on maritime); it is the tenant's key
