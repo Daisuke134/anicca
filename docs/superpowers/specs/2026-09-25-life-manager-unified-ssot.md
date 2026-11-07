@@ -26831,3 +26831,11 @@ flowchart TD
 **現在cursor:** LC04（sourceと本番配備の対応を公式readbackで棚卸し）→LC05（契約内の必要機能）→LC06（提供の適用範囲）。Naïve担当はLC58、Maritime大会参加の確認はLC63を独立して進められる。顧客課金はLC27以降、外部顧客の有料成果はLC54以降で未完。文書上のLC01–03のみ完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
+
+#### Naïve事業全体の画面録画とPostiz公開 — 2026-11-07 06:48 UTC
+
+- **依頼された収録範囲:** QuickTimeで実際の画面を録画し、Naïve上のagent状態/実行→公開済み商品の発見→購入者側のHTTP応答→運営費・売上状態までを一続きで示し、動画はPostiz経由でYouTubeへ公開する。今段階の録画条件は入金ではなく、提供済み商品の実動作と未達の正直な表示。
+- **収録内容の真実境界:** 現行商品`life-manager-funding-rates`は稼働中でAgent402に`listed: true`、公開GETはHTTP 402の支払条件を返す。直近のNaïve agent実行はその公開ページを読むread-only操作で、session費用は`$0.038666`。商品デプロイ/掲載は会社admin APIをCodexが実行しており、agentが商品を作成・公開・配信した成果物ではない。外部buyer、支払い済み納品、売上、利益は未確認。動画で管理者の事前作業とagentの実行を混同しない。
+- **録画の実状態:** QuickTimeの「新規画面収録」は有効化できず、macOS「プライバシーとセキュリティ → 画面収録とシステムオーディオ録音」でQuickTimeを追加しようとすると管理者認証が要求される。管理者パスワードは入力していない。画面収録権限は未付与、録画ファイル/動画ID/URLは存在せず、音声収録は求めていない。
+- **Postizの接続先 readback:** 個人workspaceにはYouTube接続が2件（`Daily Affirmation App - Anicca`、`Anicca - Daily Affirmation`）あり、どちらもLife Manager用と特定できない。`Primary` workspaceには接続がなく、Life Manager名の既存動画もPostiz media libraryにない。動画完成後に投稿先を確定してから一度だけ公開する。
+- **現在cursorと残TODO:** (1) Mac上の管理者が開いているmacOSダイアログでQuickTimeの画面収録許可を有効化する（秘密値はチャットへ送らない）。(2) 全体運営を「自律実績」として見せるには、既存Naïve agent自身が一つの外向き成果物を作成/公開し、そのlive URLと公式eventを記録する。現状のread-only runだけでは自律企業の全体運営を実証できない。(3) QuickTimeでagent設定・実行event・成果物・公開商品・購入者応答・費用と売上0/未確認を連続収録する。入金を収録の前提にしない。(4) 動画完成後、候補2件のどちらをYouTube公開先にするか確認し、Postizへアップロード/即時投稿する。(5) YouTubeの公開URLを確認し、このspecの録画/公開状態を更新する。現在は(1)でMac管理者認証待ち。動画録画・アップロード・公開は未完。
