@@ -26804,8 +26804,8 @@ flowchart TD
 |---|---|---|---|
 | LC58 | 部分・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | ユーザー共有の公式イベント本文では2026-11-07–08、全チームNaïve SDK利用、live demoで実際の成果・判断・人の介入箇所を示す。参加承認はユーザー申告、公式ticket receiptは未readback |
 | LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
-| LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
-| LC61 | 部分（映像のみ、LC60未完） / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 公開x402 endpointの29秒録画だけ作成。Naïve agentのrun・成果物作成・人の介入・購入・決済・収益は映像で証明していない。一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分けて記録する |
+| LC60 | 未 / LC59 + 共通playbook | `NAIVE + CAPAFY`：Naïve agentがエージェント商品を一件作成・出品する | CAPAFY上の公開listing URLと公式receipt。x402 endpoint録画はこの作業の証拠に数えない。売上は注文/決済receiptなしに主張しない |
+| LC61 | 部分（映像のみ、LC60未完） / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 現在の29秒映像は公開BTC funding-rate APIのx402 `Payment Required` challenge確認のみ。CAPAFY事業でもx402販売完了でもなく、Naïve agentの実行・成果物・人の介入・購入・決済・収益を証明していない。実runのnative events・成果物・費用・介入状態と区別して記録する |
 | LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
 
 #### Maritime大会・YCの事業証拠
@@ -26821,4 +26821,6 @@ flowchart TD
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
 
-**Naïve録画チェックポイント (2026-11-07 JST):** Screenity 4.7.2を隔離Chrome profile `Naive Demo Recorder` で使用。公開中の `https://life-manager-funding-rates-s5n2hqva.vercel.app/api/index` → `/.well-known/x402.json` → `/funding-rates?symbol=BTC` を画面収録し、最後の実リクエストが `Payment Required` / x402 challengeを返すことを確認。29秒のMP4を `docs/evidence/naive/screenity-live-x402-endpoint-proof-2026-11-07.mp4` に保存（SHA-256 `18d86ee7d4610a3e0ca71a5dfb79cce443dcabea0df4813c33de853e539008a8`）。元39秒録画の冒頭に入ったScreenity権限案内11秒をローカル編集で除き、QuickTimeで再生を確認した。これは公開商品endpointの動作映像であり、Naïve agentが商品を作成/公開した証拠ではない。購入者、x402 settlement、実売上、利益も確認していない。録画のためNaïve account/API key/Computerを操作していない。YouTube/Postizへの公開は未実施。Naïve sublane cursorはLC59（組織・agent・budget・Computer/browserの最新readback）、次にLC60（一つの成果物をagentが実際に公開）とし、そのprovider receiptに結びつく2–4分映像を取り直してLC61を完了する。
+**Naïve録画チェックポイント (2026-11-07 JST):** Screenity 4.7.2を隔離Chrome profile `Naive Demo Recorder` で使用。公開中の `https://life-manager-funding-rates-s5n2hqva.vercel.app/api/index` → `/.well-known/x402.json` → `/funding-rates?symbol=BTC` を画面収録し、最後の実リクエストが `Payment Required` / x402 challengeを返すことを確認。29秒のMP4を `docs/evidence/naive/screenity-live-x402-endpoint-proof-2026-11-07.mp4` に保存（SHA-256 `18d86ee7d4610a3e0ca71a5dfb79cce443dcabea0df4813c33de853e539008a8`）。元39秒録画の冒頭に入ったScreenity権限案内11秒をローカル編集で除き、QuickTimeで再生を確認した。この映像が示すのは公開BTC funding-rate APIのx402 challengeだけであり、CAPAFY出品事業でも、x402の購入・settlement・売上でもない。Naïve agentが事業を実行した証拠、購入者、実売上、利益も確認していない。録画のためNaïve account/API key/Computerを操作していない。YouTube/Postizへの公開は未実施。
+
+**Naïve残TODO（順序固定）:** LC59で組織/agent/model/budget/Computer/browserの現状態を公式readback → LC60でNaïve agentにCAPAFY用エージェント商品を一件作らせて出品し、公開URLとprovider receiptを確認 → LC61で同じ実runの判断・成果物・費用・人の介入状態を見せる2–4分デモを録画 → LC62で公式提出先へ提出し受領receiptを読む。現在cursorはLC59。現在のx402映像はこの列の成果証拠に数えない。
