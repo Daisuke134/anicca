@@ -3,6 +3,10 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
+## 2026-11-07｜Phase 9 P09-2〜5の実データ学習・評価（軽量モデルのみ）
+
+[全体の実測結果と制約](P09-2_TO_P09-5_REAL_EVAL_20261107_JA.md)、[再現コード](experiments/p09_2_5_empirical_bench.py)、[10件の人工テスト](experiments/test_p09_2_5_empirical_bench.py)、[入力SHA・全スコアJSON](evidence/P09-2_TO_P09-5_REAL_TWO_DOMAIN_EVAL_20261107.json)、日本語講義[P09-2](P09-2_JA.md)・[P09-3](P09-3_JA.md)・[P09-4](P09-4_JA.md)・[P09-5](P09-5_JA.md)、[研究スライド16枚の再生成コード](journal_club/build_p09_2_5_real_research_slides.py)、[発表用原稿](journal_club/P09-2_TO_P09-5_RESEARCH_APPENDIX_SOURCE_JA.md)を追加。Nature70研究の既存効果表とMaMe-Reの日本語ミーム100,000組の公開人間評定（160 train/40 valid/50 heldout contexts）で新しい軽量回帰モデルを実際にfit/evalした。少数例補正は小幅改善、OOD代理群で誤差悪化、単一共有スカラーに負の転移、ミームRidgeは過去平均に勝たない。**新規GPT/Be.FM/Centaur/OmniSapiens推論、共有7B BFM学習、Nature原RDSの完全再現、利用者への便益、公開Web配信は未実施。** Mac上では元118枚を保持して研究PPTX134枚と追加16枚のノートを生成・QAしたが、共有ディスク満杯でGitへバイナリ反映ができず、配布用16枚の独立PPTX/PDFを別に制作・検証した。元の34枚講演用を変更しない。会社の運用SSOTやBFM-01/INT-02の順序を変えない。**学習次はP10-1、製品実装は未完了のまま。**
+
 ## 2026-11-07｜P09-1：Nature公開Figure1の実データ再解析（原著完全再現ではない）
 
 [日本語講義](P09-1_JA.md)、[結果と制約](NATURE_2026_FIG1_REANALYSIS_20261107_JA.md)、[実行レシート](evidence/P09-1_NATURE_FIG1_RESULT_20261107.json)、[実行コード](experiments/p09_1_nature_fig1_reanalysis.py)、[人工テスト](experiments/test_p09_1_nature_fig1_reanalysis.py)、[研究スライド4枚の原稿](journal_club/P09-1_NATURE_FIG1_APPENDIX_SLIDE_SOURCE_JA.md)を作成。公式Figure1の70研究/3356方向付き比較から無調整r=.8051と研究LOSO校正のRMSE 11.83→8.15ppを独立計算。**原著のGPT-4 raw=.8508 / adjusted=.9151とは同じ推定器ではなく、元の保存済み人間・LLM RDSはCode Oceanのダウンロードに認証が必要で、Rscript未導入につき完全再現未実施。** P09-2以降の正式5講義IDと既存の会社の実装優先順は維持。
@@ -196,10 +200,10 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
 | P09-1 | 人・研究・時間・領域を分けた評価 | **[講義＋Nature図表実データの再解析](P09-1_JA.md)を実行／元RDSと原著Rの完全再現は未完** | 70研究/3356方向付き比較、研究単位LOSO・校正・研究クラスタbootstrap。9件の人工テスト成功。新しい実人間成果・BFM学習は未実施。 |
-| P09-2 | ゼロショット・少数例適応・階層モデル | **残** | 共通知識と固有差。 |
-| P09-3 | 分布外検知・校正・棄権 | **残** | 分からないときの扱い。 |
-| P09-4 | 負の転移・忘却・退行テスト | **残** | 新しい学習で以前の能力が壊れないか。 |
-| P09-5 | 同じモデルで複数領域の比較 | **残** | 領域別モデルしか許さない設計にはしない。 |
+| P09-2 | ゼロショット・少数例適応・階層モデル | **[講義・実データの軽量研究適応評価](P09-2_JA.md)を実行／共有BFM未学習** | Nature公開集約効果の36研究でzero-shot対k=1/3/5少数例・部分プーリングを比較。個人適応の証明ではない。 |
+| P09-3 | 分布外検知・校正・棄権 | **[講義・公開研究群の校正/棄権評価](P09-3_JA.md)を実行／本番OOD保証なし** | published/unpublished研究を代理群に分け、校正区間の広さと誤差悪化を記録。 |
+| P09-4 | 負の転移・忘却・退行テスト | **[講義・二領域の共有スカラー実験](P09-4_JA.md)を実行／7B BFMは未実行** | Nature効果予測・日本語ミーム評価の単一校正傾きで干渉を検証。EWC/PCGrad等は一次研究の学習のみ。 |
+| P09-5 | 同じモデルで複数領域の比較 | **[講義・MaMe-Re 10万組の軽量モデル評価](P09-5_JA.md)を実行／共通BFMは未学習** | 未知50文脈2万評価でRidgeが過去平均に勝たず。元実験効果とミームの尺度は合算しない。 |
 
 ### P10｜持続可能な事業と運用
 
