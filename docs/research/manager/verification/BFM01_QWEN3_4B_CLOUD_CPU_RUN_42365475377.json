@@ -1,0 +1,22 @@
+{
+  "kind": "actual_open_model_cpu_inference_not_human_benchmark",
+  "inference_executed": true,
+  "quantized_model": "bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
+  "original_base_model": "Qwen/Qwen3-4B-Instruct-2507",
+  "huggingface_revision": "ae44f08e1392f39c0e474af10c3ff8355c8b6688",
+  "gguf_file": "Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+  "gguf_sha256_verified": "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
+  "llama_cpp_release": "b12137",
+  "llama_cpp_release_sha256": "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525",
+  "compute": "GitHub Actions ubuntu-24.04 CPU (no dedicated GPU)",
+  "duration_seconds": 6,
+  "prompt": "<|im_start|>user\nIn a fictional one-round anonymous dictator game, you receive ten tokens and can transfer any integer from 0 to 10 to another player. What number of tokens do you transfer? Answer only the integer.\n<|im_end|>\n<|im_start|>assistant\n",
+  "stdout_excerpt": "\n\nLoading model... |\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b\\\b|\b/\b-\b \b\n\n▄▄ ▄▄\n██ ██\n██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄\n██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██\n██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀\n                                    ██    ██\n                                    ▀▀    ▀▀\n\nbuild      : b12137-c55b09488\nmodel      : /home/runner/work/_temp/manager-bfm01/qwen3.gguf\nftype      : Q4_K - Medium\nmodalities : text\n\navailable commands:\n  /exit or Ctrl+C     stop or exit\n  /regen              regenerate the last response\n  /clear              clear the chat history\n  /read <file>        add a text file\n  /glob <pattern>     add text files using globbing pattern\n\n\n\n> <|im_start|>user\nIn a fictional one-round anonymous dictator game, you receive ten tokens and can transfer any integer from 0 to 10 to another player. What number of tokens do you transfer? Answer only the integer.\n<|im_end|>\n<|im_start|>assistant\n0\n\n[ Prompt: 23.1 t/s | Generation: 12.4 t/s ]\n\n> \n\nExiting...\n",
+  "behavior_prediction_accuracy_measured": false,
+  "be_fm_adapter_loaded": false,
+  "manager_model_trained": false,
+  "causal_effect_measured": false,
+  "user_intervention_performed": false,
+  "human_participant_data_used": false,
+  "warning": "Single synthetic example. No observed human behavior, no benchmark accuracy."
+}
