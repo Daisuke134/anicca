@@ -8,6 +8,7 @@ Use an isolated browser recorder and hand Muse the exact artifact and remaining 
 - Worktree: `/Users/anicca/Projects/life-manager-main/.worktrees/naive-screenity-handoff-20261107`
 - Branch: `docs/naive-screenity-handoff-20261107`
 - Base: `origin/main` at `92b3b24fab733b7a3df9a8c33d3e3c3e342922be`
+- Artifact/spec commit: `eb88101ece`
 - Canonical spec: `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md`, “Naïve大会専用lane” and “Naïve録画チェックポイント”
 - Video: `docs/evidence/naive/screenity-live-x402-endpoint-proof-2026-11-07.mp4` (29 seconds, 393 KB)
 - SHA-256: `18d86ee7d4610a3e0ca71a5dfb79cce443dcabea0df4813c33de853e539008a8`
