@@ -11,7 +11,7 @@ RUN grep -E '^(jsonschema|playwright|cloakbrowser|Pillow|PyYAML|httpx|requests|w
     && rm /tmp/maritime-requirements.txt \
     && CLOAKBROWSER_CACHE_DIR=/opt/cloakbrowser python3 -c "from cloakbrowser.download import ensure_binary; from pathlib import Path; Path('/usr/local/bin/lm-cloud-chromium').symlink_to(ensure_binary())" \
     && chmod -R a+rX /opt/cloakbrowser \
-    && npm install --global @openai/codex@0.160.0 \
+    && npm install --global @openai/codex@0.160.0 openclaw@2026.6.1 \
     && npm cache clean --force
 COPY . /app
 RUN groupadd --gid 10001 lm-agent \
