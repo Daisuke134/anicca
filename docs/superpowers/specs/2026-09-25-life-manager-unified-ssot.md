@@ -28,7 +28,7 @@
 **順序調整（2026-11-06）:** 直前の提出順は1.9.8を先に提出して後続G2/G4へ戻る順だった。ユーザーが提出前に画面別計測・Open表示・全画面E2Eの実証を要求したため、現在はG2→G4→G4.1→G5へ変更した。1.9.8のsubmission ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消しreadback済み。外部effectを再送しない。
 
 **現在cursor:** G2の実端末APNs登録・Free/Pro配信receiptを確認する。G2残件のreadback後にG4のMixpanel本番受信・重複検証、G4.1のOpen funnel接続、G5の同一candidate build/E2E動画へ進む。
-**最新readback:** PR [#9289](https://github.com/Daisuke134/life-manager/pull/9289) はOPEN、head `a91f975b558ffbb6a5793f1e871fe5ce6f444926`、CI run `42335527159`の表示checksは全件成功、formal reviewなし、未merge。CI成功はMixpanel受信・Open表示・App Store buildの証明ではない。
+**最新readback:** PR [#9289](https://github.com/Daisuke134/life-manager/pull/9289) はOPEN・未merge、formal reviewなし。iOS source candidate SHA `a91f975b558ffbb6a5793f1e871fe5ce6f444926`の表示checksはrun `42335527159`で成功し、その後のbranch更新は文書のみ。CI成功はMixpanel受信・Open表示・App Store buildの証明ではない。
 **Open確認:** `https://aniccaai.com/open/data.json` の取得snapshotは `2026-11-07 12:37 JST`。`product_analytics`/`anicca_ios`/`screen_viewed`/`mixpanel`は未掲載。最新 `anicca-products` main workflowもMixpanelを参照せず、G4.1は未実装。
 **ASC/2FA境界:** 最後に記録されたASC公式readbackではbuild 818=`VALID`、version=`DEVELOPER_REJECTED`、submission `d584f304-8581-4b11-b803-f8289b804e35`=`COMPLETE`/item=`REMOVED`/inFlight=false。今回status確認では再提出していない。以前のSMS要求はcode reader timeoutで認証不成立。ユーザーはTwilio番号を指定後、次の操作を待つよう指示したため、その後のSMS/loginは行っておらず、Twilio番号のID対応とApple web sessionは未確認。
 
