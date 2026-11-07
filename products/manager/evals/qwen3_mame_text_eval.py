@@ -131,18 +131,41 @@ def prompt_from_text_only(context: str, desc_a: str, desc_b: str) -> str:
 
 
 def parse_llama_reply(stdout: str) -> str | None:
-    # llama-cli echoes the full prompt, then appends the assistant generation.
-    # Parsing prior portions would leak the prompt's A/B option text.
+    """Score only the GENERATED answer, including --no-display-prompt mode.
+
+    Never scrape the A/B choices from the echoed Japanese context. A bare
+    generated A/B line is valid in noninteractive, hidden-prompt CLI mode.
+    """
     marker = "<|im_start|>assistant\n"
-    if marker not in stdout:
-        return None
-    generated = stdout.rsplit(marker, 1)[-1]
-    generated = re.sub(r"\x1b\[[0-9;]*m", "", generated)
-    lines = [s.strip() for s in generated.splitlines() if s.strip()]
-    if not lines:
-        return None
-    first = lines[0]
-    return first[0] if re.fullmatch(r"[ABab][\s\.\u3002\u3001]*", first) else None
+    text = re.sub(r"\x1b\[[0-9;]*m", "", stdout)
+    if marker in text:
+        generated = text.rsplit(marker, 1)[-1]
+    else:
+        # Fail closed if the response is an echoed prompt (not model output).
+        if any(s in text for s in ("Aのコマの描写:", "Bのコマの描写:", "回答（A/Bの一文字）:")):
+            return None
+        generated = text
+    choices = []
+    for line in generated.splitlines():
+        line = line.strip()
+        if re.fullmatch(r"[ABab][\s\.\u3002\u3001]*", line):
+            choices.append(line[0].upper())
+    return choices[0] if len(choices) == 1 else None
+
+
+def build_llama_command(cli: str, model: str, prompt: str) -> list[str]:
+    """b12137 llama-cli automatically enables conversation mode for chat GGUF.
+
+    Single-turn and simple-io prevent interactive-loop/terminal output in
+    redirected subprocesses. No-display-prompt makes strict generated-answer
+    parsing possible without leaking licensed source prompt text to the logs.
+    """
+    return [
+        str(cli), "-m", str(model), "-p", prompt,
+        "-n", "12", "-c", "2048", "-t", "4", "--temp", "0",
+        "--simple-io", "--single-turn", "--no-display-prompt",
+        "--no-show-timings"
+    ]
 
 
 def load_labeled_table(folder: Path) -> tuple[dict[int,str],dict[int,str],dict[tuple[int,int],float]]:
@@ -243,7 +266,7 @@ def perform_live_model(cases: list[dict], cli: Path, gguf: Path) -> list[dict]:
     results=[]
     for i,row in enumerate(cases):
         started=time.monotonic()
-        cmd=[str(cli),"-m",str(gguf),"-p",row["_prompt"],"-n","12","-c","1024","-t","4","--temp","0"]
+        cmd=build_llama_command(str(cli), str(gguf), row["_prompt"])
         proc=subprocess.run(cmd,text=True,encoding="utf-8",errors="replace",stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=75)
         response=parse_llama_reply(proc.stdout) if proc.returncode==0 else None
         item={k:v for k,v in row.items() if k!="_prompt"}

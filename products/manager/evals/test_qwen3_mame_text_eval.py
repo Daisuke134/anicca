@@ -17,6 +17,21 @@ class TextOnlyHumanMemeTests(unittest.TestCase):
         self.assertEqual(len(set(a+b+c)),250)
         self.assertEqual(len(set(a)&set(c)),0)
 
+    def test_one_turn_cli_outputs_hidden_prompt_answer(self):
+        # llama-cli with --single-turn --simple-io --no-display-prompt
+        # returns generated text without an echoed ChatML assistant marker.
+        self.assertEqual(parse_llama_reply("A\n"), "A")
+        self.assertEqual(parse_llama_reply("llama_perf_context_print: 10 ms\nB\n"), "B")
+        self.assertIsNone(parse_llama_reply("usage: llama-cli -m model.gguf -p prompt\n"))
+
+    def test_cli_has_noninteractive_single_turn_and_no_prompt_echo(self):
+        from qwen3_mame_text_eval import build_llama_command
+        command = build_llama_command("llama-cli", "/tmp/model.gguf", "テスト")
+        self.assertIn("--single-turn", command)
+        self.assertIn("--simple-io", command)
+        self.assertIn("--no-display-prompt", command)
+        self.assertEqual(command[command.index("-p")+1], "テスト")
+
     def test_parse_uses_generated_answer_not_echoed_prompt(self):
         text="Prompt follows: Joke A or Joke B?\n<|im_start|>assistant\nB\n\n[ Prompt: 8 t/s ]"
         self.assertEqual(parse_llama_reply(text),"B")
