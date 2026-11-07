@@ -27,7 +27,7 @@ The clip does not prove that a Naïve agent created or published the product, co
 1. **LC59 — read current Naïve state:** Use the already-authorized account/API path and provider readback to capture organization, agent identity, model/budget, Computer state, and browser availability. The shared Naïve browser profile is leased to `life-manager-cloud-naive-n02`; do not take over that lease.
 2. **LC60 — one real agent deliverable:** Have the Naïve agent create and publish one CAPAFY agent listing. Record the provider event, public listing URL, cost, and any human intervention. Do not count a draft, endpoint request, or successful browser navigation as business completion.
 3. **LC61 — final demo:** Record a 2–4 minute screen demo of that same verified run, its output, cost, and intervention status. State explicitly whether a buyer or settlement exists; do not imply revenue without a provider receipt.
-4. **LC62 — submission:** Re-check the official demo submission destination and submit the verified artifact, then read back the official receipt. Attendance approval is user-reported; no official ticket receipt was read in this recording task.
+4. **LC62 — submission and live demo:** Re-check the official demo submission destination, submit the verified artifact, and read back the official receipt. Prepare to reproduce the same verified run in the live presentation; the recording does not replace the live demo. Attendance approval is user-reported; no official ticket receipt was read in this recording task.
 5. **Optional distribution:** YouTube/Postiz was not used. Before publishing, verify the intended connected YouTube channel and show the final title, description, audience, and video to the user.
 
 ## Current cursor
