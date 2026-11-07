@@ -227,9 +227,15 @@ STATE_JS = _build_state_js()
 # card DOM position/order is NOT stable across a period change, so a caller must key
 # off each card's CURRENT Period label, never array position. Within a card the
 # first two visible <input>s are always price/cap (documented in CP1_AGENTIC.md);
-# a card showing "Enable Free Trial" reveals two more inputs (duration hours, free
-# request count) -- their mere presence (not a color/class guess) is what signals
-# the trial is enabled, matching the UI behavior CP1_AGENTIC.md already documents.
+# a card with Free Trial ENABLED reveals two more inputs (duration hours, free
+# request count) -- but input presence alone is NOT the signal: the current card
+# UI renders extra summary inputs even with "No Free Trial" selected (measured
+# 2026-11-07 on the tenant CP1 card: the yearly card showed a read-only
+# calculated yearly-total input, 480 cap x 12 = 5760, which the old positional
+# read mistook for trial hours and blocked a correctly priced card at the
+# PRICES gate). The trial state is therefore read from the trial radio group's
+# checked option ("No Free Trial" vs "Enable Free Trial"), and the two extra
+# inputs count as trial values only when the trial is actually enabled.
 PRICE_CARDS_JS = r"""
 () => {
   const vis = (e) => {
@@ -256,7 +262,17 @@ PRICE_CARDS_JS = r"""
     const inputs = [...card.querySelectorAll('input')].filter(vis);
     const price = inputs[0] ? inputs[0].value : null;
     const cap = inputs[1] ? inputs[1].value : null;
-    const trial = inputs.length > 2
+    // Trial state comes from the checked radio of the card's trial group, not
+    // from input positions: extra summary inputs (e.g. the calculated yearly
+    // total) render even when "No Free Trial" is selected.
+    const radios = [...card.querySelectorAll('input[type="radio"]')].filter(vis);
+    const checkedRadio = radios.find((r) => r.checked);
+    const radioLabel = (r) => {
+      const lab = (r.closest('label') || r.parentElement || {}).textContent || '';
+      return lab.replace(/\s+/g, ' ').trim();
+    };
+    const trialOn = checkedRadio ? /enable free trial/i.test(radioLabel(checkedRadio)) : false;
+    const trial = trialOn
       ? { hours: inputs[2] ? inputs[2].value : null, requests: inputs[3] ? inputs[3].value : null }
       : null;
     return { period, price, cap, trial };

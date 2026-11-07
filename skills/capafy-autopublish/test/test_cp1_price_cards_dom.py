@@ -45,3 +45,33 @@ def test_daily_card_without_trial_section_is_read():
     assert set(by_period) == {"Daily", "Weekly", "Monthly"}
     assert (by_period["Daily"]["price"], by_period["Daily"]["cap"], by_period["Daily"]["trial"]) == ("1.99", "10", None)
     assert (by_period["Weekly"]["price"], by_period["Weekly"]["cap"]) == ("4.99", "30")
+
+
+def test_yearly_card_with_calculated_total_input_and_no_trial_selected():
+    # Measured 2026-11-07 on the tenant CP1 card (agent 9845947823): with
+    # "No Free Trial" selected, the yearly card still renders extra inputs --
+    # a calculated yearly-total summary (480 cap x 12 = 5760). The old
+    # positional read mistook that input for trial hours and the prices gate
+    # reported a trial mismatch on a correctly configured card, blocking CP1
+    # confirmation across publish15/17/19. The trial state must come from the
+    # checked radio, not from input positions.
+    html = """<div id='plans'><div class="card"><div class="head">
+    <button class="pricingConfigDropdownButton">Yearly</button></div>
+    <div class="body"><input value="149.99"><input value="480"><input value="5760">
+    <div class="trial">無料トライアル
+    <label><input type="radio" name="ft">Enable Free Trial</label>
+    <label><input type="radio" name="ft" checked>No Free Trial</label>
+    </div></div></div></div>"""
+    sync_api = pytest.importorskip("playwright.sync_api")
+    with sync_api.sync_playwright() as pw:
+        try:
+            browser = pw.chromium.launch(executable_path=os.environ.get("CP1_TEST_CHROMIUM") or None)
+        except Exception as exc:
+            pytest.skip(f"chromium unavailable: {exc}")
+        page = browser.new_page()
+        page.evaluate("(h) => { document.body.innerHTML = h; }", html)
+        cards = page.evaluate(cp1.PRICE_CARDS_JS)
+        browser.close()
+    assert len(cards) == 1
+    card = cards[0]
+    assert (card["price"], card["cap"], card["trial"]) == ("149.99", "480", None)
