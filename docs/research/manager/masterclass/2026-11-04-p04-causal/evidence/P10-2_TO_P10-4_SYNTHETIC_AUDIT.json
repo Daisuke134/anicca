@@ -1,0 +1,72 @@
+{
+  "timestamp_local_date": "2026-11-07",
+  "data_kind": "ENTIRELY_SYNTHETIC_ONLY",
+  "test_run": {
+    "suite": "python3 -m unittest discover -v -p 'test_p10_2_4*.py'",
+    "on": "AniccanoMac-mini.local / Python3 stdlib",
+    "tests_run": 41,
+    "passed": 41,
+    "failures": 0,
+    "errors": 0
+  },
+  "code_path": "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p10_2_4_control_plane_synthetic.py",
+  "test_path": "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/test_p10_2_4_control_plane_synthetic.py",
+  "portfolio_synthetic": {
+    "cash_minor": 1000,
+    "minimum_reserve_minor": 450,
+    "experiment_cap_minor": 500,
+    "selected_project_ids": [
+      "BFM_EVAL",
+      "PRODUCT_PILOT"
+    ],
+    "allocated_minor": 480,
+    "assumed_net_value_minor": 340,
+    "available_unspent_cap_minor": 20,
+    "external_authorization": false,
+    "real_roi_proven": false
+  },
+  "policy_synthetic": {
+    "decision": "SIMULATION_ELIGIBLE_NOT_AUTHORIZED",
+    "authority_to_execute": false,
+    "policy_version": "p10-3-demo-v1",
+    "live_external_effects": 0
+  },
+  "operations_synthetic": {
+    "unknown_external_effect_action": "RECONCILE_ONLY_NO_RESEND",
+    "slo": {
+      "eligible_total": 1000,
+      "target": "0.995",
+      "failures": 3,
+      "allowed_failures": 5,
+      "error_budget_remaining": 2
+    },
+    "cost": {
+      "billed_minor": 600,
+      "allocated_minor": 580,
+      "unallocated_minor": 20,
+      "real_invoice": false
+    },
+    "runway": {
+      "cash_minor": 1000,
+      "monthly_net_burn_minor": 250,
+      "runway_months": "4",
+      "actual_company_cash": false
+    }
+  },
+  "evidence_boundary": [
+    "No personal or corporate bank data accessed",
+    "No real provider invoices or receipts accessed",
+    "No claims of company profitability/ROI",
+    "No code production deployment",
+    "No live payment, publication, message, or account mutation",
+    "No authorized live agent privileges created",
+    "No model efficacy, real-user welfare, or autonomous-operation proof",
+    "Research and lecture only, existing operational SSOT unchanged"
+  ],
+  "phase9_open": [
+    "BFM-01 Be.FM rights/comparison",
+    "BFM-02 model output parsing",
+    "INT-02 original HeartSteps replication",
+    "Shared BFM generalization on independent external holdouts"
+  ]
+}
