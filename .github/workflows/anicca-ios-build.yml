@@ -29,6 +29,14 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Generate xcconfig files from examples
+        # Real values are injected by Xcode Cloud (ci_post_clone.sh) for
+        # release builds. CI only needs the files to exist to type-check
+        # and build; the examples contain placeholders only.
+        run: |
+          cp Configs/Production.xcconfig.example Configs/Production.xcconfig
+          cp Configs/Staging.xcconfig.example Configs/Staging.xcconfig
+
       - name: Resolve Swift packages
         run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios
 
