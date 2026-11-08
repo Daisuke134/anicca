@@ -45,6 +45,14 @@ def rewrap_prompt(prompt: str, prompt_format: str) -> str:
     (BFM-05 canary, run 42491777987: exit 0, no parseable answer)."""
     if prompt_format == "chatml":
         return prompt
+    if prompt_format == "raw":
+        # Hand llama-cli the bare user message; its conversation mode
+        # applies the model's own GGUF chat template. Pre-wrapping by hand
+        # double-templates (BFM-05 runs 42491777987 / 42493777608: the model
+        # continued the text with a fake new user turn instead of answering).
+        assert prompt.startswith(CHATML_PREFIX) and prompt.endswith(
+            CHATML_SUFFIX)
+        return prompt[len(CHATML_PREFIX):-len(CHATML_SUFFIX)]
     if prompt_format == "llama3":
         assert prompt.startswith(CHATML_PREFIX) and prompt.endswith(
             CHATML_SUFFIX)
@@ -119,7 +127,7 @@ def main():
                    help="Run only the first frozen case and require a valid A/B")
     p.add_argument("--extra-flags", default="",
                    help="Comma-separated extra llama-cli flags (recorded)")
-    p.add_argument("--prompt-format", choices=["chatml", "llama3"],
+    p.add_argument("--prompt-format", choices=["chatml", "llama3", "raw"],
                    default="chatml",
                    help="Native chat template wrapper for the frozen prompt "
                         "text (recorded in the receipt)")

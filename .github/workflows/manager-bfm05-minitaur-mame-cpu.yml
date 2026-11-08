@@ -115,7 +115,7 @@ jobs:
             --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
             --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
             --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
-            --prompt-format llama3 \
+            --prompt-format raw \
             --output artifacts/bfm05-canary.json
 
       - name: Run real 24-context Minitaur forward passes and score
@@ -129,7 +129,7 @@ jobs:
             --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
             --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
             --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
-            --prompt-format llama3 \
+            --prompt-format raw \
             --output artifacts/bfm05-minitaur-eval.json
           python - <<'PY'
           import json
