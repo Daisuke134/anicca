@@ -19,7 +19,7 @@ permissions:
 jobs:
   build:
     name: Build and unit tests (unsigned)
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         working-directory: apps/mobile/anicca-ios
