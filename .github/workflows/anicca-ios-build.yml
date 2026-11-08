@@ -58,9 +58,18 @@ jobs:
           set -o pipefail
           UDID=$(xcrun simctl list devices available | grep 'iPhone' | grep -Eo '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
           echo "Running tests on simulator: $UDID"
+          set +e
           xcodebuild test \
             -project aniccaios.xcodeproj \
             -scheme aniccaios \
             -destination "platform=iOS Simulator,id=$UDID" \
             CODE_SIGNING_ALLOWED=NO \
-            | tail -60
+            > /tmp/test-output.log 2>&1
+          TEST_EXIT=$?
+          set -e
+          echo "----- failing tests / errors -----"
+          grep -E "Test Case .* failed|error:|\*\* TEST (FAILED|SUCCEEDED)" /tmp/test-output.log | head -80 || true
+          echo "----- test summary -----"
+          grep -E "Executed [0-9]+ test|Test Suite .* (passed|failed)" /tmp/test-output.log | tail -20 || true
+          tail -20 /tmp/test-output.log
+          exit $TEST_EXIT
