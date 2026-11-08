@@ -2,6 +2,14 @@
 
 **正本：Managerの「唯一の順番付き実装TODO・現在のNEXT」は [Life Manager統合SSOTのMANAGER MG-01〜MG-18](../../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md#manager唯一の順番付き実装todop00p12を全統合2026-11-07) です。** この資料はP00〜P12の学習内容と履歴を示す索引であり、実装の別TODO/別カーソルではありません。旧文中の「次」「NOW」は当該日付の履歴で、最新の実行順を変更しません。現在のMG-02はP00/P02の本番権限・データの目的・撤回/停止の契約である。MG-01は公開サイトの限定S1実モデル比較を実行して技術受入済み。ただしQwenと現行ルールは不一致、モデルの価値は未証明。
 
+## 2026-11-08｜P12-2〜4の講義・合成検証・記事・発表資料を追加
+
+[長期の人間便益/害](P12-2_JA.md)、[科学記事と書籍](P12-3_JA.md)、[継続評価](P12-4_JA.md)を一次資料とともに学習。完全合成の[研究コード](experiments/p12_2_4_synthetic_education.py)と[39ソフトテスト](experiments/test_p12_2_4_synthetic_education.py)をMac miniで実行してPASS。検査可能な[結果JSON](evidence/P12-2_TO_P12-4_SYNTHETIC_DEMO_20261108.json)には架空の欠測境界-4〜+26pp（CIではない）、JSD≈0.10175、遅延ラベルと本番適用権限の分離を記録。**実人間の行動変化、苦の減少、社会影響、ビジネス利益の測定ではない。**
+
+日英6本の研究**記事草稿（未公開）**をdocs/research/manager/articlesに保存。[30枚の研究用スライド原稿と日本語発表ノート](journal_club/P12-2_TO_P12-4_SLIDES_SOURCE_JA.md)を追加した。既存本番講演34枚、P11研究33枚、P12-1研究16枚を上書きしない。公式サイトへの実公開は、レビュー、ハッシュ付きmanifest、immutable content revision、Netlify成功、本番のHTTP readbackが揃った後のみ認定。Xへ投稿しない。
+
+**P00〜P12基礎講義の教育一巡と、実モデル/製品/長期便益の完成は別**。P12-4は継続的研究目標として維持。次の実装作業は既存の統合MG-01〜MG-18 SSOTを唯一の正本とし、現行MG-02の順序を変更しない。新しいPhase13や会社の実装TODOの別カーソルを作らない。
+
 ## 2026-11-07｜P12-1独立再現研究（教材・同一チームの別計算法・出版準備）
 
 **P12-1の教育・合成コードを実行**。ACM/NeurIPSのartifact評価、Centaur/Psych-101のgated test、BehaviorBench公式評価器、Model/Dataset Cardを一次資料で検証。元の[P11完全合成実験](experiments/p11_1_5_research_labs.py)（P11原コミット 0c236f249ac4503764770135a86e2026cd37fec9、元コードSHA256 4a3c76b12f7423c575af526a35906e6d7d1ac2b5f6ef9d1b1db895c6a91f4818）に対し、[P12-1別実装の検算](experiments/p12_1_reproducibility_audit.py)を実施。[37のテスト](experiments/test_p12_1_reproducibility_audit.py)、[合成結果JSON](evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json)、[第三者用の空レポート書式](examples/P12-1_INDEPENDENT_REVIEW_REPORT_TEMPLATE_JA.md)、[専用CI](../../../../../.github/workflows/manager-p12-1-reproduction.yml)を追加。**これは同一著者チームの異なる式/推定器による内部検算であり、第三者の結果再現/外部追試ではない**。元モデル/実人間データの再学習、心理的便益・会社利益は一切未検証。
@@ -254,9 +262,9 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
 | P12-1 | 第三者の再現と公開できるベンチマーク | **講義・内部別実装の合成検算済／第三者再現は未完** | [P12-1](P12-1_JA.md)：元P11の合成OPE/負の転移を別実装で検算、37テスト、独立レビュー用契約、日英記事、16枚の研究スライド。実人間・外部追試は未実施。 |
-| P12-2 | 長期の利益・害・制度と社会への影響 | **残** | 短期点数を最終使命へ読み替えない。 |
-| P12-3 | 記事を編集して書籍にまとめる | **残** | 各講の下書きは学習と並行して作る。 |
-| P12-4 | 汎用的な行動・介入知能を継続検証 | **継続目標** | 単一指標で全苦の終結・万能性を認定しない。 |
+| P12-2 | 長期の利益・害・制度と社会への影響 | **講義・合成脱落感度分析済／実人間長期研究は未実施** | [P12-2](P12-2_JA.md)：CONSORT2025、ITT、欠測、介入の近接/遠位・害・自律性。架空例の最悪最良境界と39件テスト。 |
+| P12-3 | 記事を編集して書籍にまとめる | **講義・日英記事草稿と書籍構成済／実書籍未出版** | [P12-3](P12-3_JA.md)：FAIR/PRISMA/ICMJE、Evidence Graph、出版と訂正の契約。公開前のドラフトは公開済みと言わない。 |
+| P12-4 | 汎用的な行動・介入知能を継続検証 | **講義・合成Drift評価済／継続研究目標** | [P12-4](P12-4_JA.md)：Performative Prediction、JSD、遅延Label、モデル更新Gate。汎用性・実人間の便益は未証明。 |
 
 ## 2026-11-06当時のNEXT履歴（現在の実装TODOではない。正本は統合SSOTのMG表）
 
