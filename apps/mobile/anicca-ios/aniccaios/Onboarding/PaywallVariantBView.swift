@@ -54,8 +54,13 @@ struct PaywallVariantBView: View {
         return formatter.string(from: NSNumber(value: price))
     }
 
-    // 2026-06-23 Dais: 無料トライアル全廃（ASC からも introductory offer を削除）。
-    private var hasTrialEligibility: Bool { false }
+    // 2026-06-23 に無料トライアルを全廃したが、2026-11-07 のハードペイウォール化で
+    // 年額トライアルを復活 (ASC 側で introductory offer を再設定)。
+    // 選択中パッケージに introductory offer が付いている場合のみトライアル文面を出す
+    // (PlanSelectionStepView と同じ判定方式)。
+    private var hasTrialEligibility: Bool {
+        selectedPackage?.storeProduct.introductoryDiscount != nil
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -230,8 +235,9 @@ struct PaywallVariantBView: View {
     }
 
     private func trialBadge(for package: Package) -> String? {
-        guard hasTrialEligibility else { return nil }
         guard package.packageType == .annual || package.packageType == .monthly else { return nil }
+        // そのパッケージ自身に introductory offer が付いている場合だけバッジを出す。
+        guard package.storeProduct.introductoryDiscount != nil else { return nil }
         return String(localized: "paywall_b_trial_badge")
     }
 

@@ -633,7 +633,14 @@ struct PaywallValueTimelineStepView: View {
     }
 }
 
-// MARK: - Paywall Flow Container (Soft Paywall — 右上 × で無課金メインへ)
+// MARK: - Paywall Flow Container
+// 2026-11-08 ハードペイウォール A/B 化: ゲートの形は RevenueCat Experiment が
+// 割り当てた Offering で決まる (PaywallGateVariant)。
+// - 検証群 (anicca_variant_b_hard): 新規導線では × を描画しない。購入成功か
+//   復元で entitled になるまで本編へ進めない。
+// - 対照群 (anicca_variant_b): 従来のソフトペイウォール (× で無料完了)。
+// 設定 (flowID == "settings_subscription") など既存ユーザーの再表示では
+// ゲートによらず × を残す。
 
 struct PaywallFlowContainer: View {
     let onPurchaseSuccess: (CustomerInfo) -> Void
@@ -641,6 +648,15 @@ struct PaywallFlowContainer: View {
     var flowID: String = "onboarding"
     @State private var step: PaywallStep = .planSelection
     @EnvironmentObject private var appState: AppState
+
+    /// このユーザーに割り当てられたペイウォールゲート (cachedOffering 由来)。
+    private var gateVariant: PaywallGateVariant {
+        PaywallGateVariant.resolve(offeringIdentifier: appState.cachedOffering?.identifier)
+    }
+
+    private var showsCloseButton: Bool {
+        PaywallGateVariant.showsCloseButton(flowID: flowID, variant: gateVariant)
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -658,19 +674,22 @@ struct PaywallFlowContainer: View {
                 )
             }
 
-            // ソフトペイウォール: 右上に平均サイズの × 。課金せずメイン画面へ。
-            // primer / planSelection どちらの段でも常に表示。
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+            if showsCloseButton {
+                // 既存ユーザーの再表示と、対照群 (ソフト) の新規導線のみ:
+                // 右上の × で課金せず閉じられる。
+                // primer / planSelection どちらの段でも常に表示。
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityIdentifier("paywall-close-button")
+                .accessibilityLabel(Text(String(localized: "common_close")))
+                .padding(.trailing, 12)
+                .padding(.top, 8)
             }
-            .accessibilityIdentifier("paywall-close-button")
-            .accessibilityLabel(Text(String(localized: "common_close")))
-            .padding(.trailing, 12)
-            .padding(.top, 8)
         }
         .analyticsScreen(.paywall, flowID: flowID)
     }

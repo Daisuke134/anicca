@@ -1,0 +1,82 @@
+name: Anicca iOS build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mobile/anicca-ios/**'
+      - '.github/workflows/anicca-ios-build.yml'
+  push:
+    branches: [muse/hard-paywall-1.9.9]
+    paths:
+      - 'apps/mobile/anicca-ios/**'
+      - '.github/workflows/anicca-ios-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and unit tests (unsigned)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Generate xcconfig files from examples
+        # Real values are injected by Xcode Cloud (ci_post_clone.sh) for
+        # release builds. CI only needs the files to exist to type-check
+        # and build; the examples contain placeholders only.
+        run: |
+          cp Configs/Production.xcconfig.example Configs/Production.xcconfig
+          cp Configs/Staging.xcconfig.example Configs/Staging.xcconfig
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios
+
+      - name: Build app (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -40
+
+      - name: Run unit tests (unsigned)
+        # The macos-15 image (Xcode 16.4) ships no pre-created "iPhone 15"
+        # simulator; pick the first available iPhone simulator instead of
+        # hard-coding a device name.
+        run: |
+          set -o pipefail
+          UDID=$(xcrun simctl list devices available | grep 'iPhone' | grep -Eo '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
+          echo "Running tests on simulator: $UDID"
+          set +e
+          # Unit tests only. The aniccaiosUITests (PaywallE2ETests) drive the
+          # real app end-to-end and require live RevenueCat keys: with the
+          # placeholder xcconfigs generated above, RevenueCat returns
+          # "Invalid API Key", offerings never load and the paywall is
+          # unreachable by design. Those tests belong to the Xcode Cloud
+          # lane, where ci_post_clone.sh injects the real configuration.
+          xcodebuild test \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:aniccaiosTests \
+            CODE_SIGNING_ALLOWED=NO \
+            > /tmp/test-output.log 2>&1
+          TEST_EXIT=$?
+          set -e
+          echo "----- failing tests / errors -----"
+          grep -E "Test Case .* failed|error:|\*\* TEST (FAILED|SUCCEEDED)" /tmp/test-output.log | head -80 || true
+          echo "----- test summary -----"
+          grep -E "Executed [0-9]+ test|Test Suite .* (passed|failed)" /tmp/test-output.log | tail -20 || true
+          tail -20 /tmp/test-output.log
+          exit $TEST_EXIT

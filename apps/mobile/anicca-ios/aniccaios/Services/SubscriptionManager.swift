@@ -152,7 +152,8 @@ final class SubscriptionManager: NSObject {
                     productIdentifiers: packages.map { $0.storeProduct.productIdentifier },
                     hasAnnualOrMonthlyPackage: packages.contains { $0.packageType == .annual || $0.packageType == .monthly }
                 )
-            }
+            },
+            identifier: { offering in offering.identifier }
         )
     }
 

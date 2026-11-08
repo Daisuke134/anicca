@@ -3,8 +3,12 @@ import RevenueCat
 
 /// Retention Offer Sheet (Will / Adam Lyttle pattern)
 /// Triggered when user cancels Apple Pay sheet during paywall purchase.
-/// $44.99/year (25% OFF vs $59.99). Single CTA: Accept Offer. No decline button.
+/// Single CTA: Accept Offer. No decline button.
 /// Shown at most once per session (gated by parent's hasShownRetention flag).
+/// 表示価格は StoreKit の localizedPriceString が正。ただし未ロード時の
+/// フォールバック表示 "$44.99" と App Store 公開価格 (Annual Retention Plan
+/// $59.99、2026-11-07 監査で公開ページ実測) には乖離がある。実価格の変更は
+/// 価格判断として別途行う残件 (paywall-audit-2026-11-07 仕様4)。
 struct RetentionOfferSheet: View {
     var flowID: String = "onboarding"
     let onAccepted: (CustomerInfo) -> Void

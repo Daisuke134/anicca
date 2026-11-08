@@ -46,6 +46,38 @@ enum PaywallStorefrontEligibility {
 }
 
 
+/// A/B gate for the paywall, driven by which RevenueCat offering the
+/// RevenueCat Experiment assigned to this user (delivered as
+/// `offerings.current`).
+///
+/// - Control offering `anicca_variant_b`: soft paywall — the onboarding
+///   close button stays and tapping it completes onboarding for free.
+/// - Treatment offering `anicca_variant_b_hard`: hard paywall — no close
+///   button in onboarding; onboarding completes only on purchase/restore
+///   entitlement.
+///
+/// Kept free of RevenueCat types so the assignment rules can be unit
+/// tested. Decided 2026-11-08: hard paywall rolls out behind an A/B
+/// experiment instead of the previous all-users soft gate.
+enum PaywallGateVariant: String, Equatable {
+    case soft
+    case hard
+
+    /// Offering identifier of the hard-paywall treatment offering.
+    static let hardOfferingIdentifier = "anicca_variant_b_hard"
+
+    static func resolve(offeringIdentifier: String?) -> PaywallGateVariant {
+        offeringIdentifier == hardOfferingIdentifier ? .hard : .soft
+    }
+
+    /// The close button (free exit) is shown for existing-user surfaces
+    /// (any flow other than onboarding) regardless of the gate, and in
+    /// onboarding only for the soft gate.
+    static func showsCloseButton(flowID: String, variant: PaywallGateVariant) -> Bool {
+        flowID != "onboarding" || variant == .soft
+    }
+}
+
 enum PaywallOfferingSelection {
     static func isLatestRefresh(requestID: Int, currentRequestID: Int) -> Bool {
         requestID == currentRequestID
@@ -59,8 +91,20 @@ enum PaywallOfferingSelection {
         current: Offering?,
         all: [String: Offering],
         fallbackIdentifier: String,
-        isUsableForAnicca: (Offering) -> Bool
+        isUsableForAnicca: (Offering) -> Bool,
+        identifier: (Offering) -> String
     ) -> Offering? {
+        // A running RevenueCat Experiment delivers the assigned offering as
+        // `current`. When that assignment is one of the experiment
+        // offerings (control or treatment), it must win over the configured
+        // fallback so the A/B split actually reaches the plan screen.
+        if let current, isUsableForAnicca(current) {
+            let currentIdentifier = identifier(current)
+            if currentIdentifier == fallbackIdentifier
+                || currentIdentifier == PaywallGateVariant.hardOfferingIdentifier {
+                return current
+            }
+        }
         // The app's plan screen must include its configured Lifetime product,
         // even when the shared current offering points at legacy subscriptions.
         if let configured = all[fallbackIdentifier], isUsableForAnicca(configured) {
