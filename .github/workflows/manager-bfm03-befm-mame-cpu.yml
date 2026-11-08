@@ -1,0 +1,204 @@
+name: Manager BFM-03 | Be.FM 1.5-4B LoRA on the frozen BFM-02 MaMe-Re slice (research eval)
+
+# Research-purpose evaluation only. Be.FM weights are used under the Be.FM
+# Terms (non-commercial research evaluation; NO commercial loading, NO
+# redistribution). The adapter is downloaded with the account's own HF read
+# token (repo secret HF_TOKEN) after the account accepted the gated terms.
+# Nothing in this workflow uploads model weights anywhere.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm03-befm-mame-cpu.yml"
+      - "products/manager/evals/gguf_mame_text_eval.py"
+      - "products/manager/evals/qwen3_mame_text_eval.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bfm03-befm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  befm-real-eval:
+    name: Actual Be.FM 1.5-4B LoRA forward passes vs Japanese human aggregate ratings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      BASE_GGUF_SHA256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e"
+      BASE_GGUF_SIZE: "2497280736"
+      ADAPTER_SHA256: "62bd79fa95b7aa3a47c4a99bacdedec6ccab81f020dbbbde2bd320bc7f2b96ba"
+      ADAPTER_SIZE: "66126768"
+      ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+    steps:
+      - name: Gate — HF_TOKEN secret must exist BEFORE any download or compute
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "HF_TOKEN repo secret is missing; Be.FM is a gated repo and"
+            echo "cannot be downloaded. No GPU/CPU eval was attempted."
+            exit 1
+          fi
+          echo "HF_TOKEN is configured (value never printed)."
+
+      - name: Checkout evaluated commit and frozen benchmark split
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate frozen pair selection and scoring harness
+        working-directory: products/manager/evals
+        run: python -m unittest -v test_qwen3_mame_text_eval.py
+
+      - name: Download & checksum original CC BY human aggregate ratings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, sys
+          sys.path.insert(0, "products/manager/evals")
+          from qwen3_mame_text_eval import download_pinned_text_data, verify_sources
+          path = pathlib.Path("artifacts/mame-input")
+          download_pinned_text_data(path)
+          print("Verified source bytes:", verify_sources(path))
+          PY
+
+      - name: Freeze 24 test-only contexts (dry run, no labels inspected)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python products/manager/evals/qwen3_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 --dry-run \
+            --output artifacts/bfm03-ex-ante-pairs.json
+
+      - name: Obtain pinned llama.cpp release (inference)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/manager-bfm03/bin"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 240 \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" \
+            -o "$RUNNER_TEMP/manager-bfm03/llama.tar.gz"
+          echo "$ARCHIVE_SHA256  $RUNNER_TEMP/manager-bfm03/llama.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/manager-bfm03/llama.tar.gz" -C "$RUNNER_TEMP/manager-bfm03/bin"
+          CLI="$(find "$RUNNER_TEMP/manager-bfm03/bin" -type f -name llama-cli | head -n 1)"
+          test -f "$CLI"
+          chmod +x "$CLI"
+          echo "$CLI" > "$RUNNER_TEMP/manager-bfm03/cli.txt"
+
+      - name: Obtain pinned base Qwen3-4B Q4_K_M GGUF (identical artifact to BFM-02)
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL="$RUNNER_TEMP/manager-bfm03/qwen3.gguf"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 750 \
+            "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf" \
+            -o "$MODEL"
+          echo "$BASE_GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$BASE_GGUF_SIZE"
+
+      - name: Download Be.FM 1.5-4B LoRA adapter with the account HF token
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "huggingface_hub>=0.26,<1.0"
+          python - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+          token = os.environ["HF_TOKEN"]
+          path = snapshot_download(
+              "befm/BeFM1.5-4B", token=token,
+              allow_patterns=["adapter_config.json", "adapter_model.safetensors"])
+          print("adapter snapshot at:", path)
+          base = snapshot_download(
+              "Qwen/Qwen3-4B-Instruct-2507",
+              allow_patterns=["config.json", "tokenizer.json",
+                              "tokenizer_config.json", "special_tokens_map.json",
+                              "vocab.json", "merges.txt", "generation_config.json"])
+          print("base config snapshot at:", base)
+          with open(os.environ["RUNNER_TEMP"] + "/manager-bfm03-paths.txt", "w") as fh:
+              fh.write(path + "\n" + base + "\n")
+          PY
+          mkdir -p "$RUNNER_TEMP/manager-bfm03"
+          mapfile -t PATHS < "$RUNNER_TEMP/manager-bfm03-paths.txt"
+          ADAPTER_DIR="${PATHS[0]}"
+          BASE_DIR="${PATHS[1]}"
+          echo "$ADAPTER_DIR" > "$RUNNER_TEMP/manager-bfm03/adapter-dir.txt"
+          echo "$BASE_DIR" > "$RUNNER_TEMP/manager-bfm03/base-dir.txt"
+          sha256sum "$ADAPTER_DIR/adapter_model.safetensors"
+          echo "$ADAPTER_SHA256  $ADAPTER_DIR/adapter_model.safetensors" | sha256sum --check
+          test "$(stat -c%s "$ADAPTER_DIR/adapter_model.safetensors")" = "$ADAPTER_SIZE"
+          python -c "import json; c=json.load(open('$ADAPTER_DIR/adapter_config.json')); print('adapter base:', c.get('base_model_name_or_path'), '| r:', c.get('r'), '| alpha:', c.get('lora_alpha'))"
+
+      - name: Convert LoRA adapter to GGUF (llama.cpp b12137 converter)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch b12137 https://github.com/ggml-org/llama.cpp "$RUNNER_TEMP/llama-src"
+          python -m pip install --disable-pip-version-check \
+            --index-url https://download.pytorch.org/whl/cpu "torch>=2.2,<2.6"
+          python -m pip install --disable-pip-version-check \
+            -r "$RUNNER_TEMP/llama-src/requirements.txt"
+          ADAPTER_DIR="$(cat "$RUNNER_TEMP/manager-bfm03/adapter-dir.txt")"
+          BASE_DIR="$(cat "$RUNNER_TEMP/manager-bfm03/base-dir.txt")"
+          python "$RUNNER_TEMP/llama-src/convert_lora_to_gguf.py" \
+            --outfile "$RUNNER_TEMP/manager-bfm03/befm-lora.gguf" \
+            --base "$BASE_DIR" \
+            "$ADAPTER_DIR"
+          test -f "$RUNNER_TEMP/manager-bfm03/befm-lora.gguf"
+          sha256sum "$RUNNER_TEMP/manager-bfm03/befm-lora.gguf"
+
+      - name: Canary with LoRA — one frozen case must yield a parseable A/B
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm03/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm03/bin/lib"
+          python products/manager/evals/gguf_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 --canary-only \
+            --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm03/qwen3.gguf" \
+            --lora "$RUNNER_TEMP/manager-bfm03/befm-lora.gguf" \
+            --model-label "Be.FM 1.5-4B (LoRA on Qwen3-4B-Instruct-2507, Q4_K_M GGUF base)" \
+            --model-repo "befm/BeFM1.5-4B" \
+            --adapter-label "BeFM1.5-4B adapter_model.safetensors converted to GGUF" \
+            --adapter-repo "befm/BeFM1.5-4B" \
+            --output artifacts/bfm03-canary.json
+
+      - name: Run real 24-context Be.FM forward passes and score
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm03/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm03/bin/lib"
+          python products/manager/evals/gguf_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 \
+            --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm03/qwen3.gguf" \
+            --lora "$RUNNER_TEMP/manager-bfm03/befm-lora.gguf" \
+            --model-label "Be.FM 1.5-4B (LoRA on Qwen3-4B-Instruct-2507, Q4_K_M GGUF base)" \
+            --model-repo "befm/BeFM1.5-4B" \
+            --adapter-label "BeFM1.5-4B adapter_model.safetensors converted to GGUF" \
+            --adapter-repo "befm/BeFM1.5-4B" \
+            --output artifacts/bfm03-befm-eval.json
+          python - <<'PY'
+          import json
+          r = json.load(open("artifacts/bfm03-befm-eval.json"))
+          assert r["model_forward_pass_executed"] is True
+          assert r["n_cases"] == 24
+          print("Be.FM scores:", r["scores"])
+          PY
+
+      - name: Upload reproducible non-personal benchmark receipt (not model weights)
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: manager-bfm03-befm-mame-real-24
+          path: |
+            artifacts/bfm03-ex-ante-pairs.json
+            artifacts/bfm03-befm-eval.json
+          retention-days: 30

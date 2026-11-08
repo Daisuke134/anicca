@@ -1,0 +1,128 @@
+name: Manager BFM-05 | Minitaur-8B (Centaur family) on the frozen BFM-02 MaMe-Re slice
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm05-minitaur-mame-cpu.yml"
+      - "products/manager/evals/gguf_mame_text_eval.py"
+      - "products/manager/evals/qwen3_mame_text_eval.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bfm05-minitaur-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  minitaur-real-eval:
+    name: Actual Minitaur-8B GGUF forward passes vs Japanese human aggregate ratings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GGUF_SHA256: "f8a445c6329e4042dfd20f4722e02c5350ab2072d2df51e861554c07330600b7"
+      GGUF_SIZE: "4920734208"
+      GGUF_URL: "https://huggingface.co/HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF/resolve/main/unsloth.Q4_K_M.gguf"
+      ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+    steps:
+      - name: Checkout evaluated commit and frozen benchmark split
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate frozen pair selection and scoring harness
+        working-directory: products/manager/evals
+        run: python -m unittest -v test_qwen3_mame_text_eval.py
+
+      - name: Download & checksum original CC BY human aggregate ratings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, sys
+          sys.path.insert(0, "products/manager/evals")
+          from qwen3_mame_text_eval import download_pinned_text_data, verify_sources
+          path = pathlib.Path("artifacts/mame-input")
+          download_pinned_text_data(path)
+          print("Verified source bytes:", verify_sources(path))
+          PY
+
+      - name: Freeze 24 test-only contexts (dry run, no labels inspected)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python products/manager/evals/qwen3_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 --dry-run \
+            --output artifacts/bfm05-ex-ante-pairs.json
+
+      - name: Obtain pinned llama.cpp release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/manager-bfm05/bin"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 240 \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" \
+            -o "$RUNNER_TEMP/manager-bfm05/llama.tar.gz"
+          echo "$ARCHIVE_SHA256  $RUNNER_TEMP/manager-bfm05/llama.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/manager-bfm05/llama.tar.gz" -C "$RUNNER_TEMP/manager-bfm05/bin"
+          CLI="$(find "$RUNNER_TEMP/manager-bfm05/bin" -type f -name llama-cli | head -n 1)"
+          test -f "$CLI"
+          chmod +x "$CLI"
+          echo "$CLI" > "$RUNNER_TEMP/manager-bfm05/cli.txt"
+
+      - name: Obtain pinned Minitaur-8B Q4_K_M GGUF (non-gated, Meta Llama 3.1 terms)
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL="$RUNNER_TEMP/manager-bfm05/minitaur.gguf"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 1200 \
+            "$GGUF_URL" -o "$MODEL"
+          echo "$GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
+          test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
+
+      - name: Canary — one frozen case must yield a parseable A/B
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm05/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm05/bin/lib"
+          python products/manager/evals/gguf_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 --canary-only \
+            --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
+            --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
+            --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
+            --output artifacts/bfm05-canary.json
+
+      - name: Run real 24-context Minitaur forward passes and score
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm05/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm05/bin/lib"
+          python products/manager/evals/gguf_mame_text_eval.py \
+            --input-dir artifacts/mame-input --n-cases 24 \
+            --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
+            --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
+            --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
+            --output artifacts/bfm05-minitaur-eval.json
+          python - <<'PY'
+          import json
+          r = json.load(open("artifacts/bfm05-minitaur-eval.json"))
+          assert r["model_forward_pass_executed"] is True
+          assert r["n_cases"] == 24
+          print("Minitaur scores:", r["scores"])
+          PY
+
+      - name: Upload reproducible non-personal benchmark receipt (not model weights)
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: manager-bfm05-minitaur-mame-real-24
+          path: |
+            artifacts/bfm05-ex-ante-pairs.json
+            artifacts/bfm05-minitaur-eval.json
+          retention-days: 30
