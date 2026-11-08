@@ -35,11 +35,11 @@
 23. **6つのDrift**：Covariate/Label/Concept/Policy/Measurement/System。講演：入力の分布シフトと性能悪化は別。
 24. **JSD**：JSD=.5 KL(P||M)+.5 KL(Q||M)。講演：P=.5/.5、Q=.9/.1の架空2分布を比較し、原因を誤認しない。
 25. **Label Delayの罠**：未観測結果はBrier=0にしない。講演：pending/unknownを明示しcoverageを併記。
-26. **Champion vs Challenger**：NLL/Brier/TVD/Calibration/abstention/費用/害/権限を同条件で比較。
+26. **Champion vs Challenger**：NLL/Brier/TVD/Calibration/abstention/費用/害/権限を同条件で比較。講演：単一スコアで昇格させず、事前固定の候補採用条件を評価する。
 27. **Safe Improvement Loop**：Observe→Verify→Evaluate→Propose→Shadow→Admit→Canary→Monitor/Stop。講演：実権限は元ホスト側で強制。
 28. **Goodhart / Reward Hacking**：クリック最大化による通知疲労。講演：長期の本人の選択目標と安全性は別ガードレール。
 29. **Continual Learning / Forgetting**：旧タスクと新タスクを別評価、Model Card、権利、Source Hash。講演：EWC/Replay/Adaptersは仮説と比較が必要。
-30. **基礎学習の完了と続く研究**：P00〜P12の講義一巡 ≠ MG-01〜18の製品実証完了。次は必要な実研究、外部評価、長期追跡を継続。
+30. **基礎学習の完了と続く研究**：P00〜P12の講義一巡 ≠ MG-01〜18の製品実証完了。講演：次は必要な実研究、外部評価、長期追跡を継続する。
 
 ### 原典
 - JITAI/MRT https://pmc.ncbi.nlm.nih.gov/articles/PMC9755932/
