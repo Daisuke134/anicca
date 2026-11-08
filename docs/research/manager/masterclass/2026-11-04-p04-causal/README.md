@@ -1,5 +1,8 @@
 # Manager Masterclass｜P00〜P12の全講義と製品実装（唯一のロードマップへ）
 
+**2026-11-08 P12-2〜P12-4学習アーカイブ：** [長期の便益・害](P12-2_JA.md)、[研究記事/書籍の編集](P12-3_JA.md)、[継続行動知能の検証](P12-4_JA.md)の3講義、[完全合成ソフト演習](experiments/p12_2_4_synthetic_education.py)、[39テスト](experiments/test_p12_2_4_synthetic_education.py)、[結果・証拠レベルJSON](evidence/P12-2_TO_P12-4_SYNTHETIC_DEMO_20261108.json)、[30枚の研究スライド原稿・発表ノート](journal_club/P12-2_TO_P12-4_SLIDES_SOURCE_JA.md)、日英6本の研究記事ドラフトを保存。P00〜P12の基礎講義の一巡と、外部第三者再現、実人間の長期便益/害、モデルの実事業価値、書籍の正式出版とは別。**実装の唯一の現在地は統合SSOTのMG-01〜MG-18。** 学習の正本は[既存の唯一のロードマップ](ROADMAP_STATUS_JA.md)。記事・スライドの本番公開は別の正規CI/readbackの証拠があるまで未公開として扱う。Xへの投稿停止維持。
+
+
 **2026-11-07 P12-1｜再現性研究の教育・検算成果。** [日本語講義](P12-1_JA.md)、[別計算の完全合成検算](experiments/p12_1_reproducibility_audit.py)と[37テスト](experiments/test_p12_1_reproducibility_audit.py)、[SHA固定の証拠JSON](evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json)、[外部Reviewer用の空テンプレート](examples/P12-1_INDEPENDENT_REVIEW_REPORT_TEMPLATE_JA.md)、研究用16枚スライド/日本語発表ノート、公式メディア用日英2本と独自図を追加。元P11のOPE・負の転移を同一チーム内で別方式で検算しただけであり、外部第三者の再現・実人間の便益・独自行動FMの実証ではない。学習の次はP12-2。進捗正本は[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)。
 
 
