@@ -59,10 +59,17 @@ jobs:
           UDID=$(xcrun simctl list devices available | grep 'iPhone' | grep -Eo '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
           echo "Running tests on simulator: $UDID"
           set +e
+          # Unit tests only. The aniccaiosUITests (PaywallE2ETests) drive the
+          # real app end-to-end and require live RevenueCat keys: with the
+          # placeholder xcconfigs generated above, RevenueCat returns
+          # "Invalid API Key", offerings never load and the paywall is
+          # unreachable by design. Those tests belong to the Xcode Cloud
+          # lane, where ci_post_clone.sh injects the real configuration.
           xcodebuild test \
             -project aniccaios.xcodeproj \
             -scheme aniccaios \
             -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:aniccaiosTests \
             CODE_SIGNING_ALLOWED=NO \
             > /tmp/test-output.log 2>&1
           TEST_EXIT=$?
