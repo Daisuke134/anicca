@@ -84,15 +84,20 @@ jobs:
             "huggingface_hub>=0.26,<1.0" "hf_xet>=1.1"
           python - <<'PY'
           import os
+          import shutil
           from huggingface_hub import snapshot_download
           path = snapshot_download(
               "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF",
               allow_patterns=["unsloth.Q4_K_M.gguf"])
+          # The snapshot entry is a RELATIVE symlink into the cache blobs;
+          # moving the link itself breaks it (run 42493478874). Resolve and
+          # copy the real bytes instead.
+          src = os.path.realpath(os.path.join(path, "unsloth.Q4_K_M.gguf"))
           dest = os.path.join(os.environ["RUNNER_TEMP"], "manager-bfm05",
                               "minitaur.gguf")
           os.makedirs(os.path.dirname(dest), exist_ok=True)
-          os.replace(os.path.join(path, "unsloth.Q4_K_M.gguf"), dest)
-          print("model at:", dest)
+          shutil.copyfile(src, dest)
+          print("model at:", dest, os.path.getsize(dest), "bytes")
           PY
           MODEL="$RUNNER_TEMP/manager-bfm05/minitaur.gguf"
           echo "$GGUF_SHA256  $MODEL" | sha256sum --check
