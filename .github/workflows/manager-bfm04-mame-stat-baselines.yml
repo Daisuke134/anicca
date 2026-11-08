@@ -11,6 +11,14 @@ on:
 permissions:
   contents: read
 
+# Single-threaded BLAS: two earlier receipts (runs 42491778222, 42493478706)
+# differed by exactly one near-tie case per learned method. Pinning thread
+# counts (plus RandomForest n_jobs=1) makes the receipt reproducible.
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+
 concurrency:
   group: manager-bfm04-stat-${{ github.ref }}
   cancel-in-progress: false

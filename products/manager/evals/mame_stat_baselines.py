@@ -131,7 +131,7 @@ def main():
     ridge.fit(X_train, y_train)
     forest = RandomForestRegressor(
         n_estimators=400, max_depth=10, min_samples_leaf=5,
-        n_jobs=4, random_state=SEED)
+        n_jobs=1, random_state=SEED)
     forest.fit(X_train, y_train)
 
     def pick(predict):
