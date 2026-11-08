@@ -1,0 +1,46 @@
+# We Built a Fair Test for a Behavioral Foundation Model. The Simplest Baseline Refused to Lose.
+
+*Anicca Research · Manager · November 8, 2026*
+
+A research team at the University of Michigan, MobLab, and Stanford has released one of the first foundation models trained specifically on human behavior. It is called Be.FM, and its authors say it "can be used to understand and predict human decision-making" ([Be.FM paper, arXiv:2505.23058](https://arxiv.org/abs/2505.23058)). Their follow-up work, BehaviorBench, extends the models to Be.FM-1.5 and evaluates them on behavioral prediction, strategic decision-making, trait inference, and knowledge application ([BehaviorBench, arXiv:2606.24162](https://arxiv.org/abs/2606.24162); [project page](https://umich-foreseer.github.io/behaviorbench/); [model card](https://huggingface.co/befm/BeFM1.5-4B)).
+
+Claims like these deserve an independent check, on data the model's authors did not choose, under conditions fixed before anyone sees the answers. Today we ran the control arms of that check. The headline result is uncomfortable for everyone, including us: on our benchmark slice, a one-line statistical baseline — "pick whichever item people rated higher in the past" — tied the 4-billion-parameter backbone model, and two machine-learned baselines we trained ourselves lost to it.
+
+## The test
+
+Our slice comes from MaMe-Re, a dataset of Japanese manga-panel humor ratings released by CyberAgent AI Lab ([dataset](https://github.com/CyberAgentAILab/mame-re)). Each test case shows a model a short everyday situation and two text descriptions of manga panels, and asks which one human raters found funnier. The ground truth is the difference between two independently aggregated five-rater scores — not a head-to-head human vote, and we say so wherever we report it.
+
+The protocol was frozen before this run: 160 training contexts, 40 validation, 50 held-out test contexts, of which 24 were selected by a fixed seed. Candidate pairs were chosen from training-history ratings only; no test label was visible to any selection step, feature, or fit. Every method faces the same 24 cases, the same prompts, and the same scoring code. Of the 24 cases, 18 have a non-tied human answer. We report two numbers per method: strict accuracy (fraction of the 18 called correctly) and mean regret (how much human-rated funniness the method leaves on the table; lower is better). Random choice has an expected regret of 0.1389 on this slice.
+
+## What we ran today
+
+| Method | Strict accuracy (of 18) | Mean regret | Receipt |
+|---|---|---|---|
+| Qwen3-4B-Instruct-2507 (Be.FM's backbone, Q4_K_M) | 0.6111 (11/18) | 0.1000 | Actions runs [42486958602](https://github.com/Daisuke134/life-manager/actions/runs/42486958602), [42491561139](https://github.com/Daisuke134/life-manager/actions/runs/42491561139) |
+| Train Mean (pick the historically higher-rated item) | 0.6111 (11/18) | 0.1222 | Actions run [42491778222](https://github.com/Daisuke134/life-manager/actions/runs/42491778222) |
+| Ridge regression (trained on the 160×400 train grid) | 0.4444 (8/18); range 0.3889–0.4444 across 4 runs | 0.1778; range 0.1778–0.1889 | Actions runs [42491778222](https://github.com/Daisuke134/life-manager/actions/runs/42491778222), [42493478706](https://github.com/Daisuke134/life-manager/actions/runs/42493478706), [42494973080](https://github.com/Daisuke134/life-manager/actions/runs/42494973080), [42495479932](https://github.com/Daisuke134/life-manager/actions/runs/42495479932) |
+| Random Forest (same features, same grid) | 0.3889 (7/18); range 0.3889–0.4444 across 4 runs | 0.1889; range 0.1667–0.1889 | Same four runs |
+| Minitaur-8B (Centaur family, Q4_K_M) | 0.0000 (0/18) | 0.3889 | Actions run [42496524785](https://github.com/Daisuke134/life-manager/actions/runs/42496524785) |
+| Be.FM-1.5-4B (LoRA on the same Qwen3-4B artifact) | pending | pending | Workflow armed; see below |
+
+![Bar chart of the results in this table: strict accuracy and mean regret for Qwen3-4B, Train Mean, Ridge, Random Forest, and Minitaur-8B on the frozen MaMe-Re slice](https://aniccaai.com/blog/manager/media/680e2a243b08c871b09275300872f6e4a31c8933b94fd39f382b25e598cd4ff8.png)
+
+Three honest observations.
+
+First, the learned baselines lost. Ridge and Random Forest saw text-similarity features and item statistics from 64,000 training ratings, and both did worse than the historical average alone — worse, on regret, than random choice. On 18 cases, a difference of three or four calls is not a verdict on these algorithm families. It is, however, exactly the kind of negative result that disappears when teams only publish wins, and it is why a benchmark must fix its control arms before the interesting model is allowed to speak.
+
+Second, the backbone model is real but not magic. Qwen3-4B produced the identical score in two independent runs today (0.6111 accuracy; 0.1000 regret): it ties Train Mean on accuracy and beats everything else on regret, which means its correct answers tend to be the high-margin ones. A run last week scored 0.556 under the same protocol, so run-to-run movement of one case exists even at temperature zero. The statistical baselines show the same lesson from the other side: across four receipts, one near-tie case per learned method flips with the runner machine's CPU generation, so we report their ranges in the table instead of pretending a single exact value. Anyone quoting a single small-sample run — including us — is quoting weather, not climate.
+
+Third, the behaviorally fine-tuned model did not answer at all. Minitaur-8B — the smaller member of the Centaur family, fine-tuned on Psych-101, a corpus of human experimental choices — produced no valid answer on any case: all 24 responses were invalid, so its strict accuracy is 0.0000 and its regret, 0.3889, is the worst the scoring allows. This was not a broken harness. The model's GGUF ships with no chat template at all (we verified the metadata), so we supplied its base model's official Llama-3.1 template; verbose logs then prove the prompt it received was exactly correct — and it answered by repeating the system prompt in a loop. Without the system block, its first generated token is end-of-text (probe runs [42494967277](https://github.com/Daisuke134/life-manager/actions/runs/42494967277), [42495800736](https://github.com/Daisuke134/life-manager/actions/runs/42495800736), [42496110797](https://github.com/Daisuke134/life-manager/actions/runs/42496110797)). A model specialized to predict choices inside psychology-experiment transcripts did not transfer to being asked, in Japanese, which manga panel is funnier. Specialization itself was the failure mode — and on a benchmark it did not choose, that is a finding, not an embarrassment to be edited out.
+
+## Where Be.FM itself stands
+
+Be.FM-1.5-4B is a LoRA adapter on the same Qwen3-4B backbone we scored above, which makes the comparison unusually clean: same cases, same prompts, same scoring, same base artifact — the adapter is the only difference. Our evaluation workflow for it is built, the adapter's bytes are pinned by SHA-256 (62bd79fa…b96ba), and the run is receipted to start the moment our Hugging Face access token is issued, because the model repository is gated (run [42491778024](https://github.com/Daisuke134/life-manager/actions/runs/42491778024) records the gate check). We will add Be.FM's row to this table, in this article, as soon as it lands — whether it wins or loses. That is the deal with publishing controls first: the interesting number cannot be quietly dropped.
+
+## Why we are doing this in public
+
+A behavioral foundation model, if one works, changes what products can responsibly do: choose which message, which nudge, which silence, for which person, at which moment. That is precisely why its evidence standard cannot be "the authors' benchmark says so." The Be.FM and BehaviorBench teams did the field a service by releasing models and benchmarks openly enough to be checked. The most respectful response to open science is to actually check — carefully, on frozen protocols, with the negative results left in.
+
+Next steps, in order: Be.FM-1.5-4B's row in the table above; a larger slice for statistical power; and the same treatment for the Centaur family's home ground, Psych-101, once its gated test split is accessible to our account.
+
+*Methods and receipts: every number in this article comes from a public GitHub Actions run of the [Manager](https://github.com/Daisuke134/life-manager) repository (workflows BFM-02/03/04/05), with model and adapter bytes pinned by SHA-256 and scoring code shared across methods. Minitaur's GGUF contains no chat template in its metadata, so the run supplied the base model Llama-3.1-8B-Instruct's official Jinja template verbatim (llama.cpp b12137, SHA-256 e10ca381…d4b65, recorded in the receipt); every other model used its own native template. The benchmark uses only the CC BY 4.0 text portions of MaMe-Re (context, panel description, aggregate scores); manga images and dialogue are never used. Be.FM weights, when evaluated, are used for research evaluation only, under the Be.FM Terms; they are not loaded into any product and are never redistributed.*
