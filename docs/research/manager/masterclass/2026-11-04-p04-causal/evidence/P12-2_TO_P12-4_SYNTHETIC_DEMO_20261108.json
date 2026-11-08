@@ -1,0 +1,46 @@
+{
+  "schema": "manager.phase12.p12-2-4.synthetic-education.v1",
+  "date": "2026-11-08",
+  "implementation": "Python3 standard library: experiments/p12_2_4_synthetic_education.py",
+  "tests": "experiments/test_p12_2_4_synthetic_education.py",
+  "test_report": {
+    "source": "AniccanoMac-mini.local, Python 3",
+    "tests_run": 39,
+    "passed": 39,
+    "failed": 0
+  },
+  "kind": "ENTIRELY_SYNTHETIC_NO_REAL_WORLD_EFFECTS",
+  "p12_2": {
+    "allocated_each_arm": 100,
+    "observed_treatment": 80,
+    "success_treatment": 60,
+    "observed_control": 90,
+    "success_control": 54,
+    "observed_only_difference": 0.15,
+    "full_arms_missing_outcome_difference_lower": -0.04,
+    "full_arms_missing_outcome_difference_upper": 0.26,
+    "interpretation": "Illustrative binary missing outcomes bound; NOT a confidence interval, NOT actual ITT"
+  },
+  "p12_3": {
+    "claim_id": "P12-3-EXAMPLE-001",
+    "source_kind": "SYNTHETIC_INTERNAL",
+    "source_url": "https://www.bmj.com/content/389/bmj-2024-081123",
+    "claim_record_sha256": "a683ac232adfb335e79881ca02a1a107eba93dec300c37960f791a8ff709ca30",
+    "human_welfare_verified": false
+  },
+  "p12_4": {
+    "jsd_p_05_05_q_09_01_nats": 0.10174922507919676,
+    "equal_distribution_jsd": 0,
+    "brier_with_two_of_three_observed": 0.25,
+    "label_coverage": 0.6666666666666666,
+    "all_labels_missing_status": "PERFORMANCE_UNKNOWN",
+    "proposed_model_status": "RESEARCH_CANDIDATE_ONLY",
+    "production_deployed": false
+  },
+  "caveats": [
+    "No real people, no randomized clinical trial, no published scientific paper",
+    "No real model weights trained and no actual system deployed",
+    "No evidence of human benefit, harm reduction, financial return or autonomous governance",
+    "Internal software tests are not an independent third-party replication"
+  ]
+}
