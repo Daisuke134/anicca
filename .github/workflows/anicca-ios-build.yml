@@ -51,11 +51,16 @@ jobs:
             | tail -40
 
       - name: Run unit tests (unsigned)
+        # The macos-15 image (Xcode 16.4) ships no pre-created "iPhone 15"
+        # simulator; pick the first available iPhone simulator instead of
+        # hard-coding a device name.
         run: |
           set -o pipefail
+          UDID=$(xcrun simctl list devices available | grep 'iPhone' | grep -Eo '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
+          echo "Running tests on simulator: $UDID"
           xcodebuild test \
             -project aniccaios.xcodeproj \
             -scheme aniccaios \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination "platform=iOS Simulator,id=$UDID" \
             CODE_SIGNING_ALLOWED=NO \
             | tail -60
