@@ -72,10 +72,13 @@ def sha256_of(path: Path) -> str:
 
 
 def command_for(cli: str, model: str, prompt: str, lora: Path | None,
-                extra_flags: list[str] | None = None) -> list[str]:
+                extra_flags: list[str] | None = None,
+                chat_template_file: Path | None = None) -> list[str]:
     cmd = build_llama_command(cli, model, prompt)
     if lora is not None:
         cmd = cmd + ["--lora", str(lora)]
+    if chat_template_file is not None:
+        cmd = cmd + ["--chat-template-file", str(chat_template_file)]
     if extra_flags:
         cmd = cmd + extra_flags
     return cmd
@@ -85,14 +88,15 @@ def run_cases(cases, cli: Path, model: Path, lora: Path | None,
               only_first: bool = False,
               extra_flags: list[str] | None = None,
               prompt_format: str = "chatml",
-              keep_raw: bool = False) -> list[dict]:
+              keep_raw: bool = False,
+              chat_template_file: Path | None = None) -> list[dict]:
     results = []
     todo = cases[:1] if only_first else cases
     for i, row in enumerate(todo):
         started = time.monotonic()
         prompt = rewrap_prompt(row["_prompt"], prompt_format)
         cmd = command_for(str(cli), str(model), prompt, lora,
-                          extra_flags)
+                          extra_flags, chat_template_file)
         proc = subprocess.run(cmd, text=True, encoding="utf-8",
                               errors="replace", stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=300)
@@ -127,6 +131,9 @@ def main():
                    help="Run only the first frozen case and require a valid A/B")
     p.add_argument("--extra-flags", default="",
                    help="Comma-separated extra llama-cli flags (recorded)")
+    p.add_argument("--chat-template-file", type=Path,
+                   help="Explicit Jinja chat template for llama-cli, for "
+                        "GGUFs that ship none (recorded by SHA-256)")
     p.add_argument("--prompt-format", choices=["chatml", "llama3", "raw"],
                    default="chatml",
                    help="Native chat template wrapper for the frozen prompt "
@@ -140,10 +147,13 @@ def main():
         raise ValueError("lora adapter file missing")
 
     cases = build_cases(args.input_dir, n_cases=args.n_cases)
+    if args.chat_template_file is not None and not args.chat_template_file.is_file():
+        raise ValueError("chat template file missing")
     scored = run_cases(cases, args.llama_cli, args.model, args.lora,
                        only_first=args.canary_only, extra_flags=extra_flags,
                        prompt_format=args.prompt_format,
-                       keep_raw=args.canary_only)
+                       keep_raw=args.canary_only,
+                       chat_template_file=args.chat_template_file)
     if args.canary_only:
         ok = len(scored) == 1 and scored[0]["model"] in ("A", "B")
         print(json.dumps({"canary_ok": ok, "answer": scored[0]["model"],
@@ -166,6 +176,10 @@ def main():
         "adapter_bytes": args.lora.stat().st_size if args.lora else None,
         "llama_cpp_release": "b12137",
         "prompt_format": args.prompt_format,
+        "chat_template_file": (str(args.chat_template_file)
+                               if args.chat_template_file else None),
+        "chat_template_sha256": (sha256_of(args.chat_template_file)
+                                 if args.chat_template_file else None),
         "extra_llama_flags": extra_flags,
         "n_cases": len(cases),
         "scores": score_pairs(scored),
