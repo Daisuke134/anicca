@@ -1,0 +1,53 @@
+name: Anicca iOS build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mobile/anicca-ios/**'
+      - '.github/workflows/anicca-ios-build.yml'
+  push:
+    branches: [muse/hard-paywall-1.9.9]
+    paths:
+      - 'apps/mobile/anicca-ios/**'
+      - '.github/workflows/anicca-ios-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and unit tests (unsigned)
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios
+
+      - name: Build app (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -40
+
+      - name: Run unit tests (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -60

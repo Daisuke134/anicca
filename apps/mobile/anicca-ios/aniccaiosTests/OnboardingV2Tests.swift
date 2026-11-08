@@ -180,4 +180,81 @@ final class OnboardingV2Tests: XCTestCase {
         let event = AnalyticsEvent.paywallDrawerConverted
         XCTAssertEqual(event.rawValue, "paywall_drawer_converted")
     }
+
+    // MARK: - PaywallGateVariant (2026-11-08 hard paywall A/B)
+
+    func test_gateVariant_hardOffering_resolvesHard() {
+        XCTAssertEqual(
+            PaywallGateVariant.resolve(offeringIdentifier: "anicca_variant_b_hard"),
+            .hard
+        )
+    }
+
+    func test_gateVariant_controlOffering_resolvesSoft() {
+        XCTAssertEqual(
+            PaywallGateVariant.resolve(offeringIdentifier: "anicca_variant_b"),
+            .soft
+        )
+    }
+
+    func test_gateVariant_missingOrLegacyOffering_resolvesSoft() {
+        XCTAssertEqual(PaywallGateVariant.resolve(offeringIdentifier: nil), .soft)
+        XCTAssertEqual(PaywallGateVariant.resolve(offeringIdentifier: "default"), .soft)
+    }
+
+    func test_gateVariant_closeButton_onboardingHard_isHidden() {
+        XCTAssertFalse(PaywallGateVariant.showsCloseButton(flowID: "onboarding", variant: .hard))
+    }
+
+    func test_gateVariant_closeButton_onboardingSoft_isShown() {
+        XCTAssertTrue(PaywallGateVariant.showsCloseButton(flowID: "onboarding", variant: .soft))
+    }
+
+    func test_gateVariant_closeButton_settingsHard_isShown() {
+        XCTAssertTrue(PaywallGateVariant.showsCloseButton(flowID: "settings_subscription", variant: .hard))
+    }
+
+    // MARK: - PaywallOfferingSelection experiment priority (2026-11-08)
+
+    private func resolveOffering(current: String?, all: [String: String]) -> String? {
+        PaywallOfferingSelection.resolve(
+            current: current,
+            all: all,
+            fallbackIdentifier: "anicca_variant_b",
+            isUsableForAnicca: { _ in true },
+            identifier: { $0 }
+        )
+    }
+
+    func test_offeringSelection_experimentTreatmentCurrent_winsOverFallback() {
+        let resolved = resolveOffering(
+            current: "anicca_variant_b_hard",
+            all: ["anicca_variant_b": "anicca_variant_b", "anicca_variant_b_hard": "anicca_variant_b_hard"]
+        )
+        XCTAssertEqual(resolved, "anicca_variant_b_hard")
+    }
+
+    func test_offeringSelection_experimentControlCurrent_wins() {
+        let resolved = resolveOffering(
+            current: "anicca_variant_b",
+            all: ["anicca_variant_b": "anicca_variant_b", "anicca_variant_b_hard": "anicca_variant_b_hard"]
+        )
+        XCTAssertEqual(resolved, "anicca_variant_b")
+    }
+
+    func test_offeringSelection_legacyCurrent_fallsBackToConfigured() {
+        let resolved = resolveOffering(
+            current: "legacy_default",
+            all: ["anicca_variant_b": "anicca_variant_b", "legacy_default": "legacy_default"]
+        )
+        XCTAssertEqual(resolved, "anicca_variant_b")
+    }
+
+    func test_offeringSelection_noCurrent_usesFallback() {
+        let resolved = resolveOffering(
+            current: nil,
+            all: ["anicca_variant_b": "anicca_variant_b"]
+        )
+        XCTAssertEqual(resolved, "anicca_variant_b")
+    }
 }

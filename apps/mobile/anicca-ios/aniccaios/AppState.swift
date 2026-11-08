@@ -171,6 +171,8 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: onboardingStepKey)
         // 通知スケジュールは呼び出し側が責任を持つ
         // (handlePaywallSuccess / handlePaywallDismissedAsFree / completeOnboardingForExistingPro)
+        // 2026-11-08: handlePaywallDismissedAsFree は A/B 対照群 (ソフト) 専用。
+        // 検証群 (ハード) は購入・復元でのみ markOnboardingComplete に到達する。
     }
 
     // l.md Bible Step 1: CommandLine引数でモックデータ注入と画面遷移を制御
