@@ -1,0 +1,117 @@
+name: Manager BFM-05 DEBUG | Minitaur llama-cli behavior probe (throwaway)
+
+on:
+  push:
+    paths:
+      - ".github/workflows/manager-bfm05-debug.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bfm05-debug-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GGUF_SHA256: f8a445c6329e4042dfd20f4722e02c5350ab2072d2df51e861554c07330600b7
+  GGUF_SIZE: "4920734208"
+  ARCHIVE_SHA256: d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525
+
+jobs:
+  probe:
+    name: Probe Minitaur raw llama-cli behavior on frozen case 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build frozen input and case-1 prompts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/probe" artifacts/mame-input
+          python - <<'PY'
+          import os, pathlib, sys
+          sys.path.insert(0, "products/manager/evals")
+          from qwen3_mame_text_eval import build_cases, download_pinned_text_data
+          from gguf_mame_text_eval import rewrap_prompt
+          download_pinned_text_data(pathlib.Path("artifacts/mame-input"))
+          tmp = os.environ["RUNNER_TEMP"] + "/probe"
+          cases = build_cases(pathlib.Path("artifacts/mame-input"), n_cases=24)
+          p = cases[0]["_prompt"]
+          open(tmp + "/prompt-chatml.txt", "w").write(p)
+          open(tmp + "/prompt-raw.txt", "w").write(rewrap_prompt(p, "raw"))
+          open(tmp + "/prompt-llama3.txt", "w").write(rewrap_prompt(p, "llama3"))
+          print("case1 context_id:", cases[0]["context_id"])
+          PY
+
+      - name: Obtain llama.cpp b12137 and Minitaur GGUF; dump GGUF chat template metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="$RUNNER_TEMP/probe/bin"; mkdir -p "$BIN"
+          curl --fail --show-error --location --retry 3 --max-time 300 \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" \
+            -o "$BIN/llama.tar.gz"
+          echo "$ARCHIVE_SHA256  $BIN/llama.tar.gz" | sha256sum --check
+          tar -xzf "$BIN/llama.tar.gz" -C "$BIN"
+          CLI="$(find "$BIN" -type f -name llama-cli | head -n1)"
+          echo "$CLI" > "$RUNNER_TEMP/probe/cli.txt"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$BIN/lib"
+          "$CLI" --help 2>&1 | grep -i "conversation\|chat-template\|single-turn\|no-display" | head -10 || true
+          python -m pip install --quiet "huggingface_hub>=0.26,<1.0" "hf_xet>=1.1" gguf
+          python - <<'PY'
+          import os, shutil
+          from huggingface_hub import snapshot_download
+          path = snapshot_download("HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF",
+                                   allow_patterns=["unsloth.Q4_K_M.gguf"])
+          src = os.path.realpath(os.path.join(path, "unsloth.Q4_K_M.gguf"))
+          dest = os.environ["RUNNER_TEMP"] + "/probe/minitaur.gguf"
+          shutil.copyfile(src, dest)
+          print("model copied:", os.path.getsize(dest))
+          try:
+              import gguf
+              r = gguf.GGUFReader(dest)
+              for key in ("tokenizer.chat_template",
+                          "tokenizer.ggml.eos_token_id", "general.name"):
+                  f = r.get_field(key)
+                  if f is None:
+                      print(key, "-> ABSENT")
+                  else:
+                      try:
+                          val = bytes(f.parts[-1].tolist()).decode(
+                              "utf-8", "replace")
+                      except Exception:
+                          val = str(f.parts[-1].tolist())
+                      print(key, "->", val[:300])
+          except Exception as exc:
+              print("metadata dump failed (non-fatal):", exc)
+          PY
+          MODEL="$RUNNER_TEMP/probe/minitaur.gguf"
+          echo "$GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
+
+      - name: Run llama-cli variants on case 1 (full stdout shown)
+        shell: bash
+        run: |
+          set -uo pipefail
+          CLI="$(cat "$RUNNER_TEMP/probe/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/probe/bin/lib"
+          MODEL="$RUNNER_TEMP/probe/minitaur.gguf"
+          P="$RUNNER_TEMP/probe"
+          run_variant () {
+            local name="$1"; shift
+            echo "================ VARIANT $name ================"
+            timeout 240 "$CLI" -m "$MODEL" "$@" 2>&1 | tail -30
+            echo "---------------- END $name ----------------"
+          }
+          BASE="--temp 0 --simple-io --single-turn --no-display-prompt --no-show-timings -t 4 -c 2048"
+          run_variant "V1-chatml-n12"  -p "$(cat $P/prompt-chatml.txt)" -n 12 $BASE
+          run_variant "V2-raw-n12"     -p "$(cat $P/prompt-raw.txt)" -n 12 $BASE
+          run_variant "V3-llama3-n12"  -p "$(cat $P/prompt-llama3.txt)" -n 12 $BASE
+          run_variant "V4-llama3-n128" -p "$(cat $P/prompt-llama3.txt)" -n 128 $BASE
+          run_variant "V5-raw-n128"    -p "$(cat $P/prompt-raw.txt)" -n 128 $BASE
