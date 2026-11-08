@@ -1,4 +1,4 @@
-name: Manager BFM-05 DEBUG2 | Minitaur templated-generation probe (throwaway)
+name: Manager BFM-05 DEBUG3 | Minitaur no-system completion probe (throwaway)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: manager-bfm05-debug2-${{ github.ref }}
+  group: manager-bfm05-debug3-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   probe:
-    name: Probe Minitaur with official template rendered exactly
+    name: Probe Minitaur completion mode without system block
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -29,12 +29,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Build frozen case-1 raw prompt and jinja-rendered templated prompt
+      - name: Build frozen case-1 no-system Llama-3 prompt string
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/probe" artifacts/mame-input
-          python -m pip install --quiet jinja2
           python - <<'PY'
           import os, pathlib, sys
           sys.path.insert(0, "products/manager/evals")
@@ -43,24 +42,10 @@ jobs:
           download_pinned_text_data(pathlib.Path("artifacts/mame-input"))
           tmp = os.environ["RUNNER_TEMP"] + "/probe"
           cases = build_cases(pathlib.Path("artifacts/mame-input"), n_cases=24)
-          body = rewrap_prompt(cases[0]["_prompt"], "raw")
-          open(tmp + "/prompt-raw.txt", "w").write(body)
-          import jinja2
-          tpl_src = pathlib.Path(
-              "products/manager/evals/chat_templates/llama3-instruct.jinja"
-          ).read_text(encoding="utf-8")
-          env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True,
-                                   keep_trailing_newline=True)
-          tpl = env.from_string(tpl_src)
-          rendered = tpl.render(
-              messages=[{"role": "user", "content": body}],
-              bos_token="<|begin_of_text|>", eos_token="<|eot_id|>",
-              add_generation_prompt=True)
-          open(tmp + "/prompt-rendered.txt", "w").write(rendered)
-          print("=== RENDERED PROMPT (repr, first 200) ===")
-          print(repr(rendered[:200]))
-          print("=== RENDERED PROMPT (repr, last 160) ===")
-          print(repr(rendered[-160:]))
+          nosystem = rewrap_prompt(cases[0]["_prompt"], "llama3")
+          open(tmp + "/prompt-nosystem.txt", "w").write(nosystem)
+          print("no-system prompt head:", repr(nosystem[:90]))
+          print("no-system prompt tail:", repr(nosystem[-80:]))
           PY
 
       - name: Obtain llama.cpp b12137 and Minitaur GGUF
@@ -73,7 +58,6 @@ jobs:
             -o "$BIN/llama.tar.gz"
           echo "$ARCHIVE_SHA256  $BIN/llama.tar.gz" | sha256sum --check
           tar -xzf "$BIN/llama.tar.gz" -C "$BIN"
-          echo "=== BINARIES ==="; find "$BIN" -maxdepth 3 -type f -name "llama-*" -printf "%f\n" | sort -u
           python -m pip install --quiet "huggingface_hub>=0.26,<1.0" "hf_xet>=1.1"
           python - <<'PY'
           import os, shutil
@@ -89,30 +73,21 @@ jobs:
           echo "$GGUF_SHA256  $MODEL" | sha256sum --check
           test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
 
-      - name: Variants with full stdout
+      - name: Completion-mode variants (failures isolated)
         shell: bash
         run: |
           set -uo pipefail
           BIN="$RUNNER_TEMP/probe/bin"
-          CLI="$(find "$BIN" -type f -name llama-cli | head -n1)"
-          COMPLETION="$(find "$BIN" -type f -name llama-completion | head -n1 || true)"
-          export LD_LIBRARY_PATH="$(dirname "$CLI"):$BIN/lib"
+          COMPLETION="$(find "$BIN" -type f -name llama-completion | head -n1)"
+          echo "completion binary: $COMPLETION"
+          export LD_LIBRARY_PATH="$(dirname "$COMPLETION"):$BIN/lib"
           MODEL="$RUNNER_TEMP/probe/minitaur.gguf"
           P="$RUNNER_TEMP/probe"
-          echo "================ T1: llama-cli raw + --chat-template-file, -n 64, verbose ================"
-          timeout 300 "$CLI" -m "$MODEL" -p "$(cat $P/prompt-raw.txt)" \
-            --chat-template-file products/manager/evals/chat_templates/llama3-instruct.jinja \
-            -n 64 --temp 0 -t 4 -c 2048 --simple-io --single-turn --no-show-timings --verbose 2>&1 | tail -45
-          echo "---------------- END T1 ----------------"
-          if [ -n "${COMPLETION:-}" ]; then
-            echo "================ T2: llama-completion with jinja-rendered prompt, -n 64 ================"
-            timeout 300 "$COMPLETION" -m "$MODEL" -p "$(cat $P/prompt-rendered.txt)" \
-              -n 64 --temp 0 -t 4 -c 2048 --no-display-prompt --no-show-timings 2>&1 | tail -25
-            echo "---------------- END T2 ----------------"
-          else
-            echo "llama-completion NOT in tarball; T2 skipped"
-          fi
-          echo "================ T3: llama-cli rendered prompt as -p (completion-style), -n 64 ================"
-          timeout 300 "$CLI" -m "$MODEL" -p "$(cat $P/prompt-rendered.txt)" \
-            -n 64 --temp 0 -t 4 -c 2048 --simple-io --single-turn --no-display-prompt --no-show-timings 2>&1 | tail -25
-          echo "---------------- END T3 ----------------"
+          echo "================ C2-64: llama-completion, no-system prompt, -n 64 ================"
+          timeout 300 "$COMPLETION" -m "$MODEL" -p "$(cat $P/prompt-nosystem.txt)" \
+            -n 64 --temp 0 -t 4 -c 2048 --no-display-prompt 2>&1 | tail -20 || echo "C2-64 exit=$?"
+          echo "---------------- END C2-64 ----------------"
+          echo "================ C2-12: llama-completion, no-system prompt, -n 12 ================"
+          timeout 300 "$COMPLETION" -m "$MODEL" -p "$(cat $P/prompt-nosystem.txt)" \
+            -n 12 --temp 0 -t 4 -c 2048 --no-display-prompt 2>&1 | tail -20 || echo "C2-12 exit=$?"
+          echo "---------------- END C2-12 ----------------"
