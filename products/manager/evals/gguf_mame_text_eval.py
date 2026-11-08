@@ -1,8 +1,10 @@
 """Generic GGUF forward-pass evaluation on the frozen BFM-02 MaMe-Re slice.
 
 Runs ANY llama.cpp GGUF model (optionally with one GGUF LoRA adapter) on the
-identical 24 held-out contexts, identical prompts and identical scoring as
-the BFM-02 Qwen3-4B pilot (qwen3_mame_text_eval). Used for:
+identical 24 held-out contexts, identical prompt text and identical scoring
+as the BFM-02 Qwen3-4B pilot (qwen3_mame_text_eval); the chat-template
+wrapper is each model family's native one (--prompt-format, recorded in the
+receipt). Used for:
   * Minitaur-8B (Centaur family, full GGUF weights, non-gated), and
   * Be.FM 1.5-4B (LoRA adapter converted to GGUF, applied on top of the same
     pinned bartowski Qwen3-4B Q4_K_M GGUF artifact as BFM-02).
@@ -30,6 +32,29 @@ from qwen3_mame_text_eval import (
 )
 
 
+CHATML_PREFIX = "<|im_start|>user\n"
+CHATML_SUFFIX = "<|im_end|>\n<|im_start|>assistant\n"
+
+
+def rewrap_prompt(prompt: str, prompt_format: str) -> str:
+    """Re-wrap the frozen BFM-02 prompt body in a model's native chat
+    template. The Japanese instruction text is byte-identical for every
+    model; only the control-token wrapper changes. ChatML is native to the
+    Qwen family; Llama-3 models do not treat <|im_start|> as a control
+    token, so feeding them ChatML measures the harness, not the model
+    (BFM-05 canary, run 42491777987: exit 0, no parseable answer)."""
+    if prompt_format == "chatml":
+        return prompt
+    if prompt_format == "llama3":
+        assert prompt.startswith(CHATML_PREFIX) and prompt.endswith(
+            CHATML_SUFFIX)
+        body = prompt[len(CHATML_PREFIX):-len(CHATML_SUFFIX)]
+        return ("<|begin_of_text|><|start_header_id|>user<|end_header_id|>"
+                "\n\n" + body +
+                "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n")
+    raise ValueError(f"unknown prompt format: {prompt_format}")
+
+
 def sha256_of(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -50,21 +75,26 @@ def command_for(cli: str, model: str, prompt: str, lora: Path | None,
 
 def run_cases(cases, cli: Path, model: Path, lora: Path | None,
               only_first: bool = False,
-              extra_flags: list[str] | None = None) -> list[dict]:
+              extra_flags: list[str] | None = None,
+              prompt_format: str = "chatml",
+              keep_raw: bool = False) -> list[dict]:
     results = []
     todo = cases[:1] if only_first else cases
     for i, row in enumerate(todo):
         started = time.monotonic()
-        cmd = command_for(str(cli), str(model), row["_prompt"], lora,
+        prompt = rewrap_prompt(row["_prompt"], prompt_format)
+        cmd = command_for(str(cli), str(model), prompt, lora,
                           extra_flags)
         proc = subprocess.run(cmd, text=True, encoding="utf-8",
                               errors="replace", stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=300)
-        response = (parse_llama_reply(proc.stdout, expected_prompt=row["_prompt"])
+        response = (parse_llama_reply(proc.stdout, expected_prompt=prompt)
                     if proc.returncode == 0 else None)
         item = {k: v for k, v in row.items() if k != "_prompt"}
         item.update({"model": response, "exit_code": proc.returncode,
                      "seconds": round(time.monotonic() - started, 3)})
+        if keep_raw:
+            item["stdout_tail"] = proc.stdout[-240:]
         results.append(item)
         print(json.dumps({"case": i + 1, "context_id": item["context_id"],
                           "response": response, "exit_code": proc.returncode,
@@ -89,6 +119,10 @@ def main():
                    help="Run only the first frozen case and require a valid A/B")
     p.add_argument("--extra-flags", default="",
                    help="Comma-separated extra llama-cli flags (recorded)")
+    p.add_argument("--prompt-format", choices=["chatml", "llama3"],
+                   default="chatml",
+                   help="Native chat template wrapper for the frozen prompt "
+                        "text (recorded in the receipt)")
     args = p.parse_args()
     extra_flags = [f for f in args.extra_flags.split(",") if f]
 
@@ -99,10 +133,14 @@ def main():
 
     cases = build_cases(args.input_dir, n_cases=args.n_cases)
     scored = run_cases(cases, args.llama_cli, args.model, args.lora,
-                       only_first=args.canary_only, extra_flags=extra_flags)
+                       only_first=args.canary_only, extra_flags=extra_flags,
+                       prompt_format=args.prompt_format,
+                       keep_raw=args.canary_only)
     if args.canary_only:
         ok = len(scored) == 1 and scored[0]["model"] in ("A", "B")
-        print(json.dumps({"canary_ok": ok, "answer": scored[0]["model"]}))
+        print(json.dumps({"canary_ok": ok, "answer": scored[0]["model"],
+                          "stdout_tail": scored[0].get("stdout_tail")},
+                         ensure_ascii=False))
         if not ok:
             raise SystemExit("canary failed: no valid A/B from model")
         return
@@ -119,6 +157,7 @@ def main():
         "adapter_sha256": sha256_of(args.lora) if args.lora else None,
         "adapter_bytes": args.lora.stat().st_size if args.lora else None,
         "llama_cpp_release": "b12137",
+        "prompt_format": args.prompt_format,
         "extra_llama_flags": extra_flags,
         "n_cases": len(cases),
         "scores": score_pairs(scored),
@@ -130,8 +169,10 @@ def main():
                     "20261107, identical prompts and scoring as BFM-02"),
         "wall_time_seconds": sum(x["seconds"] for x in scored),
         "limitation": ("24 context-level pilot; text-only (no manga images or "
-                       "dialogue); identical prompt text for every model, "
-                       "including the ChatML markup frozen for BFM-02"),
+                       "dialogue); the Japanese instruction text is identical "
+                       "for every model, wrapped in each model family's "
+                       "native chat template (prompt_format field); the "
+                       "BFM-02 Qwen runs used the same text with ChatML"),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n",

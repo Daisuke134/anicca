@@ -77,9 +77,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # The plain resolve-endpoint curl proved too slow for this 4.9GB
+          # file from Actions runners; the official downloader uses the Xet
+          # content-addressed path. Bytes are pinned by SHA-256 either way.
+          python -m pip install --disable-pip-version-check \
+            "huggingface_hub>=0.26,<1.0" "hf_xet>=1.1"
+          python - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+          path = snapshot_download(
+              "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF",
+              allow_patterns=["unsloth.Q4_K_M.gguf"])
+          dest = os.path.join(os.environ["RUNNER_TEMP"], "manager-bfm05",
+                              "minitaur.gguf")
+          os.makedirs(os.path.dirname(dest), exist_ok=True)
+          os.replace(os.path.join(path, "unsloth.Q4_K_M.gguf"), dest)
+          print("model at:", dest)
+          PY
           MODEL="$RUNNER_TEMP/manager-bfm05/minitaur.gguf"
-          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 1200 \
-            "$GGUF_URL" -o "$MODEL"
           echo "$GGUF_SHA256  $MODEL" | sha256sum --check
           test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
           test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
@@ -95,6 +110,7 @@ jobs:
             --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
             --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
             --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
+            --prompt-format llama3 \
             --output artifacts/bfm05-canary.json
 
       - name: Run real 24-context Minitaur forward passes and score
@@ -108,6 +124,7 @@ jobs:
             --llama-cli "$CLI" --model "$RUNNER_TEMP/manager-bfm05/minitaur.gguf" \
             --model-label "Minitaur-8B (Llama-3.1-Minitaur-8B, Q4_K_M GGUF)" \
             --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
+            --prompt-format llama3 \
             --output artifacts/bfm05-minitaur-eval.json
           python - <<'PY'
           import json
