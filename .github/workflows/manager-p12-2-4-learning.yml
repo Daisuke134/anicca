@@ -1,0 +1,53 @@
+name: Manager P12-2 to P12-4 synthetic learning
+
+on:
+  pull_request:
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/P12-*_JA.md'
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12_2_4_*'
+      - '.github/workflows/manager-p12-2-4-learning.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12_2_4_*'
+      - '.github/workflows/manager-p12-2-4-learning.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify all synthetic methods and safety boundaries
+        working-directory: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
+        run: |
+          python -m unittest -v test_p12_2_4_synthetic_education
+          python p12_2_4_synthetic_education.py > p12-2-4-demo.json
+      - name: Enforce evidence boundary and fixed toy results
+        working-directory: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path("p12-2-4-demo.json").read_text())
+          assert obj["all_examples_synthetic"] is True
+          assert obj["real_user_benefit"] == "NOT_MEASURED"
+          assert obj["real_software_deployment"] == "NOT_PERFORMED"
+          bound=obj["P12-2"]["range_of_unobserved_binary_effect"]
+          assert abs(bound[0]+0.04)<1e-12 and abs(bound[1]-0.26)<1e-12
+          assert obj["P12-4"]["update"]["production_deployed"] is False
+          print("Synthetic research evidence gates passed")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manager-p12-2-4-synthetic-methods
+          path: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p12-2-4-demo.json
+          retention-days: 30
+          if-no-files-found: error
