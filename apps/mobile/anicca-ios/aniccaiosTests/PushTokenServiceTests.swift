@@ -37,7 +37,23 @@ final class PushTokenServiceTests: XCTestCase {
             XCTAssertNotNil(request.value(forHTTPHeaderField: "x-timezone"))
             XCTAssertNotNil(request.value(forHTTPHeaderField: "x-lang"))
 
-            let body = request.httpBody ?? Data()
+            // Under URLProtocol, URLSession may deliver the body only via
+            // httpBodyStream (observed in the CI simulator): httpBody is
+            // nil there, and JSONSerialization on empty data would throw
+            // before exp.fulfill() is reached.
+            let body: Data = {
+                if let httpBody = request.httpBody { return httpBody }
+                guard let stream = request.httpBodyStream else { return Data() }
+                stream.open()
+                defer { stream.close() }
+                var data = Data()
+                var buffer = [UInt8](repeating: 0, count: 4096)
+                while stream.hasBytesAvailable {
+                    let count = stream.read(&buffer, maxLength: buffer.count)
+                    if count > 0 { data.append(buffer, count: count) } else { break }
+                }
+                return data
+            }()
             let obj = try JSONSerialization.jsonObject(with: body) as? [String: Any]
             XCTAssertEqual(obj?["token"] as? String, expectedHex)
             XCTAssertEqual(obj?["platform"] as? String, "ios")
