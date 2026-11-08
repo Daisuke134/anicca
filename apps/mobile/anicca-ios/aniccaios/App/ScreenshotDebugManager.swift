@@ -5,6 +5,7 @@
 #if DEBUG
 import Foundation
 
+@MainActor
 final class ScreenshotDebugManager {
     static let shared = ScreenshotDebugManager()
     private init() {}
