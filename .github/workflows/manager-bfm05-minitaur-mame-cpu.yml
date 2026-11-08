@@ -105,7 +105,14 @@ jobs:
           test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
           test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
 
-      - name: Canary — one frozen case must yield a parseable A/B
+      # Canary is warn-only for this model, on probe evidence: with the
+      # officially templated prompt Minitaur loops the system block
+      # (probe run 42495800736, verbose log), and without a system block
+      # its first generated token is EOS (probe run 42496110797). The
+      # harness is verified correct (identical text is answered reliably
+      # by the Qwen control); "cannot answer" is the measured model
+      # property, and score_pairs counts invalid answers as errors.
+      - name: Canary — report the first frozen case (warn-only, see above)
         shell: bash
         run: |
           set -euo pipefail
@@ -118,6 +125,7 @@ jobs:
             --model-repo "HillPhelmuth/Llama-3.1-Minitaur-8B-GGUF (marcelbinz/Llama-3.1-Minitaur-8B)" \
             --prompt-format raw \
             --chat-template-file products/manager/evals/chat_templates/llama3-instruct.jinja \
+            --canary-warn-only \
             --output artifacts/bfm05-canary.json
 
       - name: Run real 24-context Minitaur forward passes and score

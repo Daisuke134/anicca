@@ -129,6 +129,12 @@ def main():
     p.add_argument("--n-cases", type=int, default=24)
     p.add_argument("--canary-only", action="store_true",
                    help="Run only the first frozen case and require a valid A/B")
+    p.add_argument("--canary-warn-only", action="store_true",
+                   help="With --canary-only: report the canary outcome but "
+                        "do not fail. Reserved for models whose inability "
+                        "to answer has been established as a model property "
+                        "by probe evidence (see BFM-05 workflow comments); "
+                        "invalid answers are scored as errors downstream.")
     p.add_argument("--extra-flags", default="",
                    help="Comma-separated extra llama-cli flags (recorded)")
     p.add_argument("--chat-template-file", type=Path,
@@ -159,8 +165,11 @@ def main():
         print(json.dumps({"canary_ok": ok, "answer": scored[0]["model"],
                           "stdout_tail": scored[0].get("stdout_tail")},
                          ensure_ascii=False))
-        if not ok:
+        if not ok and not args.canary_warn_only:
             raise SystemExit("canary failed: no valid A/B from model")
+        if not ok:
+            print("canary warning only: proceeding; invalid answers are "
+                  "scored as errors by score_pairs")
         return
 
     out = {
