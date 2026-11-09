@@ -1,0 +1,84 @@
+name: Manager BehaviorBench / Psych-101 data and publication contract
+
+on:
+  pull_request:
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/BEHAVIORBENCH_PSYCH101_*'
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/*behaviorbench_psych101*'
+      - 'docs/research/manager/publication/2026-10-19/**'
+      - 'docs/research/manager/articles/*behaviorbench-psych101*'
+      - '.github/workflows/manager-behaviorbench-psych101-data-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/*behaviorbench_psych101*'
+      - '.github/workflows/manager-behaviorbench-psych101-data-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-to-model-and-publication-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Data split, synthetic gradient updates, answer-only mask and rights gates
+        working-directory: docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
+        run: |
+          python3 -m unittest -v test_behaviorbench_psych101_data_contract
+          python3 behaviorbench_psych101_data_contract.py > /tmp/manager-behaviorbench-psych101-synthetic.json
+      - name: Confirm educational evidence not presented as real BFM
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("/tmp/manager-behaviorbench-psych101-synthetic.json").read_text())
+          assert x["evidence"] == "FULLY_SYNTHETIC_TEACHING_ONLY"
+          assert x["n_sessions"] == 128 and x["n_decisions"] == 1152
+          assert x["test_never_used_for_weight_updates"] is True
+          assert x["behaviorbench_evaluation_data_for_training"] is False
+          assert x["real_human_responses_used"] is False
+          assert x["actual_foundation_model_trained"] is False
+          assert x["commercial_model_rights_cleared"] is False
+          assert x["study_holdout_metric_measured"] is False
+          assert x["toy_trained_nll"] < x["baseline_nll"]
+          print("P11/BehaviorBench data-to-training educational contract PASSED")
+          PY
+      - name: Verify all canonical article and media hashes
+        run: |
+          node apps/landing/manager-blog/scripts/verify-package.mjs
+          node --test apps/landing/manager-blog/tests/*.test.mjs
+      - name: Check new blog source and package identity
+        run: |
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path("docs/research/manager/publication/2026-10-19")
+          m=json.loads((root/"manifest.json").read_text())
+          features=[x for x in m["articles"] if x["slug"].startswith("manager-behaviorbench-psych101-training-data-")]
+          assert len(features)==2
+          assert {x["lang"] for x in features}=={"ja","en"}
+          for x in features:
+              p=root/x["package_path"]
+              source=Path(x["source"])
+              assert p.read_bytes()==source.read_bytes()
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==x["sha256"]
+              assert "BEHAVIORBENCH_DATA_FLOW_IMAGE" not in x["markdown"]
+              assert x["n_papers_cited"]>=6
+          assert len(m["articles"])>=100 and len(m["media"])>=58
+          print("BehaviorBench bilingual article SHA package PASSED")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manager-behaviorbench-psych101-synthetic-training-evidence
+          path: /tmp/manager-behaviorbench-psych101-synthetic.json
+          if-no-files-found: error
+          retention-days: 30

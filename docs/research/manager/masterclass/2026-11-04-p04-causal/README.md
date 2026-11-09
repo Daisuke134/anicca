@@ -1,5 +1,8 @@
 # Manager Masterclass｜P00〜P12の全講義と製品実装（唯一のロードマップへ）
 
+**2026-11-08 BehaviorBench × Psych-101 データ学習研究：** [論文・公開データ・学習レシピの日本語徹底解説](BEHAVIORBENCH_PSYCH101_DATA_TRAINING_DEEP_DIVE_JA.md)、[架空データでの小型モデル実学習コード](experiments/behaviorbench_psych101_data_contract.py)、[人物/研究漏洩・損失マスク・ライセンス37テスト](experiments/test_behaviorbench_psych101_data_contract.py)、[実行証拠JSON](evidence/BEHAVIORBENCH_PSYCH101_SYNTHETIC_DATA_TRAINING_20261108.json)、[編集可能26枚の研究スライド](journal_club/MANAGER_BEHAVIORBENCH_PSYCH101_DEEP_DIVE_JA.pptx)、[全日本語発表ノート](journal_club/MANAGER_BEHAVIORBENCH_PSYCH101_SPEAKER_NOTES_JA.md)。公開EVALデータと学習用Trainは別、商用ライセンスは未認定、合成Logisticは実BFMではない。日英記事2本を公式メディアの既存SHA付きパッケージへ追加（研究側100記事/58メディア。**本番公開は未確認**）。唯一の実装SSOT・MGのNEXTは変更しない。
+
+
 **2026-11-07 P12-1｜再現性研究の教育・検算成果。** [日本語講義](P12-1_JA.md)、[別計算の完全合成検算](experiments/p12_1_reproducibility_audit.py)と[37テスト](experiments/test_p12_1_reproducibility_audit.py)、[SHA固定の証拠JSON](evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json)、[外部Reviewer用の空テンプレート](examples/P12-1_INDEPENDENT_REVIEW_REPORT_TEMPLATE_JA.md)、研究用16枚スライド/日本語発表ノート、公式メディア用日英2本と独自図を追加。元P11のOPE・負の転移を同一チーム内で別方式で検算しただけであり、外部第三者の再現・実人間の便益・独自行動FMの実証ではない。学習の次はP12-2。進捗正本は[ROADMAP_STATUS_JA.md](ROADMAP_STATUS_JA.md)。
 
 

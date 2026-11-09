@@ -2,6 +2,14 @@
 
 **正本：Managerの「唯一の順番付き実装TODO・現在のNEXT」は [Life Manager統合SSOTのMANAGER MG-01〜MG-18](../../../../superpowers/specs/2026-09-25-life-manager-unified-ssot.md#manager唯一の順番付き実装todop00p12を全統合2026-11-07) です。** この資料はP00〜P12の学習内容と履歴を示す索引であり、実装の別TODO/別カーソルではありません。旧文中の「次」「NOW」は当該日付の履歴で、最新の実行順を変更しません。現在のMG-02はP00/P02の本番権限・データの目的・撤回/停止の契約である。MG-01は公開サイトの限定S1実モデル比較を実行して技術受入済み。ただしQwenと現行ルールは不一致、モデルの価値は未証明。
 
+## 2026-11-08｜BehaviorBench × Psych-101：「モデルはどのデータを学習するか」の深掘り
+
+**論文/公開データ/実際の学習コード/評価コードを別々に確認。** [日本語の詳細講義](BEHAVIORBENCH_PSYCH101_DATA_TRAINING_DEEP_DIVE_JA.md)に、Huang et al. 2026の12タスク・学習649,394例と最終評価19,893例の分離、MobLab/BigFive/研究要約/IEOの異なるラベル、LoRA r8・alpha32・1epochの実際の学習設計、Psych-101の60,092セッション中10,681,650選択とCentaurの回答tokenのみの学習、データ/モデル/評価器の異なるライセンスを整理。公開BehaviorBench評価JSONLは非商用研究評価のために提供され、**自社SFT用データではない**。Psych-101のtrain/test/adapterも権利別審査。Be.FMのgated termsは正式確認まで商用使用しない。
+
+[完全合成のデータ→モデル学習コード](experiments/behaviorbench_psych101_data_contract.py)では**128架空セッション・1152選択**から実際に小型LogisticをGradient Descentで学習。人/研究分割・過去履歴のみの入力・回答マスク・ライセンス拒否を[37件の単体テスト](experiments/test_behaviorbench_psych101_data_contract.py)でMac mini上PASS。[根拠JSON](evidence/BEHAVIORBENCH_PSYCH101_SYNTHETIC_DATA_TRAINING_20261108.json)は架空Test NLLをBaseline0.690697→Toy0.535906と記録し、**人間データ未利用、実BFM未学習、商用利用権未認定**を明示。
+
+日英の研究記事2本、[完全編集可能26枚の研究スライド](journal_club/MANAGER_BEHAVIORBENCH_PSYCH101_DEEP_DIVE_JA.pptx)、[全26枚日本語発表ノート](journal_club/MANAGER_BEHAVIORBENCH_PSYCH101_SPEAKER_NOTES_JA.md)、独自エディトリアル図1枚と既存公式メディア形式の内容アーカイブを追加。研究ブランチmanifestは**100記事・58メディア**（旧ベース98/57、別作業者の内容を含めて保持）。HTTP readback/Netlify正式公開までは**公開準備**。学習・研究記録として保存するが、実事業実装の唯一のSSOTは既存MG-01〜MG-18であり、現在の実装NEXTを勝手に変更しない。X投稿停止を維持。
+
 ## 2026-11-07｜P12-1独立再現研究（教材・同一チームの別計算法・出版準備）
 
 **P12-1の教育・合成コードを実行**。ACM/NeurIPSのartifact評価、Centaur/Psych-101のgated test、BehaviorBench公式評価器、Model/Dataset Cardを一次資料で検証。元の[P11完全合成実験](experiments/p11_1_5_research_labs.py)（P11原コミット 0c236f249ac4503764770135a86e2026cd37fec9、元コードSHA256 4a3c76b12f7423c575af526a35906e6d7d1ac2b5f6ef9d1b1db895c6a91f4818）に対し、[P12-1別実装の検算](experiments/p12_1_reproducibility_audit.py)を実施。[37のテスト](experiments/test_p12_1_reproducibility_audit.py)、[合成結果JSON](evidence/P12-1_REPRODUCIBILITY_AUDIT_20261107.json)、[第三者用の空レポート書式](examples/P12-1_INDEPENDENT_REVIEW_REPORT_TEMPLATE_JA.md)、[専用CI](../../../../../.github/workflows/manager-p12-1-reproduction.yml)を追加。**これは同一著者チームの異なる式/推定器による内部検算であり、第三者の結果再現/外部追試ではない**。元モデル/実人間データの再学習、心理的便益・会社利益は一切未検証。
