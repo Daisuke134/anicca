@@ -58,6 +58,11 @@ BehaviorBench論文v3 Table 5：**学習11タスク計649,394例、評価12タ�
 公開HuggingFace「befm/BehaviorBench」は評価専用のChat形式のJSONL。各行はおおむねsystem（タスク説明）、user（入力）、assistant（参照正解）で構成。ただしassistantが「実際の人間の回答」か「年齢/人格得点」か「試験正答」か「論文に由来する文章」かをタスクごとに区別する。
 公開READMEでMulti-Roundの3,498件と、論文v3の3,623件が一致しない。論文v3の科学ワークフロー1,084件と公開ファイルの総件数にも集計単位/版差がある。使用するGit/HF revision・ファイルハッシュ・タスクごとの行数を必ず固定する。
 
+### 4.1 公開HFデータビューアにも現在のスキーマ問題がある
+2026-11-08に公式Hugging Faceのルートデータセット画面を確認すると、DatasetGenerationError / CastErrorが表示された。一部JSONLにsystem/user/assistant以外のmetadata構造体があるのに、統合Viewerが固定の3列へcastしようとすることが原因と表示されている。
+これは公開Viewer/自動Parquet化のスキーマ不一致を示すが、元JSONL全体の破損やBehaviorBenchの論文スコアの不正を意味しない。公式task loaderの想定ファイルを版固定で読む／JSONLを個別に検査すべきであり、ルートへの汎用load_datasetだけで全タスク正常読込と仮定しない。行を勝手に除外して評価セットを改変してもいけない。
+確認元：https://huggingface.co/datasets/befm/BehaviorBench
+
 学習には「公開のtest.jsonlを丸ごと入れる」のでなく、著者が学習側として分けた元データから権利を確認した上で**別に学習例を生成**する必要がある。公開のevaluation GitHubは「訓練コードなし」と明示。
 
 評価コード：https://github.com/umich-foreseer/behaviorbench_eval
