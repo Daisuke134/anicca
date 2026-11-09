@@ -249,7 +249,7 @@ def synthetic_training_evidence()->dict:
         "baseline_brier":brier(baseline,test_y),
         "toy_trained_brier":brier(trained,test_y),
         "toy_trained_parameters":list(params),
-        "heldout_study_synthetic":True,
+        "study_holdout_metric_measured":False,
         "supervised_character_count_in_sample":sum(response_mask),
         "masked_character_count_in_sample":len(response_mask)-sum(response_mask),
         "sample_transcript_sha256":sha256(transcript["text"].encode()).hexdigest(),
