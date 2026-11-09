@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-08",
+  "experiment_kind": "SYNTHETIC_DATA_TO_MODEL_EDUCATIONAL_DEMO",
+  "source_commit": "12063793afbabe7aae9ed391c05e0c26912e50ca",
+  "model": "3-parameter logistic trained by gradient descent on synthetic response labels",
+  "training_proof": "REAL_GRADIENT_UPDATE_ON_FAKE_DATA_NO_BFM",
+  "data": {
+    "unique_synthetic_sessions": 128,
+    "synthetic_studies": 4,
+    "synthetic_persons_per_study": 32,
+    "synthetic_decisions": 1152,
+    "train_decisions": 792,
+    "validation_decisions": 108,
+    "test_decisions": 252,
+    "train_test_group_overlap": 0,
+    "split_kind": "STUDY_ID_PLUS_PARTICIPANT_ID",
+    "source": "SELF_AUTHORED_SYNTHETIC_GENERATOR"
+  },
+  "holdout_metrics": {
+    "baseline_mean_only_nll": 0.6906972207831242,
+    "toy_logistic_nll": 0.5359056804233484,
+    "baseline_mean_only_brier": 0.24877576788250097,
+    "toy_logistic_brier": 0.1773707045245975,
+    "meaning": "synthetic held-out participants, not real human behavioral validity"
+  },
+  "study_holdout_metric_measured": false,
+  "mask_demo": {
+    "type": "character_mask_only_NOT_LLM_TOKEN_MASK",
+    "sample_response_characters": 9,
+    "sample_masked_other_characters": 473,
+    "description": "illustrate choosing only marked answer letters for loss; real tokenizer spans require alignment"
+  },
+  "license_guards": {
+    "behaviorbench_public_eval": "CC_BY_NC_ND_4_0_ACADEMIC_EVAL_ONLY_NO_TRAINING",
+    "psych101_train": "HF_PUBLIC_CARD_APACHE2_BUT_UPSTREAM_LICENSE_REVIEW_REQUIRED",
+    "psych101_test": "GATED_CC_BY_ND_NOT_ACCESSED",
+    "centaur_adapter": "LLAMA3_1_COMMUNITY_LICENSE_REVIEW_REQUIRED",
+    "befm_adapter": "GATED_ADDITIONAL_TERMS_REVIEW_REQUIRED"
+  },
+  "software_test": {
+    "run": "python3 -m unittest -v test_behaviorbench_psych101_data_contract",
+    "on": "AniccanoMac-mini.local / Python 3 stdlib",
+    "passed": 37,
+    "failed": 0,
+    "errors": 0
+  },
+  "scientific_limitations": [
+    "No real human choice rows accessed",
+    "No BehaviorBench evaluation examples used for model training",
+    "No gated Psych-101 test or BeFM weights accessed",
+    "No transformer/LoRA/behavior foundation model trained",
+    "No user life outcome or causal uplift measured",
+    "No business revenue or independent third-party evaluation verified"
+  ],
+  "publication_state": "STAGED_IN_SOURCE_PACKAGE_NOT_LIVE_VERIFIED"
+}
