@@ -6,7 +6,7 @@
 
 A person's choice in a psychology experiment? A survey response? A click on a headline? A change caused by an intervention? These are different observations, different learning targets, and different products.
 
-![Original Anicca diagram separating behavioral training data, held-out evaluation, and real customer outcomes]({{BEHAVIORBENCH_DATA_FLOW_IMAGE}})
+![Original Anicca diagram separating behavioral training data, held-out evaluation, and real customer outcomes](https://aniccaai.com/blog/manager/media/e811a70f90fd49c2810e35ee93ec7f940fa5c0aab9547a6003afb46b1e48b505.png)
 
 ## BehaviorBench's public data are not its training set
 

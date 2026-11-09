@@ -8,7 +8,7 @@
 
 **この違いを決めない限り、モデルが学習するべきデータも、良いモデルの定義も決められない。**
 
-![BehaviorBenchとPsych-101のデータ、学習、評価を区別するAniccaオリジナル図]({{BEHAVIORBENCH_DATA_FLOW_IMAGE}})
+![BehaviorBenchとPsych-101のデータ、学習、評価を区別するAniccaオリジナル図](https://aniccaai.com/blog/manager/media/e811a70f90fd49c2810e35ee93ec7f940fa5c0aab9547a6003afb46b1e48b505.png)
 
 ## BehaviorBenchの驚くべき点：公開データは「学習用」ではない
 
