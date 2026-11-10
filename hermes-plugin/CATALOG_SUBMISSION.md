@@ -2,7 +2,7 @@
 
 Target repository: `NousResearch/hermes-agent`
 File: `plugin-catalog/life-manager.yaml`
-Pin: the full 40-character SHA of the `Daisuke134/life-manager` default-branch commit that contains `hermes-plugin/` at version 1.0.0. This file is updated with that SHA once the commit is on the default branch. Until then the yaml below uses `PENDING_DEFAULT_BRANCH_SHA`.
+Pin: `722bc06474c30aeb9437384cb14db20e544c4823` added the plugin source and passed `hermes plugins validate --install-deps`. A later commit on this branch only records that pin in this file. Catalog CI should pin a default-branch commit whose `hermes-plugin/` tree matches that commit. The `sha` field below is that plugin commit.
 
 ## Entry
 
@@ -10,7 +10,7 @@ Pin: the full 40-character SHA of the `Daisuke134/life-manager` default-branch c
 name: life-manager
 title: Life Manager
 repo: https://github.com/Daisuke134/life-manager
-sha: PENDING_DEFAULT_BRANCH_SHA
+sha: 722bc06474c30aeb9437384cb14db20e544c4823
 subdir: hermes-plugin
 version: "1.0.0"
 description: "Records commitments a person states, keeps habit streaks, and injects the board before each turn. A daily Automation Blueprint runs an unattended check-in. Disclosure: no network, no credentials, no shell. Stores commitment text, due dates, streaks, nudged session ids, and the last check-in id in the active Hermes profile plugin state only."
