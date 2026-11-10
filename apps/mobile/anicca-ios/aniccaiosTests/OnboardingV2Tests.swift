@@ -258,3 +258,38 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(resolved, "anicca_variant_b")
     }
 }
+
+// MARK: - Onboarding personalization v1 (1.9.10): struggles answer steers the feed
+
+final class QuotePersonalizationTests: XCTestCase {
+
+    private func makePool() -> [Quote] {
+        (0..<10).flatMap { i in
+            [Quote(id: "growth.calm.\(i)", text: "Calm \(i)"),
+             Quote(id: "growth.confidence.\(i)", text: "Confidence \(i)"),
+             Quote(id: "growth.rest.\(i)", text: "Rest \(i)")]
+        }
+    }
+
+    func test_problemCategories_coversEveryOnboardingProblem() {
+        for problem in ["self_loathing", "procrastination", "anxiety", "rumination", "anger"] {
+            XCTAssertFalse(QuoteProvider.problemCategories[problem]?.isEmpty ?? true,
+                           "problem \(problem) must map to at least one quote category")
+        }
+    }
+
+    func test_recommendations_anxietyProblem_leadsWithCalm() {
+        let ranked = QuoteProvider.recommendations(
+            from: makePool(), goals: [], problems: ["anxiety"], likedIDs: [], recentIDs: [])
+        XCTAssertEqual(ranked.count, 30)
+        XCTAssertTrue(ranked.prefix(4).allSatisfy { $0.categoryID == "calm" },
+                      "anxiety struggle must lead the feed with calm quotes")
+    }
+
+    func test_recommendations_noProblems_returnsFullPool() {
+        let ranked = QuoteProvider.recommendations(
+            from: makePool(), goals: [], problems: [], likedIDs: [], recentIDs: [])
+        XCTAssertEqual(ranked.count, 30)
+        XCTAssertEqual(Set(ranked.map(\.id)).count, 30)
+    }
+}

@@ -238,12 +238,26 @@ struct FeedRootView: View {
         return QuoteProvider.recommendations(
             from: remaining.isEmpty ? catalog : remaining,
             goals: selectedCategory.map { [$0] } ?? appState.userProfile.goals,
+            problems: selectedCategory == nil ? appState.userProfile.problems : [],
             likedIDs: likedStore.likedIds,
             recentIDs: UserDefaults.standard.stringArray(forKey: recentQuotesKey) ?? []
         )
     }
 
     private func rebuildFeed() {
+        // Personalization measurement (1.9.10): record which onboarding
+        // branch actually steered this feed, so the effect is visible in
+        // Mixpanel next to affirmation_viewed (which carries category).
+        if selectedCategory == nil {
+            let problems = appState.userProfile.problems
+            let categories = problems.flatMap { QuoteProvider.problemCategories[$0] ?? [] }
+            if !categories.isEmpty {
+                AnalyticsManager.shared.track(.personalizationApplied, properties: [
+                    "problems": problems.joined(separator: ","),
+                    "categories": Array(Set(categories)).sorted().joined(separator: ",")
+                ])
+            }
+        }
         quotes = Array(nextQuotes(excludingQueued: false).prefix(8))
         currentIndex = 0
         feedRevision += 1
