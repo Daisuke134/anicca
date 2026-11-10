@@ -75,3 +75,14 @@ A skill alone cannot keep this state across sessions or run the check-in when no
 - Not a fork of a listed plugin and not a skin of a bundled plugin.
 - Source only. No binaries, bytecode, or archives.
 - English user-facing strings.
+
+## Catalog pull request
+
+The catalog PR against `NousResearch/hermes-agent` was not opened. This checkout can create pull requests only in `Daisuke134/life-manager`. Forking the catalog repo failed:
+
+```text
+gh repo fork NousResearch/hermes-agent --clone=false --default-branch-only
+failed to fork: HTTP 403: Resource not accessible by integration (https://api.github.com/repos/NousResearch/hermes-agent/forks)
+```
+
+Paste the yaml above as `plugin-catalog/life-manager.yaml` and use the pull request description in this file. The `sha` field stays `722bc06474c30aeb9437384cb14db20e544c4823` only while that commit is reachable from the default branch and `hermes-plugin/` at that commit is the validated tree.
