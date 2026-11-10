@@ -133,7 +133,7 @@ jobs:
           echo "$BASE_DIR" > "$RUNNER_TEMP/manager-bfm03/base-dir.txt"
           sha256sum "$ADAPTER_DIR/adapter_model.safetensors"
           echo "$ADAPTER_SHA256  $ADAPTER_DIR/adapter_model.safetensors" | sha256sum --check
-          test "$(stat -c%s "$ADAPTER_DIR/adapter_model.safetensors")" = "$ADAPTER_SIZE"
+          test "$(stat -Lc%s "$ADAPTER_DIR/adapter_model.safetensors")" = "$ADAPTER_SIZE"
           python -c "import json; c=json.load(open('$ADAPTER_DIR/adapter_config.json')); print('adapter base:', c.get('base_model_name_or_path'), '| r:', c.get('r'), '| alpha:', c.get('lora_alpha'))"
 
       - name: Convert LoRA adapter to GGUF (llama.cpp b12137 converter)
