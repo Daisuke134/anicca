@@ -117,3 +117,41 @@ struct QuoteNavigationCoordinatorTests {
         #expect(coordinator.pendingRequest == nil)
     }
 }
+
+// MARK: - Onboarding personalization v1 (1.9.10): struggles answer steers the feed
+// (Lives in this file because it is registered in the test target's Sources;
+// OnboardingV2Tests.swift is not part of the target.)
+
+struct QuotePersonalizationTests {
+
+    private func makePool() -> [Quote] {
+        (0..<10).flatMap { i in
+            [Quote(id: "growth.calm.\(i)", text: "Calm \(i)"),
+             Quote(id: "growth.confidence.\(i)", text: "Confidence \(i)"),
+             Quote(id: "growth.rest.\(i)", text: "Rest \(i)")]
+        }
+    }
+
+    @Test("Every onboarding problem maps to at least one quote category")
+    func problemCategoriesCoverEveryOnboardingProblem() {
+        for problem in ["self_loathing", "procrastination", "anxiety", "rumination", "anger"] {
+            #expect(!(QuoteProvider.problemCategories[problem]?.isEmpty ?? true))
+        }
+    }
+
+    @Test("Anxiety struggle leads the feed with calm quotes")
+    func anxietyProblemLeadsWithCalm() {
+        let ranked = QuoteProvider.recommendations(
+            from: makePool(), goals: [], problems: ["anxiety"], likedIDs: [], recentIDs: [])
+        #expect(ranked.count == 30)
+        #expect(ranked.prefix(4).allSatisfy { $0.categoryID == "calm" })
+    }
+
+    @Test("No problems returns the full pool without duplication")
+    func noProblemsReturnsFullPool() {
+        let ranked = QuoteProvider.recommendations(
+            from: makePool(), goals: [], problems: [], likedIDs: [], recentIDs: [])
+        #expect(ranked.count == 30)
+        #expect(Set(ranked.map(\.id)).count == 30)
+    }
+}

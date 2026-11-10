@@ -44,12 +44,25 @@ final class QuoteProvider {
         }
     }
 
-    static func recommendations(from pool: [Quote], goals: [String], likedIDs: Set<String>, recentIDs: [String]) -> [Quote] {
+    /// Onboarding personalization v1 (1.9.10): ProblemType (stored from the
+    /// onboarding struggles answer via StrugglesStepView.problemMapping) ->
+    /// quote categories that speak to that struggle. Before 1.9.10 the
+    /// struggles answer never reached the feed; only goals did.
+    static let problemCategories: [String: [String]] = [
+        "self_loathing": ["self_love"],
+        "procrastination": ["growth"],
+        "anxiety": ["calm"],
+        "rumination": ["presence", "letting_go"],
+        "anger": ["calm", "letting_go"]
+    ]
+
+    static func recommendations(from pool: [Quote], goals: [String], problems: [String] = [], likedIDs: Set<String>, recentIDs: [String]) -> [Quote] {
         let recent = Set(recentIDs.suffix(20))
         let unseen = pool.filter { !recent.contains($0.id) }
         let candidates = unseen.isEmpty ? pool : unseen
         let legacyGoals = ["reduce_anxiety": "calm", "feel_peace": "calm", "sleep_better": "rest", "build_discipline": "growth", "focus_more": "presence", "break_habit": "letting_go"]
         var preferredCategories = Set(goals.map { legacyGoals[$0] ?? $0 })
+        preferredCategories.formUnion(problems.flatMap { problemCategories[$0] ?? [] })
         // Stable quote IDs encode category even after that quote leaves the candidate pool.
         preferredCategories.formUnion(likedIDs.map { Quote(id: $0, text: "").categoryID })
         var preferred = candidates.filter { preferredCategories.contains($0.categoryID) }.shuffled()

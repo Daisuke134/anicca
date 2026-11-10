@@ -29,6 +29,27 @@ struct AffirmationCatalogTests {
             print("FAIL: a like outside the remaining candidate pool must still personalize the next batch")
             exit(4)
         }
+        // Onboarding personalization v1 (1.9.10): the struggles answer must steer the feed.
+        // Every ProblemType stored from onboarding maps to at least one quote category.
+        for problem in ["self_loathing", "procrastination", "anxiety", "rumination", "anger"] {
+            guard let categories = QuoteProvider.problemCategories[problem], !categories.isEmpty else {
+                print("FAIL: problem \(problem) has no quote category mapping")
+                exit(5)
+            }
+        }
+        // anxiety -> calm: with no goals/likes, the first batch must lead with calm quotes.
+        let anxietyRanking = QuoteProvider.recommendations(from: pool, goals: [], problems: ["anxiety"], likedIDs: [], recentIDs: [])
+        guard anxietyRanking.count == pool.count,
+              anxietyRanking.prefix(4).allSatisfy({ $0.categoryID == "calm" }) else {
+            print("FAIL: onboarding struggle (anxiety) must lead the feed with calm quotes")
+            exit(6)
+        }
+        // No answers -> unchanged behaviour (no crash, full pool returned).
+        let unpersonalized = QuoteProvider.recommendations(from: pool, goals: [], problems: [], likedIDs: [], recentIDs: [])
+        guard unpersonalized.count == pool.count else {
+            print("FAIL: empty problems must return the full pool")
+            exit(7)
+        }
         print("AffirmationCatalogTests: PASS (\(extra.count) supplemental quotes)")
     }
 }
