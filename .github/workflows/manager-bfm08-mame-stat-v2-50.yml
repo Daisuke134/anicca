@@ -1,0 +1,78 @@
+# eval v2.0 (2026-11-10): FULL MaMe-Re test pool (all 50 frozen test
+# contexts, 33 non-tied) instead of the v1 24-context pilot slice.
+# Same seed, same pair selection, same prompts, same scoring code
+# (build_cases/score_pairs imported unchanged). v1 protocol and its
+# receipts stay frozen; v2 numbers are a separate version, never
+# pooled with v1. Research evaluation only.
+name: Manager BFM-08 | Statistical baselines on the full 50-context MaMe-Re test pool (eval v2.0)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm08-mame-stat-v2-50.yml"
+      - "products/manager/evals/mame_stat_baselines.py"
+      - "products/manager/evals/qwen3_mame_text_eval.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-threaded BLAS: two earlier receipts (runs 42491778222, 42493478706)
+# differed by exactly one near-tie case per learned method. Pinning thread
+# counts (plus RandomForest n_jobs=1) makes the receipt reproducible.
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+
+concurrency:
+  group: manager-bfm08-stat-v2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  statistical-baselines:
+    name: Train Mean / Ridge / Random Forest vs all 50 frozen test-pool contexts (33 non-tied)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout evaluated commit and frozen benchmark split
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned analysis stack
+        run: |
+          python -m pip install --disable-pip-version-check \
+            "numpy==1.26.4" "scipy==1.13.1" "scikit-learn==1.5.2"
+
+      - name: Validate the underlying BFM-02 harness tests still pass
+        working-directory: products/manager/evals
+        run: python -m unittest -v test_qwen3_mame_text_eval.py
+
+      - name: Score Train Mean / Ridge / Random Forest on the frozen slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/mame-input artifacts/out
+          python products/manager/evals/mame_stat_baselines.py \
+            --input-dir artifacts/mame-input \
+            --n-cases 50 \
+            --output artifacts/out/bfm08-stat-baselines.json
+          python - <<'PY'
+          import json
+          r = json.load(open("artifacts/out/bfm08-stat-baselines.json"))
+          for name, s in r["methods"].items():
+              assert s["n_human_non_tied"] == 33, (name, s["n_human_non_tied"])
+              print(name, "strict:", s["model_strict_win_accuracy_including_invalid"],
+                    "regret:", s["mean_model_regret_invalid_counted"])
+          PY
+
+      - name: Upload reproducible statistical-baseline receipt
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: manager-bfm08-mame-stat-v2-50
+          path: artifacts/out/bfm08-stat-baselines.json
+          retention-days: 30
