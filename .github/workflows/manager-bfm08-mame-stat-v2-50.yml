@@ -1,5 +1,5 @@
 # eval v2.0 (2026-11-10): FULL MaMe-Re test pool (all 50 frozen test
-# contexts, 33 non-tied) instead of the v1 24-context pilot slice.
+# contexts, 37 non-tied) instead of the v1 24-context pilot slice.
 # Same seed, same pair selection, same prompts, same scoring code
 # (build_cases/score_pairs imported unchanged). v1 protocol and its
 # receipts stay frozen; v2 numbers are a separate version, never
@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   statistical-baselines:
-    name: Train Mean / Ridge / Random Forest vs all 50 frozen test-pool contexts (33 non-tied)
+    name: Train Mean / Ridge / Random Forest vs all 50 frozen test-pool contexts (37 non-tied)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -64,7 +64,7 @@ jobs:
           import json
           r = json.load(open("artifacts/out/bfm08-stat-baselines.json"))
           for name, s in r["methods"].items():
-              assert s["n_human_non_tied"] == 33, (name, s["n_human_non_tied"])
+              assert s["n_human_non_tied"] == 37, (name, s["n_human_non_tied"])
               print(name, "strict:", s["model_strict_win_accuracy_including_invalid"],
                     "regret:", s["mean_model_regret_invalid_counted"])
           PY
