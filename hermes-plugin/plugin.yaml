@@ -1,0 +1,31 @@
+name: life-manager
+version: 1.0.0
+description: Records commitments a person states, keeps habit streaks, and puts the board in front of the agent before each turn.
+author: Daisuke134
+license: MIT
+homepage: https://github.com/Daisuke134/life-manager
+requires_hermes: ">=0.23.0"
+tags:
+  - habits
+  - commitments
+  - automation
+provides_tools:
+  - life_manager_status
+  - life_manager_commit
+  - life_manager_complete
+  - life_manager_drop
+  - life_manager_defer
+  - life_manager_checkin
+provides_hooks:
+  - pre_llm_call
+provides_middleware:
+  - tool_request
+config_schema:
+  capture_statements:
+    type: bool
+    default: true
+    description: Record high-confidence commitments from the user's own words before each turn.
+  max_open:
+    type: int
+    default: 30
+    description: Maximum number of open commitments to keep.
