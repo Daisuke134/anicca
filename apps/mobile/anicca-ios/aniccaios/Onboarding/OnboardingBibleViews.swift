@@ -647,6 +647,7 @@ struct PaywallFlowContainer: View {
     let onDismiss: () -> Void
     var flowID: String = "onboarding"
     @State private var step: PaywallStep = .planSelection
+    @State private var exposedOfferingIdentifier: String?
     @EnvironmentObject private var appState: AppState
 
     /// このユーザーに割り当てられたペイウォールゲート (cachedOffering 由来)。
@@ -692,5 +693,26 @@ struct PaywallFlowContainer: View {
             }
         }
         .analyticsScreen(.paywall, flowID: flowID)
+        .onAppear { fireExperimentExposureIfNeeded() }
+        .onChange(of: appState.cachedOffering?.identifier) { _ in
+            fireExperimentExposureIfNeeded()
+        }
+    }
+
+    /// A/B 露出計測: 割当 Offering が確定し、このコンテナがそのゲートで表示
+    /// された時点で experiment_exposure を1回だけ発火する。Offering の到着が
+    /// 表示より遅れた場合は onChange で確定値を使って発火する (推測の variant
+    /// では発火しない)。実験の対象は新規導線 (onboarding) のみで、設定からの
+    /// 再表示はゲート対象外のため発火しない。
+    private func fireExperimentExposureIfNeeded() {
+        guard flowID == "onboarding" else { return }
+        guard let offeringIdentifier = appState.cachedOffering?.identifier else { return }
+        guard exposedOfferingIdentifier != offeringIdentifier else { return }
+        exposedOfferingIdentifier = offeringIdentifier
+        AnalyticsManager.shared.trackExperimentExposure(
+            offeringIdentifier: offeringIdentifier,
+            gateVariant: gateVariant,
+            flowID: flowID
+        )
     }
 }

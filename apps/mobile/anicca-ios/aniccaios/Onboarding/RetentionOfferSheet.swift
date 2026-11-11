@@ -131,7 +131,7 @@ struct RetentionOfferSheet: View {
         isPurchasing = true
         defer { isPurchasing = false }
         do {
-            AnalyticsManager.shared.trackPurchaseStarted(productID: pkg.storeProduct.productIdentifier, flowID: flowID)
+            AnalyticsManager.shared.trackPurchaseStarted(package: pkg, offeringID: "anicca_retention", flowID: flowID)
             let result = try await Purchases.shared.purchase(package: pkg)
             if !result.userCancelled {
                 AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)

@@ -48,6 +48,7 @@
 "onboarding_notifications_card_title" = "Notification Access";
 "onboarding_notifications_description" = "Anicca sends gentle reminders exactly when you need them. Without notifications, Anicca can't reach you.";
 "onboarding_notifications_allow" = "Allow notifications";
+"onboarding_notifications_preview_now" = "now";
 "onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
 
 
@@ -1438,6 +1439,10 @@
 "paywall_b_review" = "\"Anicca helped me be kinder to myself.\"";
 "paywall_b_trust_no_trial" = "Cancel anytime · Satisfaction guaranteed";
 "paywall_b_trust_trial" = "3 days free, then %@ · Cancel anytime";
+"paywall_trial_timeline_start" = "Free trial starts — everything unlocked";
+"paywall_trial_timeline_reminder" = "We remind you before your trial ends";
+"paywall_trial_timeline_charge" = "Trial ends — %@ unless you cancel first";
+"paywall_trial_timeline_promise" = "We'll always let you know before you're charged.";
 "paywall_b_trial_badge" = "3 DAYS FREE";
 "paywall_b_load_failed" = "Couldn't load plans. Check your connection and try again.";
 "paywall_b_retry" = "Reload plans";
