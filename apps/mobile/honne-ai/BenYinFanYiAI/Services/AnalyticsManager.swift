@@ -18,6 +18,7 @@ final class AnalyticsManager {
 
     private let logger = Logger(subsystem: AnalyticsManager.appID, category: "Analytics")
     private(set) var isConfigured = false
+    private var onboardingStartedAt: Date?
 
     private init() {}
 
@@ -83,11 +84,19 @@ final class AnalyticsManager {
     }
 
     func trackOnboardingStarted() {
+        if onboardingStartedAt == nil { onboardingStartedAt = Date() }
         track("onboarding_started")
     }
 
     func trackOnboardingCompleted(durationSec: Int) {
         track("onboarding_completed", properties: ["duration_sec": durationSec])
+    }
+
+    /// Convenience for call sites that cannot measure the duration themselves:
+    /// uses the timestamp recorded by trackOnboardingStarted().
+    func trackOnboardingCompleted() {
+        let duration = onboardingStartedAt.map { Int(Date().timeIntervalSince($0)) } ?? 0
+        trackOnboardingCompleted(durationSec: duration)
     }
 
     func trackScreenViewed(screenName: String) {
