@@ -12,7 +12,7 @@ test('English Manager homepage exposes current evidence, research, and honest li
   const html = read('pages/en.html');
   const text = visibleText(html);
 
-  assert.match(text, /Manager is Anicca's behavioral AI model and product/i);
+  assert.match(text, /Anicca builds Manager, our behavioral AI model/i);
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /Understand behavior\. Improve real lives\./);
   assert.match(html, /manager-real-intervention-outcomes-en/);
