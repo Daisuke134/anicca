@@ -1,4 +1,4 @@
-export const STORAGE_KEY = "anicca-hybrid-affirmations-v1";
+export const LOCAL_STORE = "anicca-hybrid-affirmations-v1";
 
 export const CLOUD_MODEL = "gemini-3.5-flash-lite";
 
@@ -268,7 +268,7 @@ export function publicError(error, config = {}) {
 
 export function loadState(storage) {
   try {
-    const parsed = JSON.parse(storage.getItem(STORAGE_KEY) || "");
+    const parsed = JSON.parse(storage.getItem(LOCAL_STORE) || "");
     if (!parsed || typeof parsed !== "object") return emptyState();
     const mood = MOODS.some((item) => item.id === parsed.mood) ? parsed.mood : "anxiety";
     const favourites = Array.isArray(parsed.favourites)
@@ -288,7 +288,7 @@ export function loadState(storage) {
 }
 
 export function saveState(storage, state) {
-  storage.setItem(STORAGE_KEY, JSON.stringify(state));
+  storage.setItem(LOCAL_STORE, JSON.stringify(state));
 }
 
 export function createMemoryStorage(initial = {}) {
