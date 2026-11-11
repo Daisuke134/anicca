@@ -71,6 +71,7 @@ struct OnboardingView: View {
     @State private var selectedSituations: Set<OnboardingSituation> = []
     @State private var selectedGoal: OnboardingGoal?
     @State private var showPaywall = false
+    @State private var onboardingStartedAt: Date?
     @State private var analysisProgress: Double = 0
     @State private var analysisPhase: Int = 0
     @State private var analysisComplete = false
@@ -114,11 +115,17 @@ struct OnboardingView: View {
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallView(isHard: true) {
                 showPaywall = false
+                let duration = onboardingStartedAt.map { Int(Date().timeIntervalSince($0)) } ?? 0
+                AnalyticsManager.shared.trackOnboardingCompleted(durationSec: duration)
                 onComplete()
             }
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.6)) { appeared = true }
+            if onboardingStartedAt == nil {
+                onboardingStartedAt = Date()
+                AnalyticsManager.shared.trackOnboardingStarted()
+            }
         }
         .preferredColorScheme(.dark)
     }

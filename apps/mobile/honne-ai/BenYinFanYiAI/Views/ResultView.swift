@@ -33,6 +33,8 @@ struct ResultView: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 appeared = true
             }
+            // Spec §3.4: Honne's core result = the message reading (interpretation) view.
+            AnalyticsManager.shared.trackCoreResultViewed(resultType: "message_reading")
         }
     }
 

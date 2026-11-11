@@ -15,6 +15,14 @@ struct BenYinFanYiAIApp: App {
         #else
         Purchases.configure(withAPIKey: Config.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY)
         #endif
+
+        // Mixpanel (shared spec: kpi-churn-event-spec-2026-11-11 §3.2/§3.3).
+        AnalyticsManager.shared.configure(token: Config.MIXPANEL_TOKEN)
+        // Link client events with RevenueCat's server-side rc_* events.
+        if let distinctId = AnalyticsManager.shared.distinctId {
+            Purchases.shared.setAttributes(["$mixpanel_distinct_id": distinctId])
+        }
+        AnalyticsManager.shared.trackAppOpened()
     }
 
     var body: some Scene {

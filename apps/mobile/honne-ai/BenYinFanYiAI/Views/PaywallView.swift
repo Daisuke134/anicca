@@ -50,6 +50,10 @@ struct PaywallView: View {
             }
             .onAppear {
                 withAnimation(.spring(response: 0.6)) { appeared = true }
+                AnalyticsManager.shared.trackPaywallShown(
+                    paywallId: "honne_paywall_v1",
+                    placement: isHard ? "onboarding" : "in_app"
+                )
             }
         }
         .presentationDetents([.large])

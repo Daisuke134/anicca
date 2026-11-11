@@ -42,16 +42,66 @@ class SubscriptionService {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+
+        let product = package.storeProduct
+        AnalyticsManager.shared.trackPurchaseStarted(
+            productId: product.productIdentifier,
+            price: NSDecimalNumber(decimal: product.price).doubleValue,
+            currency: product.currencyCode ?? "unknown",
+            period: Self.periodName(for: package),
+            trialEligible: product.introductoryDiscount != nil
+        )
         do {
             let result = try await Purchases.shared.purchase(package: package)
-            isPremium = result.customerInfo.entitlements["premium"]?.isActive == true
+            if result.userCancelled {
+                AnalyticsManager.shared.trackPurchaseCancelled(productId: product.productIdentifier)
+                return false
+            }
+            let entitlement = result.customerInfo.entitlements["premium"]
+            isPremium = entitlement?.isActive == true
+            if isPremium {
+                // Auxiliary client record; ground truth is RC's rc_* events (spec §3.5).
+                AnalyticsManager.shared.trackPurchaseCompleted(productId: product.productIdentifier)
+                if entitlement?.periodType == .trial {
+                    AnalyticsManager.shared.trackTrialStarted(
+                        productId: product.productIdentifier,
+                        trialDays: Self.trialDays(for: product)
+                    )
+                }
+            }
             return isPremium
         } catch {
             if let purchaseError = error as? RevenueCat.ErrorCode, purchaseError == .purchaseCancelledError {
+                AnalyticsManager.shared.trackPurchaseCancelled(productId: product.productIdentifier)
                 return false
             }
+            AnalyticsManager.shared.trackPurchaseFailed(
+                productId: product.productIdentifier,
+                errorCode: "\((error as NSError).code)"
+            )
             errorMessage = "購入に失敗しました。もう一度お試しください。"
             return false
+        }
+    }
+
+    private static func periodName(for package: Package) -> String {
+        switch package.packageType {
+        case .weekly: return "week"
+        case .monthly: return "month"
+        case .annual: return "year"
+        case .lifetime: return "lifetime"
+        default: return "custom"
+        }
+    }
+
+    private static func trialDays(for product: StoreProduct) -> Int {
+        guard let period = product.introductoryDiscount?.subscriptionPeriod else { return 0 }
+        switch period.unit {
+        case .day: return period.value
+        case .week: return period.value * 7
+        case .month: return period.value * 30
+        case .year: return period.value * 365
+        @unknown default: return period.value
         }
     }
 
