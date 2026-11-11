@@ -77,6 +77,7 @@
 - 2026-11-22 JST / Codex / #9414: Living Homeブランド画像共有・起動/完了計測を実装、既定OFF。Python回帰4件PASS、Xcode/E2E/TestFlight未実施。次: PRレビューと#520/readback後の出荷検証。
 - 2026-11-16 JST / Codex / PR #9357 Living home: 明示割当の `codex/rive-asset` で空の `living_home.riv` を4,614-byte実Riveへ置換。公式WASMで読込・描画・Ambient・連続WordChanged・終了後一致PASS、生成再現一致、Swift4ファイル構文PASS、独立review 0 findings。3s/8sの既存文字切替を維持。iOS build/型検査/実機録画は未実施、SPM解決とXcode検証が次。commitのみ、push/本番変更なし。
 - 2026-11-14 18:30 JST / Codex / Phase 1 UIUX F-01〜F-13: 指定Anicca worktreeに修正差分とFIX-NOTES、01〜13撮影フローを保持。Python35成功/1skip、独立Solレビューblocking0、既存翻訳parity不足は記録。提出/commit/push0。次: MuseのActions build+Maestro再撮影・原寸再監査。
+- 2026-11-11 21:55 JST / cloud-agent / #BuildHybridAI: gitleaks の履歴スキャンが初回コミット `3ac666de` の localStorage 名を再検出したため、`.gitleaksignore` にその fingerprint だけを追加。現行ツリーは既に `LOCAL_STORE`。
 - 2026-11-11 21:48 JST / cloud-agent / #BuildHybridAI: gitleaks の `generic-api-key` 誤検知を、localStorage 名の定数 `STORAGE_KEY` を `LOCAL_STORE` に変えて解消。秘密情報の追加なし。
 - 2026-11-11 21:38 JST / cloud-agent / #BuildHybridAI: `hybrid-affirmations/` に Anicca の Chrome 版を追加。Firebase AI Logic `PREFER_ON_DEVICE` と App Check を接続し、未設定時は offline demo。logic test 13 PASS、vite build と headless Chrome のデモ操作を確認。Firebase プロジェクト未接続のため live 推論と Hosting は未実施。
 - 2026-11-10 09:47 JST / cloud-agent / Hermes hackathon: `hermes-plugin/` life-manager 1.0.0 を追加。unittest 19 OK、`hermes plugins validate --install-deps` は v0.23.0 と main の validator で PASS。ネットワーク呼び出し0。次: default branch の40字SHAをピンし、カタログPR可否を記録。

@@ -6,6 +6,10 @@
 # docs/evidence/security/2026-07-29-oss-security-baseline.md.
 # This baseline does not suppress a new secret at a new commit/path/line.
 # Public attribution_token test fixtures; exact historical fingerprints only.
+# localStorage name "anicca-hybrid-affirmations-v1" assigned to STORAGE_KEY.
+# Rebased introducing commit e20a3f07e12ca5ada976f69e66246facdf5f711c.
+# The pre-rebase commit 3ac666de is listed later in this file. The value is not a credential.
+e20a3f07e12ca5ada976f69e66246facdf5f711c:hybrid-affirmations/src/logic.mjs:generic-api-key:1
 bf724f8aa6d1441728a06250055df577f60b7f9f:skills/earn/marketing-engine/measure/test_experiment_attribution.py:generic-api-key:114
 929c69d900d5f654fc7716f083c93babb9410c1f:skills/earn/marketing-engine/measure/test_experiment_attribution.py:generic-api-key:254
 acdafffdd97b37ff655e77b51bb5b6832710545c:skills/earn/marketing-engine/measure/test_experiment_attribution.py:generic-api-key:295
