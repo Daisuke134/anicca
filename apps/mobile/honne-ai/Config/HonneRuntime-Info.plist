@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Runtime values injected at build time (xcodebuild HONNE_*=...). Never commit the values. -->
 <plist version="1.0">
 <dict>
 	<key>EXPO_PUBLIC_REVENUECAT_IOS_API_KEY</key>
@@ -9,5 +8,7 @@
 	<string>$(HONNE_TOOLKIT_URL)</string>
 	<key>HONNE_TOOLKIT_TOKEN</key>
 	<string>$(HONNE_TOOLKIT_TOKEN)</string>
+	<key>MIXPANEL_TOKEN</key>
+	<string>96835bddc4fd0f2613e805d98c5915cd</string>
 </dict>
 </plist>

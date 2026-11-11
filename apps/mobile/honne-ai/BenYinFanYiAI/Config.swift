@@ -14,6 +14,7 @@ enum Config {
     static var EXPO_PUBLIC_PROJECT_ID: String { value("EXPO_PUBLIC_PROJECT_ID") }
     static var EXPO_PUBLIC_REVENUECAT_IOS_API_KEY: String { value("EXPO_PUBLIC_REVENUECAT_IOS_API_KEY") }
     static var EXPO_PUBLIC_REVENUECAT_TEST_API_KEY: String { value("EXPO_PUBLIC_REVENUECAT_TEST_API_KEY") }
+    static var MIXPANEL_TOKEN: String { value("MIXPANEL_TOKEN") }
     static var EXPO_PUBLIC_RORK_API_BASE_URL: String { value("EXPO_PUBLIC_RORK_API_BASE_URL") }
     static var EXPO_PUBLIC_TEAM_ID: String { value("EXPO_PUBLIC_TEAM_ID") }
     static var EXPO_PUBLIC_TOOLKIT_URL: String { value("EXPO_PUBLIC_TOOLKIT_URL") }
