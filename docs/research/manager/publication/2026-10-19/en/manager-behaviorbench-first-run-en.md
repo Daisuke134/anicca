@@ -1,4 +1,4 @@
-# We Ran the Behavior Model on Its Own Benchmark. It Matched the Crowd and Missed the Person.
+# BehaviorBench Results: Be.FM Matched the Crowd, Missed the Person
 
 *Anicca Research · Manager · November 11, 2026*
 
@@ -46,13 +46,13 @@ Three of the benchmark's thirty-plus tasks were run: survey response prediction 
 | Qwen3-4B-Instruct-2507 | 20.275 | 0.69 | ≈0.0 | Fail |
 | Be.FM-1.5-4B | **2.105** | 0.07 | 0.9856 | Pass |
 
-![Two bar charts. Left: in the dictator game, Be.FM-1.5-4B's answer distribution sits at Wasserstein distance 2.105 from the human distribution, against 20.275 for Qwen3-4B. Right: in Big Five score prediction, the naive per-dimension-mean baseline has the lowest error (MAE 4.73), ahead of Be.FM-1.5-4B (5.68) and Qwen3-4B (6.59)](https://aniccaai.com/blog/manager/media/ebddf148283b272ad8da0cc417e4822237d6280ee2bd160caf2a840c2601844a.png)
+![Three bar charts from the run. Left: survey response prediction accuracy (answers on a 1–5 scale, n = 20) — Qwen3-4B 0.4375, the naive prior_marginal 0.4167, Be.FM-1.5-4B 0.3542, prior_constant 0.2708. Centre: Big Five score prediction error (MAE, lower is better) — prior_marginal 4.73, ahead of Be.FM-1.5-4B 5.68 and Qwen3-4B 6.59. Right: in the dictator game, Be.FM-1.5-4B's answer distribution sits at Wasserstein distance 2.105 from the human distribution — inside the human-versus-human split-half range of 3.43 ± 1.59 — against 20.275 for Qwen3-4B](https://aniccaai.com/blog/manager/media/ac47cc9209caa8c429514f578cf74b28950cfc037655999ee18f4eb8f2c38e3c.png)
 
 For the record, the un-run fourth task's priors on the full file (n = 1,000): prior_marginal accuracy 0.3864 / MAE 0.9973; prior_constant accuracy 0.2236 / MAE 1.1361.
 
 ## The verdict: one clear win, one clear loss
 
-**The win is real.** At the distribution level, Be.FM is not slightly better than its backbone — it is roughly ten times closer to the human distribution (Wasserstein 2.105 against 20.275), and it passes a KS test that Qwen3-4B fails outright. Fine-tuning on behavioral data visibly taught this model what a population of people looks like: where the mass sits, how wide the spread runs, where the spikes are. This matches the BehaviorBench paper's own headline — on the official leaderboard, Be.FM-1.5-4B leads the distribution level with a 95.3% Mean Win Rate — and now we have reproduced the direction of that claim on the authors' own harness, with our own hands.
+**The win is real.** At the distribution level, Be.FM is not slightly better than its backbone — it is roughly ten times closer to the human distribution (Wasserstein 2.105 against 20.275), and it passes a KS test that Qwen3-4B fails outright. For scale: the human sample itself, split 50 against 150 and compared the same way, sits 3.43 ± 1.59 apart — Be.FM's 2.105 falls inside the human-versus-human range. Fine-tuning on behavioral data visibly taught this model what a population of people looks like: where the mass sits, how wide the spread runs, where the spikes are. This matches the BehaviorBench paper's own headline — on the official leaderboard, Be.FM-1.5-4B leads the distribution level with a 95.3% Mean Win Rate — and now we have reproduced the direction of that claim on the authors' own harness, with our own hands.
 
 **The loss is also real.** At the individual level, on both Big Five tasks at n = 20, neither LLM stably beat prior_marginal — the baseline that ignores the person entirely and answers the population average. On survey responses, Qwen edged the prior on accuracy alone (0.4375 vs 0.4167) while losing to it on MAE (1.0000 vs 0.8750); Be.FM trailed both. On trait scores, Be.FM beat Qwen on every metric yet still lost the headline metric to the prior (MAE 5.68 vs 4.73). This is the same direction as our earlier MaMe-Re control-arm test, where Be.FM scored 0.5556 against the simple prior's 0.6111 — a different dataset, metric, and denominator, so only the direction is comparable, but the direction agrees: distribution reproduction is strong; individual point prediction does not yet clear the naive bar.
 
