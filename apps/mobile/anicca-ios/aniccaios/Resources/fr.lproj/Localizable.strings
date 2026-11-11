@@ -48,6 +48,7 @@
 "onboarding_notifications_card_title" = "Accès aux notifications";
 "onboarding_notifications_description" = "Anicca utilise les notifications pour vous rappeler doucement aux bons moments — pour vous réveiller, poser votre téléphone ou faire une pause.";
 "onboarding_notifications_allow" = "Autoriser les notifications";
+"onboarding_notifications_preview_now" = "maintenant";
 "onboarding_notifications_optional_hint" = "Passez pour l'instant si vous préférez. Vous pouvez activer les notifications à tout moment depuis Réglages → Anicca.";
 
 "onboarding_alarmkit_title" = "Alarmes";
@@ -1291,6 +1292,10 @@
 "paywall_b_cta_trial" = "Commencer gratuitement";
 "paywall_b_trust_no_trial" = "Annulable à tout moment · Satisfaction garantie";
 "paywall_b_trust_trial" = "3 jours gratuits, puis %@ · Annulez à tout moment";
+"paywall_trial_timeline_start" = "Début de l'essai gratuit — tout est débloqué";
+"paywall_trial_timeline_reminder" = "Nous vous préviendrons avant la fin de votre essai";
+"paywall_trial_timeline_charge" = "Fin de l'essai — %@ sauf annulation avant";
+"paywall_trial_timeline_promise" = "Nous vous préviendrons toujours avant tout prélèvement.";
 "paywall_b_trial_badge" = "3 JOURS GRATUITS";
 "paywall_b_retry" = "Recharger les offres";
 "paywall_b_load_failed" = "Impossible de charger les offres. Vérifiez votre connexion et réessayez.";

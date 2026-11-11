@@ -62,6 +62,36 @@ struct PaywallVariantBView: View {
         selectedPackage?.storeProduct.introductoryDiscount != nil
     }
 
+    /// 選択中パッケージの無料トライアルオファー (introductory offer のうち
+    /// paymentMode が free trial のものだけを対象にする)。
+    private var freeTrialDiscount: StoreProductDiscount? {
+        guard let discount = selectedPackage?.storeProduct.introductoryDiscount,
+              discount.paymentMode == .freeTrial else { return nil }
+        return discount
+    }
+
+    /// トライアル終了日。Blinkist 型の「正直ペイウォール」のタイムライン表示用。
+    /// 期間は ASC の実オファー (subscriptionPeriod) から算出するので、トライアル
+    /// 日数が変わっても表示は実オファーに追随する (現在は年額3日)。
+    private var trialEndDate: Date? {
+        guard let period = freeTrialDiscount?.subscriptionPeriod else { return nil }
+        var components = DateComponents()
+        switch period.unit {
+        case .day: components.day = period.value
+        case .week: components.day = period.value * 7
+        case .month: components.month = period.value
+        case .year: components.year = period.value
+        @unknown default: return nil
+        }
+        return Calendar.current.date(byAdding: components, to: Calendar.current.startOfDay(for: Date()))
+    }
+
+    /// 課金前リマインドの日付 (トライアル終了の2日前)。
+    private var trialReminderDate: Date? {
+        guard let end = trialEndDate else { return nil }
+        return Calendar.current.date(byAdding: .day, value: -2, to: end)
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             heroSection
@@ -257,6 +287,10 @@ struct PaywallVariantBView: View {
                     .padding(.horizontal, 24)
             }
 
+            if let trialEndDate, let trialReminderDate {
+                trialTimeline(end: trialEndDate, reminder: trialReminderDate)
+            }
+
             Button { purchase() } label: {
                 Group {
                     if isPurchasing {
@@ -304,6 +338,66 @@ struct PaywallVariantBView: View {
             .foregroundStyle(.secondary)
         }
         .padding(.bottom, 32)
+    }
+
+    // MARK: - Trial Timeline
+
+    /// 課金タイムライン (Blinkist の「正直ペイウォール」型): 今日トライアル開始 →
+    /// 終了2日前にリマインド → 終了日に課金開始、を実日付で可視化し、
+    /// 「課金前に必ず知らせる」を明記する。
+    @ViewBuilder
+    private func trialTimeline(end: Date, reminder: Date) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            trialTimelineRow(
+                date: Date(),
+                detail: String(localized: "paywall_trial_timeline_start")
+            )
+            trialTimelineRow(
+                date: reminder,
+                detail: String(localized: "paywall_trial_timeline_reminder")
+            )
+            trialTimelineRow(
+                date: end,
+                detail: String(format: NSLocalizedString("paywall_trial_timeline_charge", comment: ""), selectedPackage?.localizedPriceString ?? "")
+            )
+
+            HStack(spacing: 6) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(AppTheme.Colors.accent)
+                Text(String(localized: "paywall_trial_timeline_promise"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppTheme.Colors.label)
+            }
+            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(AppTheme.Colors.buttonUnselected)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 24)
+        .accessibilityIdentifier("paywall-trial-timeline")
+    }
+
+    @ViewBuilder
+    private func trialTimelineRow(date: Date, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(formattedTrialDate(date))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppTheme.Colors.accent)
+                .frame(width: 86, alignment: .leading)
+            Text(detail)
+                .font(.system(size: 13))
+                .foregroundStyle(AppTheme.Colors.label)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func formattedTrialDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 
     // MARK: - Components
@@ -452,7 +546,7 @@ struct PaywallVariantBView: View {
             }
 
             do {
-                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: flowID)
+                AnalyticsManager.shared.trackPurchaseStarted(package: package, offeringID: offering?.identifier, flowID: flowID)
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
                     AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)

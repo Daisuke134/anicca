@@ -66,6 +66,10 @@ enum PaywallGateVariant: String, Equatable {
     /// Offering identifier of the hard-paywall treatment offering.
     static let hardOfferingIdentifier = "anicca_variant_b_hard"
 
+    /// RevenueCat Experiment identifier for this gate A/B (2026-11-08).
+    /// Recorded on the `experiment_exposure` analytics event.
+    static let experimentIdentifier = "HARD-PAYWALL-20261108"
+
     static func resolve(offeringIdentifier: String?) -> PaywallGateVariant {
         offeringIdentifier == hardOfferingIdentifier ? .hard : .soft
     }

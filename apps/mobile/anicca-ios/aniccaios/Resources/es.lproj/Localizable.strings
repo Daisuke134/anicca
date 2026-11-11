@@ -48,6 +48,7 @@
 "onboarding_notifications_card_title" = "Acceso a notificaciones";
 "onboarding_notifications_description" = "Anicca usa notificaciones para recordarte suavemente en los momentos adecuados — para despertar, dejar el teléfono o tomar un descanso.";
 "onboarding_notifications_allow" = "Permitir notificaciones";
+"onboarding_notifications_preview_now" = "ahora";
 "onboarding_notifications_optional_hint" = "Omítelo por ahora si prefieres. Puedes activar las notificaciones en cualquier momento desde Ajustes → Anicca.";
 
 "onboarding_alarmkit_title" = "Alarmas";
@@ -1331,6 +1332,10 @@
 "paywall_b_review" = "\"Anicca me ayudó a ser más amable conmigo.\"";
 "paywall_b_trust_no_trial" = "Cancela cuando quieras · Satisfacción garantizada";
 "paywall_b_trust_trial" = "3 días gratis, luego %@ · Cancela cuando quieras";
+"paywall_trial_timeline_start" = "Comienza la prueba gratuita — todo desbloqueado";
+"paywall_trial_timeline_reminder" = "Te recordaremos antes de que termine tu prueba";
+"paywall_trial_timeline_charge" = "La prueba termina — %@ si no cancelas antes";
+"paywall_trial_timeline_promise" = "Siempre te avisaremos antes de cobrarte.";
 "paywall_b_trial_badge" = "3 DÍAS GRATIS";
 "paywall_b_retry" = "Recargar planes";
 "paywall_b_load_failed" = "No se pudieron cargar los planes. Revisa tu conexión e inténtalo de nuevo.";

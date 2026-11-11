@@ -163,8 +163,47 @@ final class AnalyticsManager {
         ])
     }
 
-    func trackPurchaseStarted(productID: String, flowID: String) {
-        track(.purchaseStarted, properties: ["product_id": productID, "flow_id": flowID])
+    /// 購入開始。product_id だけでは分析側で「どのプランのカードが押されたか」を
+    /// 即座に読めなかった (2026-11-10 ファネル分析の計装欠陥) ため、パッケージ・
+    /// プラン種別・オファリング・トライアル有無を明示プロパティとして併記する。
+    func trackPurchaseStarted(package: Package, offeringID: String?, flowID: String) {
+        track(.purchaseStarted, properties: [
+            "product_id": package.storeProduct.productIdentifier,
+            "package_id": package.identifier,
+            "plan_name": Self.planName(for: package.packageType),
+            "offering_id": offeringID ?? "unknown",
+            "has_trial": package.storeProduct.introductoryDiscount != nil,
+            "flow_id": flowID,
+        ])
+    }
+
+    /// プラン種別を分析で読める安定した文字列にする。
+    static func planName(for packageType: PackageType) -> String {
+        switch packageType {
+        case .annual: return "annual"
+        case .monthly: return "monthly"
+        case .weekly: return "weekly"
+        case .lifetime: return "lifetime"
+        case .sixMonth: return "six_month"
+        case .threeMonth: return "three_month"
+        case .twoMonth: return "two_month"
+        case .custom: return "custom"
+        default: return "unknown"
+        }
+    }
+
+    /// RevenueCat Experiment の露出。割当 Offering が確定し、そのゲートで
+    /// ペイウォールが実際に表示された時点で1回だけ発火する。
+    /// これまで AnalyticsEvent に対応する送信呼び出しが存在せず、
+    /// HARD-PAYWALL-20261108 の A/B 判定が Mixpanel 側で不能だった。
+    func trackExperimentExposure(offeringIdentifier: String?, gateVariant: PaywallGateVariant, flowID: String) {
+        track(.experimentExposure, properties: [
+            "experiment_id": PaywallGateVariant.experimentIdentifier,
+            "variant": gateVariant.rawValue,
+            "offering_id": offeringIdentifier ?? "unknown",
+            "paywall_gate_variant": gateVariant.rawValue,
+            "flow_id": flowID,
+        ])
     }
 
     func trackPurchaseResult(_ result: String, productID: String, flowID: String, errorCode: String? = nil) {
@@ -260,6 +299,7 @@ enum AnalyticsEvent: String {
     case notificationDestinationResolved = "notification_destination_resolved"
     case notificationPermissionRequested = "notification_permission_requested"
     case notificationPermissionResult = "notification_permission_result"
+    case notificationPrimingViewed = "notification_priming_viewed"
     case purchaseStarted = "purchase_started"
     case purchaseResult = "purchase_result"
     case restoreStarted = "restore_started"

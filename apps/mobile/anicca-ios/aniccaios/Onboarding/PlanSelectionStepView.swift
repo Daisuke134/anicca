@@ -306,7 +306,7 @@ struct PlanSelectionStepView: View {
 
         Task {
             do {
-                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
+                AnalyticsManager.shared.trackPurchaseStarted(package: package, offeringID: offering?.identifier, flowID: "legacy_paywall")
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
                     AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: "legacy_paywall")

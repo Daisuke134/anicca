@@ -48,6 +48,7 @@
 "onboarding_notifications_card_title" = "通知アクセス";
 "onboarding_notifications_description" = "必要な瞬間に、やさしいリマインダーを届けます。通知がないと、あなたにメッセージを届けられません。";
 "onboarding_notifications_allow" = "通知を許可";
+"onboarding_notifications_preview_now" = "今";
 "onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→アニッチャからいつでも通知をオンにできます。";
 
 
@@ -1437,6 +1438,10 @@
 "paywall_b_review" = "「アニッチャのおかげで自分に優しくなれました」";
 "paywall_b_trust_no_trial" = "いつでもキャンセル · 満足保証";
 "paywall_b_trust_trial" = "3日間無料、その後 %@ · いつでもキャンセル可能";
+"paywall_trial_timeline_start" = "無料トライアル開始 — 全機能が使えます";
+"paywall_trial_timeline_reminder" = "トライアル終了前にリマインドします";
+"paywall_trial_timeline_charge" = "トライアル終了 — 解約しなければ %@";
+"paywall_trial_timeline_promise" = "課金前に必ずお知らせします";
 "paywall_b_trial_badge" = "3日間無料";
 "paywall_b_load_failed" = "プランを読み込めませんでした。通信環境をご確認の上、再試行してください。";
 "paywall_b_retry" = "プランを再読み込み";
