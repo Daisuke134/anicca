@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anicca — Hybrid Affirmations</title>
+    <meta
+      name="description"
+      content="Short, warm affirmations for the feeling you are in. On-device Gemini Nano when Chrome has it, cloud fallback through Firebase AI Logic."
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <script src="./firebase-config.js"></script>
+    <header class="top">
+      <div>
+        <p class="wordmark">Anicca</p>
+        <p class="eyebrow">A little moment, for you</p>
+      </div>
+      <p class="streak" id="streak" aria-live="polite">Start a streak</p>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="feeling-heading">
+        <h1 id="feeling-heading">What feels heavy today?</h1>
+        <p class="lede">
+          Pick a feeling. Anicca writes one short affirmation and shows whether
+          it was made on this device or in the cloud.
+        </p>
+        <div class="moods" id="moods" role="group" aria-label="Feelings"></div>
+        <div class="fields">
+          <label>
+            Name, if you want it used
+            <input id="name" name="name" maxlength="40" autocomplete="nickname" placeholder="Optional" />
+          </label>
+          <label>
+            Anything you want the words to know
+            <textarea id="note" name="note" maxlength="280" rows="3" placeholder="Optional. Stays in this browser until you ask for words."></textarea>
+          </label>
+        </div>
+        <p class="privacy" id="privacy"></p>
+        <label class="wait" id="wait-label">
+          <input id="wait-for-device" type="checkbox" />
+          Wait for Gemini Nano before writing
+        </label>
+        <div class="actions">
+          <button id="write" class="primary" type="button">Write today’s words</button>
+          <button id="another" class="quiet" type="button" hidden>Write another</button>
+        </div>
+        <p class="progress" id="progress" role="status"></p>
+        <p class="banner" id="banner"></p>
+      </section>
+
+      <section class="card" id="card" aria-live="polite" hidden>
+        <p class="badge" id="badge"></p>
+        <blockquote id="quote"></blockquote>
+        <p class="caption" id="caption"></p>
+        <div class="card-actions">
+          <button id="save" type="button" aria-pressed="false">Keep this close</button>
+        </div>
+      </section>
+
+      <section class="saved" aria-labelledby="saved-heading">
+        <h2 id="saved-heading">Kept close</h2>
+        <ul id="favourites"></ul>
+        <p class="empty" id="empty-favourites">Nothing saved yet. A line you want to see again can live here.</p>
+      </section>
+    </main>
+
+    <footer>
+      <p id="tech"></p>
+    </footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
