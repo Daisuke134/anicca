@@ -1,7 +1,6 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-10-20.1
-context-digest: 5661cfbe438c7a8cfb1c8aca5dab4b7d779a72b5e3c5a2a163d3a54f2e42ec20
-
+context-digest: a2a6f2be251c15beb045c04db613e32bab010a2cd9f138be3cceb1625b0906f8
 # Life Manager fundraising application kit
 
 This directory is generated from the repository-owned startup context. Adapt semantic answers to each program's official questions, but never change product facts, links, evidence, or claims without updating and validating the source context.
