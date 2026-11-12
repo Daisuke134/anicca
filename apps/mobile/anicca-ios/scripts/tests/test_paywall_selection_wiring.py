@@ -248,6 +248,20 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("onPremiumActivated()", success)
         self.assertIn("guard appState.subscriptionInfo.isEntitled", success)
 
+    def test_sdk_configuration_never_logs_the_api_key(self):
+        manager = SUBSCRIPTION_MANAGER.read_text(encoding="utf-8")
+        self.assertIn("Configuration.Builder(withAPIKey: apiKey)", manager)
+        self.assertFalse(any("print(" in line and "apiKey" in line for line in manager.splitlines()), "SDK configuration must not print its credential")
+
+    def test_relaunch_handles_store_account_prompt_before_verifying_free_use(self):
+        flow = (APP_ROOT / "maestro/v1.9.14/01-soft-paywall.yaml").read_text(encoding="utf-8")
+        relaunch = flow.split("- stopApp", 1)[1]
+        self.assertIn("text: Cancel", relaunch)
+        self.assertIn("optional: true", relaunch)
+        self.assertLess(relaunch.index("text: Cancel"), relaunch.index("id: feed-scroll"))
+        self.assertIn("- swipe:", relaunch)
+        self.assertIn("maestro.copiedText !== output.relaunchedQuote", relaunch)
+
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify
         # actual selection behavior and reference identity in the Swift runtime.

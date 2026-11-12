@@ -25,7 +25,6 @@ final class SubscriptionManager: NSObject {
 
         Purchases.logLevel = .info // .debugから変更（JWS tokenの長いログを抑制）
         let apiKey = AppConfig.revenueCatAPIKey
-        print("[RevenueCat] Using API Key: \(apiKey)")
         
         // V2/StoreKit 2対応のシンプル構成
         // entitlementVerificationMode: .informational は推奨設定（検証結果を情報として提供）

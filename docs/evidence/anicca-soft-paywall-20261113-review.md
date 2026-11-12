@@ -21,3 +21,11 @@ Observed device: iPhone16Pro / iOS18.5; Xcode16.4. The artifact also lists avail
 No local StoreKit catalog, mock offering or fake purchase was substituted. The existing Anicca.storekit fixture has stale prices and is not used by this `simctl`/Maestro lane; it remains outside this change. Runner-image tool paths were checked against the [official macOS15 image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md).
 
 The negative runtime test failed on the former selector, then passed after the26.2 binding. This tests selection policy, not real StoreKit connectivity.
+
+## Attempt2: relaunch system alert, not a broken free exit
+
+Run43260350714 attempt2 used Xcode26.2/iPhone17Pro/iOS26.2. Real plans loaded. JUnit failed the final feed-scroll assertion (1flow/1failure), so its 213.508-second video is not accepted as a complete journey. Frames170s show the sandWave free feed after closing Premium;190s and205s show the Apple Account modal covering that feed after relaunch. This disproves the hypothesis that theme selection failed to return to the feed.
+
+A candidate explanation involving passive syncPurchases was checked against the pinned RevenueCat5.78.0 [API contract](https://github.com/RevenueCat/purchases-ios/blob/629a56ecef190469914b8f0914bf0446363eb09f/Sources/Purchasing/Purchases/PurchasesType.swift): it explicitly does not trigger App Store login. The receipt/backend sync implementation remains unchanged. As in the existing first-launch flow, the relaunch now cancels the simulator account prompt without entering credentials; feed visibility, no onboarding/paywall and actual swipe-to-a-different-quote remain required. An existing SDK-key print was independently removed to honor the no-credential-logging boundary.
+
+The two focused regression checks failed before the fix; Python wiring passes after it. Real Maestro completion remains pending a new run.
