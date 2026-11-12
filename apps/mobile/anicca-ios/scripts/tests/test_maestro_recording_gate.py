@@ -29,7 +29,8 @@ class MaestroRecordingGateTests(unittest.TestCase):
                         time.sleep(1)
                     sys.exit(0)
                 if args[:3] == ['simctl', 'list', 'devices']:
-                    print(json.dumps({'devices': {'test': [
+                    runtime = 'iOS-18-5' if mode == 'unsupported-runtime' else 'iOS-26-2'
+                    print(json.dumps({'devices': {'com.apple.CoreSimulator.SimRuntime.' + runtime: [
                         {'name': 'iPhone harness double', 'isAvailable': True, 'udid': 'TEST'}
                     ]}}))
                 elif args and args[0] == 'swift':
@@ -53,6 +54,9 @@ class MaestroRecordingGateTests(unittest.TestCase):
             result = subprocess.run(["bash", str(SCRIPT), str(root / "evidence")],
                                     env=environment, capture_output=True, text=True, timeout=15)
             return result.returncode
+
+    def test_known_broken_storekit_runtime_is_rejected(self):
+        self.assertNotEqual(self.run_gate("unsupported-runtime"), 0)
 
     def test_recording_cannot_start_fails_the_job(self):
         self.assertNotEqual(self.run_gate("start-failure"), 0)

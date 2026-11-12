@@ -10,12 +10,16 @@ evidence_dir=$(cd "$evidence_dir" && pwd)
 derived_dir=${RUNNER_TEMP:-/tmp}/anicca-soft-paywall-derived
 simulator_id=$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
-for devices in json.load(sys.stdin)["devices"].values():
+# iOS 18.4-18.5 cannot load sandbox products (RevenueCat FB17105187).
+# Bind this to the Xcode 26.2 SDK selected by the real E2E job.
+for runtime, devices in json.load(sys.stdin)["devices"].items():
+    if runtime != "com.apple.CoreSimulator.SimRuntime.iOS-26-2":
+        continue
     for device in devices:
         if device.get("isAvailable") and "iPhone" in device["name"]:
             print(device["udid"])
             sys.exit(0)
-sys.exit("No available iPhone simulator")
+sys.exit("No available iOS 26.2 iPhone simulator for real StoreKit products")
 ')
 xcrun simctl boot "$simulator_id"
 xcrun simctl bootstatus "$simulator_id" -b
