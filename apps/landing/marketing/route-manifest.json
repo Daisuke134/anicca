@@ -38,7 +38,7 @@
       "source": "pages/life-manager-en.html",
       "public_route": "/lm",
       "export_path": "lm.html",
-      "sha256": "ebcda10d748be217a644c890ad54a5719980fbb8a27dba0a803c77e3a52f6c86"
+      "sha256": "e68597d5877312f4a80c7c649f236556258f71ccc3cb813f8ce460a54c6f1326"
     },
     {
       "source": "pages/life-manager.html",
