@@ -114,7 +114,13 @@ struct NotificationPermissionStepView: View {
                 .padding(.horizontal, 24)
 
             Button {
-                AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["result": "skipped"])
+                AnalyticsManager.shared.track(.notificationPermissionResult, properties: [
+                    "source": "onboarding",
+                    "result": "skipped",
+                ])
+                // Skippers stay .notDetermined; record the skip so the feed
+                // second-chance priming (Issue #48) can segment them.
+                NotificationPrimingCoordinator.shared.recordOnboardingSkipped()
                 next()
             } label: {
                 Text(String(localized: "growth_maybe_later"))

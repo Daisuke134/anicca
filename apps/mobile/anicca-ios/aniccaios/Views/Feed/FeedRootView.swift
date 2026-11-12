@@ -28,6 +28,8 @@ struct FeedRootView: View {
     /// Unique affirmations seen this launch — used as a lightweight "session finished" signal.
     @State private var viewedQuoteIDsThisSession: Set<String> = []
     @State private var didRequestReviewForSession = false
+    @State private var showNotificationPriming = false
+    @State private var didEvaluateNotificationReprompt = false
 
     /// Apple のお支払い更新ページ。RevenueCat の managementURL があればそれを優先。
     private var managePaymentURL: URL {
@@ -175,6 +177,13 @@ struct FeedRootView: View {
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showThemes = false } } }
             }
         }
+        .sheet(isPresented: $showNotificationPriming, onDismiss: {
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+        }) {
+            NotificationPrimingSheetView {
+                showNotificationPriming = false
+            }
+        }
         .sheet(isPresented: $showSettings, onDismiss: {
             AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
         }) {
@@ -223,10 +232,30 @@ struct FeedRootView: View {
         recent.removeAll { $0 == quoteID }
         recent.append(quoteID)
         UserDefaults.standard.set(Array(recent.suffix(20)), forKey: recentQuotesKey)
-        guard !didRequestReviewForSession, viewedQuoteIDsThisSession.count >= 3 else { return }
-        didRequestReviewForSession = true
-        ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
-            requestReview()
+        guard viewedQuoteIDsThisSession.count >= 3 else { return }
+        if !didRequestReviewForSession {
+            didRequestReviewForSession = true
+            let reviewAsked = ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
+                requestReview()
+            }
+            // One ask per value moment: when the review prompt fired, the
+            // notification re-ask waits for a later session.
+            if reviewAsked { return }
+        }
+        evaluateNotificationRepromptIfNeeded()
+    }
+
+    /// Second-chance notification priming at the same value moment
+    /// (3 affirmations read this session). Eligibility — return visit,
+    /// attempt cap, cooldown, still .notDetermined — lives in
+    /// `NotificationPrimingCoordinator` (anicca-ops Issue #48).
+    private func evaluateNotificationRepromptIfNeeded() {
+        guard !didEvaluateNotificationReprompt else { return }
+        didEvaluateNotificationReprompt = true
+        Task { @MainActor in
+            guard await NotificationPrimingCoordinator.shared.shouldOfferReprompt() else { return }
+            NotificationPrimingCoordinator.shared.recordRepromptShown()
+            showNotificationPriming = true
         }
     }
 

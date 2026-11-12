@@ -52,6 +52,10 @@ final class NotificationScheduler {
         }
     }
 
+    func currentAuthorizationStatus() async -> UNAuthorizationStatus {
+        await center.notificationSettings().authorizationStatus
+    }
+
     @discardableResult
     func requestAuthorizationIfNeeded() async -> Bool {
         let settings = await center.notificationSettings()
