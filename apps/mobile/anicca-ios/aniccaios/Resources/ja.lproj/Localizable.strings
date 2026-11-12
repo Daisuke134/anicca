@@ -2761,3 +2761,7 @@
 "growth_notifications_on" = "通知は許可されています";
 "growth_notifications_off" = "通知がオフ、またはまだ許可されていません";
 "growth_notification_settings" = "通知の許可設定を開く";
+
+/* Optional Premium after the free experience. */
+"soft_paywall_free_benefit" = "無料：言葉の閲覧・保存・共有";
+"soft_paywall_premium_benefit" = "Premium：全8背景と1日4回のリマインダー";

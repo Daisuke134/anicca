@@ -42,7 +42,8 @@ final class PaywallPackageSelectionTests {
                     productIdentifiers: $0.productIdentifiers,
                     hasAnnualOrMonthlyPackage: $0.hasAnnualOrMonthlyPackage
                 )
-            }
+            },
+            identifier: { $0.identifier }
         )
     }
 
@@ -52,6 +53,17 @@ final class PaywallPackageSelectionTests {
             productIdentifiers: ["ai.anicca.app.ios.monthly.b", "ai.anicca.app.ios.yearly.b"],
             hasAnnualOrMonthlyPackage: true
         )
+    }
+
+    func testEveryAssignedOfferingUsesSoftGateAndEverySurfaceCanClose() {
+        for offering in [nil, "anicca_variant_b", "anicca_variant_b_hard", "default"] as [String?] {
+            precondition(PaywallGateVariant.resolve(offeringIdentifier: offering) == .soft)
+        }
+        for flow in ["onboarding", "premium_theme", "settings_subscription"] {
+            for variant in [PaywallGateVariant.soft, .hard] {
+                precondition(PaywallGateVariant.showsCloseButton(flowID: flow, variant: variant))
+            }
+        }
     }
 
     func testHonneCurrentFallsBackToAniccaVariantB() {
@@ -114,16 +126,6 @@ final class PaywallPackageSelectionTests {
             hasAnnualOrMonthlyPackage: true
         )
         precondition(resolveOffering(legacy, all: ["anicca_variant_b": intended])?.identifier == "anicca_variant_b")
-    }
-
-    func testFreshCustomerInfoOverridesStaleCachedEntitlement() {
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: true, cachedEntitlement: false) == .completeOnboarding)
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: false, cachedEntitlement: true) == .presentPaywall)
-    }
-
-    func testUnavailableCustomerInfoFallsBackToCachedEntitlement() {
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: nil, cachedEntitlement: true) == .completeOnboarding)
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: nil, cachedEntitlement: false) == .presentPaywall)
     }
 
     func testDelayedLoadSelectsAnnualWithoutAnotherAppearance() {
@@ -273,14 +275,13 @@ final class PaywallPackageSelectionTests {
     }
 
     var allTests: [(String, () -> Void)] { [
+        ("testEveryAssignedOfferingUsesSoftGateAndEverySurfaceCanClose", testEveryAssignedOfferingUsesSoftGateAndEverySurfaceCanClose),
         ("testHonneCurrentFallsBackToAniccaVariantB", testHonneCurrentFallsBackToAniccaVariantB),
         ("testMissingCurrentFallsBackToAniccaVariantB", testMissingCurrentFallsBackToAniccaVariantB),
         ("testValidAniccaCurrentIsUsedWhenConfiguredOfferingIsUnavailable", testValidAniccaCurrentIsUsedWhenConfiguredOfferingIsUnavailable),
         ("testInvalidFallbackNeverReturnsHonneProducts", testInvalidFallbackNeverReturnsHonneProducts),
         ("testAniccaOfferingMustContainOnlyAniccaProductsAndMonthlyOrAnnualPlan", testAniccaOfferingMustContainOnlyAniccaProductsAndMonthlyOrAnnualPlan),
         ("testExplicitAniccaOfferingWinsOverLegacyCurrentWithoutLifetime", testExplicitAniccaOfferingWinsOverLegacyCurrentWithoutLifetime),
-        ("testFreshCustomerInfoOverridesStaleCachedEntitlement", testFreshCustomerInfoOverridesStaleCachedEntitlement),
-        ("testUnavailableCustomerInfoFallsBackToCachedEntitlement", testUnavailableCustomerInfoFallsBackToCachedEntitlement),
         ("testDelayedLoadSelectsAnnualWithoutAnotherAppearance", testDelayedLoadSelectsAnnualWithoutAnotherAppearance),
         ("testMonthlyOnlyLoadSelectsMonthly", testMonthlyOnlyLoadSelectsMonthly),
         ("testUserMonthlyChoiceSurvivesRefreshAndRebindsToCurrentInstance", testUserMonthlyChoiceSurvivesRefreshAndRebindsToCurrentInstance),

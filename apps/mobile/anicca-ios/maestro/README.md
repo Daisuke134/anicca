@@ -1,164 +1,70 @@
-# Maestro E2E Tests for Anicca iOS
+# Anicca iOS Maestro journeys
 
-This directory contains Maestro E2E UI tests for the Anicca iOS app.
+Run from `apps/mobile/anicca-ios`. The current soft-paywall journey is
+`v1.9.14/01-soft-paywall.yaml`: clean launch, goal, first affirmation/save,
+optional reminder/notification setup, free feed and swipe, saved words, locked
+Premium theme, actual purchase plans, close, free theme and continued reading,
+then relaunch into the feed.
 
-## Prerequisites
+## Real simulator run and recording
 
-### Install Maestro CLI
-
-```bash
-# macOS (Homebrew)
-brew tap mobile-dev-inc/tap
-brew install maestro
-
-# Verify installation
-maestro --version
-```
-
-### iOS Simulator
-
-Ensure you have Xcode installed and an iOS Simulator available:
+Use a Mac with full Xcode, an installed iPhone simulator runtime, Java 17 and
+Maestro CLI (`brew install mobile-dev-inc/tap/maestro`). CommandLineTools alone
+does not include the iOS simulator. Supply the existing private Production and
+Staging xcconfig files; real RevenueCat SDK settings are required to load plans.
+Never commit configuration values.
 
 ```bash
-# List available simulators
-xcrun simctl list devices available
-
-# Boot a simulator (if not already running)
-xcrun simctl boot "iPhone 15"
+bash scripts/run-soft-paywall-maestro.sh /absolute/path/to/private-evidence
 ```
 
-### Build the App
+The helper selects an available iPhone simulator, builds and installs this
+checkout, records the actual screen while Maestro runs, and saves JUnit, debug
+output, source commit, simulator metadata and MP4. Recording startup/termination,
+duration and a decoded frame must pass independently of the Maestro result.
+Inspect the real video before calling the experience verified. This helper
+replaces the old README's nonexistent `run-maestro-e2e.sh` command.
 
-Build the app for the simulator before running tests:
+To drive an already installed build without recording:
 
 ```bash
-cd aniccaios
-xcodebuild -scheme aniccaios \
-  -destination 'platform=iOS Simulator,name=iPhone 15' \
-  -derivedDataPath ./build \
-  build
+maestro --device SIMULATOR_UDID test --format JUNIT --output result.xml \
+  maestro/v1.9.14/01-soft-paywall.yaml
 ```
 
-## Test Scenarios
+## GitHub Actions
 
-| File | Description |
-|------|-------------|
-| `01-onboarding.yaml` | Complete onboarding flow from first launch |
-| `02-paywall.yaml` | Paywall display and dismiss |
-| `03-session-start.yaml` | Voice session start and end |
-
-## Running Tests
-
-### Run All Tests
+The real journey is an explicit manual job in
+`.github/workflows/anicca-ios-build.yml`, using a free local Maestro CLI on the
+GitHub macOS runner. It does not call paid Maestro Cloud. The repository secret
+`ANICCA_E2E_XCCONFIG_B64` supplies the private SDK configuration.
 
 ```bash
-# From project root
-maestro test maestro/
-
-# Or use the helper script
-./scripts/run-maestro-e2e.sh
+gh workflow run anicca-ios-build.yml --ref YOUR_BRANCH -f run_maestro=true
 ```
 
-### Run Individual Tests
+Download the `soft-paywall-evidence-COMMIT` artifact. Build logs and xcconfig files
+are excluded from the artifact. Failed runs are retained as failures, not
+accepted experience recordings. PRs run unsigned build/unit tests; they do not
+automatically run the real journey. There is no `maestro-e2e.yml` workflow.
 
-```bash
-# Onboarding flow
-maestro test maestro/01-onboarding.yaml
+## Versioned and specialized flows
 
-# Paywall display
-maestro test maestro/02-paywall.yaml
+`v1.8.0/`, `onboarding/` and `e2e/` contain older or specialized flows. Their
+entry states and product assumptions differ; running the entire directory is
+not the current acceptance command. Many flows use accessibility IDs. Required
+product assertions must not be made optional to hide a failure.
 
-# Voice session
-maestro test maestro/03-session-start.yaml
-```
+`v1.8.0/14-notification-message.yaml` expects an already injected notification.
+Simulator injection verifies routing, not real APNs delivery.
 
-### Debug Mode
+[Maestro CLI reference](https://docs.maestro.dev/maestro-cli/maestro-cli-commands-and-options)
 
-For detailed logging when tests fail:
+## Final 1.9.14 verification budget
 
-```bash
-maestro test --debug maestro/01-onboarding.yaml
-```
-
-## Test Design Notes
-
-### Text-Based Taps
-
-All tests use text-based element selection (`text:` instead of `id:`) to avoid requiring `accessibilityIdentifier` additions to the iOS codebase. This means:
-
-- Tests are more fragile to UI text changes
-- Tests support localization by changing the text values
-- No Swift code modifications are needed
-
-### Optional Assertions
-
-Many assertions use `optional: true` to handle:
-- Permission dialogs that may or may not appear
-- UI variations between iOS versions
-- State that depends on previous test runs
-
-### Test Dependencies
-
-- **01-onboarding.yaml**: Can run standalone (clears app state)
-- **02-paywall.yaml**: Requires user to be signed in
-- **03-session-start.yaml**: Requires user to be signed in with microphone permission
-
-## CI Integration
-
-Tests run automatically on:
-- Pull requests to `main`
-- Pushes to `main`
-- Manual trigger via `workflow_dispatch`
-
-See `.github/workflows/maestro-e2e.yml` for the CI configuration.
-
-## Troubleshooting
-
-### Simulator Not Found
-
-```bash
-# List available simulators
-xcrun simctl list devices available
-
-# Create a new simulator if needed
-xcrun simctl create "iPhone 15" "iPhone 15" iOS17.0
-```
-
-### App Not Installed
-
-The app must be built and installed on the simulator:
-
-```bash
-# Build and install
-xcodebuild -scheme aniccaios \
-  -destination 'platform=iOS Simulator,name=iPhone 15' \
-  build
-
-# Or install a pre-built .app
-xcrun simctl install booted path/to/aniccaios.app
-```
-
-### Element Not Found
-
-- Run with `--debug` to see detailed logs
-- Check if the text matches exactly (case-sensitive)
-- Increase timeout values for slow operations
-- Verify the element is visible on screen
-
-## Adding New Tests
-
-1. Create a new file: `maestro/NN-description.yaml` (NN = sequential number)
-2. Follow the YAML structure from existing tests
-3. Use text-based taps with `optional: true` for unreliable elements
-4. Add to this README
-
-## References
-
-- [Maestro Documentation](https://maestro.mobile.dev/)
-- [Maestro YAML Reference](https://maestro.mobile.dev/reference)
-- [Maestro GitHub](https://github.com/mobile-dev-inc/maestro)
-
-
-## Initial product polish coverage
-
-`v1.8.0/13-initial-product.yaml` covers the value-first journey, soft paywall close, 25 forward swipes, saved affirmations, the actual free notification schedule, themes and relaunch. `v1.8.0/14-notification-message.yaml` expects a notification already delivered by `simctl push`; run it separately for a terminated and a running app with the matching `MESSAGE` environment value. Simulator injection verifies routing, not real APNs delivery. Keep the MP4, command output, source SHA and simulator ID together.
+The real job uses standard `macos-15-intel`, Xcode26.2/iOS26.2 and a120-minute
+job limit. The prior40-minute limit cancelled run43268640984 after the real
+build reached recording; its MP4 is incomplete and not acceptance evidence.
+For the final delegated verification, dispatch once only. If that run fails or
+is cancelled, preserve its actual result and report the blocker; do not rerun
+it or weaken assertions. This includes a host-admission failure.

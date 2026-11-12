@@ -219,8 +219,8 @@ struct PaywallVariantBView: View {
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 8) {
-            featureRow(String(localized: "paywall_b_feature_nudges"))
-            featureRow(String(localized: "paywall_b_feature_personalized"))
+            featureRow(String(localized: "soft_paywall_free_benefit"))
+            featureRow(String(localized: "soft_paywall_premium_benefit"))
             featureRow(String(localized: "paywall_b_feature_cancel"))
         }
         .padding(.horizontal, 32)

@@ -15,6 +15,10 @@ enum ThemeID: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
+    var isFree: Bool { self == .sageMist || self == .sandWave }
+
+    func isAvailable(isEntitled: Bool) -> Bool { isFree || isEntitled }
+
     /// Display label shown in the Theme picker.
     var displayName: String {
         switch self {

@@ -2,6 +2,11 @@ name: Anicca iOS build
 
 on:
   workflow_dispatch:
+    inputs:
+      run_maestro:
+        description: Run the real soft-paywall journey and capture simulator video
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
     paths:
@@ -17,8 +22,42 @@ permissions:
   contents: read
 
 jobs:
+  maestro:
+    name: Real soft-paywall Maestro and video
+    if: github.event_name == 'workflow_dispatch' && inputs.run_maestro
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install the free Maestro CLI
+        run: brew install mobile-dev-inc/tap/maestro
+      - name: Inject private real SDK configuration
+        env:
+          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_E2E_XCCONFIG_B64 }}
+        run: |
+          bash ci_scripts/ci_post_clone.sh
+          cp Configs/Production.xcconfig Configs/Staging.xcconfig
+      - name: Build, run the actual journey, and record
+        run: bash scripts/run-soft-paywall-maestro.sh "$RUNNER_TEMP/soft-paywall-evidence"
+      - name: Preserve real run evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soft-paywall-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/soft-paywall-evidence
+          if-no-files-found: warn
   build:
     name: Build and unit tests (unsigned)
+    if: github.event_name != 'workflow_dispatch' || !inputs.run_maestro
     runs-on: macos-15
     defaults:
       run:

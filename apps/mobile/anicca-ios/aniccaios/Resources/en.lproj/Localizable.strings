@@ -2745,3 +2745,7 @@
 "growth_notifications_on" = "Notifications allowed";
 "growth_notifications_off" = "Notifications are off or not allowed yet";
 "growth_notification_settings" = "Manage notification permissions";
+
+/* Optional Premium after the free experience. */
+"soft_paywall_free_benefit" = "Free: read, save and share affirmations";
+"soft_paywall_premium_benefit" = "Premium: all 8 themes and 4 daily reminders";

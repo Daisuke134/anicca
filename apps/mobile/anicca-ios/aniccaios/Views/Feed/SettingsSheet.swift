@@ -23,7 +23,7 @@ struct SettingsSheet: View {
         List {
             Section {
                 NavigationLink {
-                    ThemePickerView()
+                    ThemePickerView(onPremiumActivated: { dismiss() })
                         .environmentObject(themeStore)
                         .analyticsScreen(.feedThemes, flowID: "feed")
                 } label: {
@@ -118,8 +118,13 @@ struct SettingsSheet: View {
 
 /// 8 theme grid. Tap = select + persist + dismiss.
 struct ThemePickerView: View {
+    var onPremiumActivated: (() -> Void)? = nil
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.dismiss) private var dismiss
+
+    @ObservedObject private var appState = AppState.shared
+    @State private var pendingTheme: ThemeID?
+    @State private var showThemePaywall = false
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -128,8 +133,13 @@ struct ThemePickerView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(ThemeID.allCases) { theme in
                     Button {
-                        themeStore.select(theme)
-                        dismiss()
+                        if theme.isAvailable(isEntitled: appState.subscriptionInfo.isEntitled) {
+                            themeStore.select(theme)
+                            dismiss()
+                        } else {
+                            pendingTheme = theme
+                            showThemePaywall = true
+                        }
                     } label: {
                         ZStack(alignment: .bottomLeading) {
                             theme.image
@@ -144,7 +154,10 @@ struct ThemePickerView: View {
                                     .foregroundStyle(.white)
                                     .padding(8)
                                 Spacer()
-                                if themeStore.selected == theme {
+                                if !theme.isAvailable(isEntitled: appState.subscriptionInfo.isEntitled) {
+                                    Label("Premium", systemImage: "lock.fill")
+                                        .font(.caption).foregroundStyle(.white).padding(8)
+                                } else if themeStore.selected == theme {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundStyle(.white)
                                         .padding(8)
@@ -162,6 +175,29 @@ struct ThemePickerView: View {
         }
         .navigationTitle(String(localized: "settings_theme"))
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showThemePaywall) {
+            PaywallFlowContainer(
+                onPurchaseSuccess: { customerInfo in
+                    appState.updateSubscriptionInfo(from: customerInfo)
+                    guard appState.subscriptionInfo.isEntitled else { return }
+                    if let pendingTheme { themeStore.select(pendingTheme) }
+                    pendingTheme = nil
+                    showThemePaywall = false
+                    if let onPremiumActivated {
+                        onPremiumActivated()
+                    } else {
+                        dismiss()
+                    }
+                },
+                onDismiss: {
+                    pendingTheme = nil
+                    showThemePaywall = false
+                    AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feedThemes, flowID: "feed")
+                },
+                flowID: "premium_theme"
+            )
+            .environmentObject(appState)
+        }
     }
 }
 

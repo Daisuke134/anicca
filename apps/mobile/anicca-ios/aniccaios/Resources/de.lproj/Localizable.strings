@@ -1379,3 +1379,7 @@
 "growth_notifications_on" = "Mitteilungen erlaubt";
 "growth_notifications_off" = "Mitteilungen sind aus oder noch nicht erlaubt";
 "growth_notification_settings" = "Mitteilungserlaubnis verwalten";
+
+/* Optional Premium after the free experience. */
+"soft_paywall_free_benefit" = "Kostenlos: Affirmationen lesen, speichern und teilen";
+"soft_paywall_premium_benefit" = "Premium: alle 8 Designs und 4 Erinnerungen täglich";

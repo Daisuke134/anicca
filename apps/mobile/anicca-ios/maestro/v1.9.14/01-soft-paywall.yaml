@@ -1,0 +1,108 @@
+appId: ai.anicca.app.ios
+name: First launch to free affirmations, optional Premium, and free continuation
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+- tapOn:
+    text: "Cancel|Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: onboarding-goal-continue
+    timeout: 60000
+- tapOn:
+    id: onboarding-goal-self_love
+- tapOn:
+    id: onboarding-goal-continue
+- assertVisible:
+    id: onboarding-first-affirmation
+- tapOn:
+    id: onboarding-first-save
+- tapOn:
+    id: onboarding-first-continue
+- tapOn:
+    id: onboarding-reminder-continue
+- tapOn:
+    id: onboarding-notifications-skip
+- extendedWaitUntil:
+    visible:
+      id: feed-scroll
+    timeout: 15000
+- assertNotVisible:
+    id: paywall-plan-cta
+- copyTextFrom:
+    id: quote-text
+- evalScript: ${output.firstQuote = maestro.copiedText}
+- swipe:
+    start: 50%, 75%
+    end: 50%, 25%
+    duration: 450
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: quote-text
+- assertTrue: ${maestro.copiedText !== output.firstQuote}
+- takeScreenshot: soft-paywall-free-feed
+- tapOn:
+    id: quote-like
+- tapOn:
+    id: feed-saved
+- assertVisible: "I am worthy of the love I give and receive."
+- tapOn: Close
+- tapOn:
+    id: feed-themes
+- tapOn:
+    id: theme-silkDusk
+- extendedWaitUntil:
+    visible:
+      id: paywall-plan-cta
+    timeout: 60000
+- assertVisible: "Free: read, save and share affirmations"
+- assertVisible: "Premium: all 8 themes and 4 daily reminders"
+- takeScreenshot: soft-paywall-real-plans
+- tapOn:
+    id: paywall-close-button
+- assertVisible:
+    id: theme-sandWave
+- tapOn:
+    id: theme-sandWave
+- assertVisible:
+    id: feed-scroll
+- swipe:
+    start: 50%, 75%
+    end: 50%, 25%
+    duration: 450
+- assertVisible:
+    id: quote-text
+- takeScreenshot: soft-paywall-free-continuation
+- stopApp
+- launchApp
+# StoreKit's unsigned simulator account prompt can also appear on relaunch.
+# Dismiss it without signing in, as on the existing first-launch journey.
+- tapOn:
+    text: Cancel
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: feed-scroll
+    timeout: 15000
+- assertNotVisible:
+    id: onboarding-goal-continue
+- assertNotVisible:
+    id: paywall-plan-cta
+- copyTextFrom:
+    id: quote-text
+- evalScript: ${output.relaunchedQuote = maestro.copiedText}
+- swipe:
+    start: 50%, 75%
+    end: 50%, 25%
+    duration: 450
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: quote-text
+- assertTrue: ${maestro.copiedText !== output.relaunchedQuote}
+- takeScreenshot: soft-paywall-free-after-relaunch
