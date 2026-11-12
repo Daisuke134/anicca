@@ -1,0 +1,142 @@
+name: Manager BB-43 wave 3 | BehaviorBench final two shards (qwen3 multiround guessing + push_pull), watchdog
+
+# anicca-ops Issue #43, wave 3 (2026-11-13, Muse): re-runs ONLY the two shards cancelled in wave 2 run 43187535316
+# (qwen3-4b-instruct-2507 multiround_behavior_guessing and multiround_behavior_push_pull, receipts 0/500).
+# Same pinned evaluator/dataset revisions and conditions as wave 2. Successful wave-2 shards are NOT re-run. Research-purpose evaluation only. Be.FM weights are used
+# under the Be.FM Terms (non-commercial research evaluation, no commercial
+# loading, no redistribution); the adapter is downloaded with the account's own
+# HF read token (repo secret HF_TOKEN). BehaviorBench data is CC BY-NC-ND 4.0:
+# it is downloaded at run time and NOT uploaded; artifacts hold only item index,
+# raw model output and parsed prediction. No model weights are uploaded.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bb43w3-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  shard:
+    name: ${{ matrix.arm }} ${{ matrix.task }} shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [qwen3-4b-instruct-2507]
+        task_shard:
+          - "pers_score_pred:2:668:1000:big_five/pers_score_pred/test.jsonl"
+          - "surv_resp_pred:2:668:1000:big_five/surv_resp_pred/test.jsonl"
+          - "missing_surv_resp:2:668:1000:big_five/missing_surv_resp/test.jsonl"
+          - "seq_surv_resp:2:668:1000:big_five/seq_surv_resp/test.jsonl"
+          - "demo_pred_age:2:668:1000:big_five/demo_pred_age/test.jsonl"
+          - "acrossdim_pers_score:2:668:1000:big_five/acrossdim_pers_score/test.jsonl"
+          - "multiround_behavior_guessing:0:0:500:moblab/multiround_behavior/guessing_multiround_test.jsonl"
+          - "multiround_behavior_push_pull:0:0:500:moblab/multiround_behavior/push_pull_multiround_test.jsonl"
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      EVAL_REV: ddd646ed2bbecdb79094eb56763ee7664d2f8e1a
+      DATA_REV: ec382c701589da2f24bf697dd1b3bb9f7bd62a35
+      BASE_GGUF_SHA256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e"
+      ADAPTER_SHA256: "62bd79fa95b7aa3a47c4a99bacdedec6ccab81f020dbbbde2bd320bc7f2b96ba"
+      ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+      ARM: ${{ matrix.arm }}
+      TS: ${{ matrix.task_shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Parse shard
+        shell: bash
+        run: |
+          IFS=: read -r TASK SHARD LO HI REL <<< "$TS"
+          echo "REL=$REL" >> $GITHUB_ENV
+          echo "TASK=$TASK" >> $GITHUB_ENV; echo "SHARD=$SHARD" >> $GITHUB_ENV
+          echo "LO=$LO" >> $GITHUB_ENV; echo "HI=$HI" >> $GITHUB_ENV
+          echo "W=$RUNNER_TEMP/bb43" >> $GITHUB_ENV
+      - name: Official evaluator (pinned) + dataset (pinned, public)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$W"; cd "$W"
+          git clone -q https://github.com/umich-foreseer/behaviorbench_eval.git
+          cd behaviorbench_eval && git checkout -q "$EVAL_REV"
+          python -m pip install -q uv && uv sync -q
+          cd "$W"
+          python -m pip install -q --disable-pip-version-check "huggingface_hub>=0.26,<1.0"
+          python -c "from huggingface_hub import snapshot_download as s; s('befm/BehaviorBench', repo_type='dataset', revision='$DATA_REV', local_dir='$W/bbdata')"
+          ln -s "$W/bbdata" behaviorbench_eval/data
+          if [ "$REL" = "-" ]; then
+            echo "DATA_PATH=" >> $GITHUB_ENV
+            echo "EXTRA_ARGS=--num-samples-per-game 50" >> $GITHUB_ENV
+            echo "TEMP=1.0" >> $GITHUB_ENV
+          else
+            DST="$W/shard_$(basename "$(dirname "$REL")")_$(basename "$REL" .jsonl)_$SHARD.jsonl"
+            sed -n "$((LO+1)),${HI}p" "bbdata/$REL" > "$DST"; wc -l "$DST"
+            echo "DATA_PATH=$DST" >> $GITHUB_ENV
+            echo "EXTRA_ARGS=" >> $GITHUB_ENV
+            echo "TEMP=0.0" >> $GITHUB_ENV
+          fi
+      - name: llama.cpp b12137 (pinned, same as BFM-03)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" -o "$W/llama.tgz"
+          echo "$ARCHIVE_SHA256  $W/llama.tgz" | sha256sum --check
+          mkdir -p "$W/llama" && tar -xzf "$W/llama.tgz" -C "$W/llama"
+          S=$(find "$W/llama" -type f -name llama-server | head -1); chmod +x "$S"
+          echo "LLAMA_SERVER=$S" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$(dirname "$S")" >> $GITHUB_ENV
+      - name: Base Qwen3-4B-Instruct-2507 Q4_K_M GGUF (pinned, same artifact as BFM-02/03)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --max-time 900 "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf" -o "$W/qwen3.gguf"
+          echo "$BASE_GGUF_SHA256  $W/qwen3.gguf" | sha256sum --check
+          echo "GGUF=$W/qwen3.gguf" >> $GITHUB_ENV
+      - name: Be.FM 1.5-4B LoRA (gated; HF_TOKEN never printed) -> GGUF
+        if: matrix.arm == 'befm15-4b'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$HF_TOKEN" || { echo "HF_TOKEN secret missing"; exit 1; }
+          python - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+          a = snapshot_download("befm/BeFM1.5-4B", token=os.environ["HF_TOKEN"], allow_patterns=["adapter_config.json", "adapter_model.safetensors"])
+          b = snapshot_download("Qwen/Qwen3-4B-Instruct-2507", allow_patterns=["config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json", "vocab.json", "merges.txt", "generation_config.json"])
+          open(os.environ["W"] + "/paths.txt", "w").write(a + "\n" + b + "\n")
+          PY
+          mapfile -t P < "$W/paths.txt"
+          echo "$ADAPTER_SHA256  ${P[0]}/adapter_model.safetensors" | sha256sum --check
+          git clone -q --depth 1 --branch b12137 https://github.com/ggml-org/llama.cpp "$W/llama-src"
+          python -m pip install -q --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu "torch>=2.2,<2.6"
+          python -m pip install -q --disable-pip-version-check -r "$W/llama-src/requirements.txt"
+          python "$W/llama-src/convert_lora_to_gguf.py" --outfile "$W/befm-lora.gguf" --base "${P[1]}" "${P[0]}"
+          sha256sum "$W/befm-lora.gguf"
+          echo "LORA=$W/befm-lora.gguf" >> $GITHUB_ENV
+      - name: Run with watchdog (timeouts, retry, resume from per-request cache)
+        shell: bash
+        run: |
+          set -uo pipefail
+          export EVAL_DIR="$W/behaviorbench_eval" OUT_DIR="$W/run" MAX_TOKENS=1024
+          bash products/manager/evals/bb43w2/bb_watchdog.sh
+          rc=$?
+          mkdir -p "$GITHUB_WORKSPACE/receipt"
+          cp "$W/run/watchdog.log" "$GITHUB_WORKSPACE/receipt/watchdog-$ARM-$TASK-$SHARD.log"
+          if [ $rc -eq 0 ]; then
+            python products/manager/evals/bb43w2/strip_result.py "$(cat "$W/run/result_path")" "$GITHUB_WORKSPACE/receipt/pred-$ARM-$TASK-$SHARD.json" "$ARM" "$TASK" "$SHARD" "$LO"
+          fi
+          exit $rc
+      - name: Upload receipt (predictions only; no dataset rows, no weights)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bb43w2-${{ env.ARM }}-${{ env.TASK }}-${{ env.SHARD }}
+          path: receipt/
+          retention-days: 30
