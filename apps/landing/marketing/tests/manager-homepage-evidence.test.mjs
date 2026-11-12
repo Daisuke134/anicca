@@ -16,8 +16,11 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /End suffering\./);
   assert.match(text, /Anicca is an AI lab/);
-  assert.match(text, /foundation model for human behavior/);
+  assert.match(text, /Foundational Model for Behaviors/);
   assert.match(text, /same intervention in a different environment/);
+  assert.match(text, /ManagerBench/);
+  assert.match(text, /Eval Driven Development on All Platforms/);
+  assert.match(text, /Product: Anicca — one product, every platform/);
   assert.match(html, /manager-real-intervention-outcomes-en/);
   assert.match(html, /manager-behavioral-foundation-model-guide-en/);
   assert.match(html, /manager-vipassana-behavior-model-en/);
@@ -57,7 +60,10 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /苦しみを終わらせる。/);
   assert.match(text, /AniccaはAIラボです/);
-  assert.match(text, /行動の分野の基盤モデルが、Managerです/);
+  assert.match(text, /ManagerBench/);
+  assert.match(text, /全プラットフォームでの評価駆動開発/);
+  assert.match(text, /製品：Anicca/);
+  assert.match(text, /行動の基盤モデル「Manager」（Foundational Model for Behaviors）です/);
   assert.match(text, /環境が違うだけで同じ行動介入/);
   assert.match(html, /manager-real-intervention-outcomes-ja/);
   assert.match(html, /manager-behavioral-foundation-model-guide-ja/);
