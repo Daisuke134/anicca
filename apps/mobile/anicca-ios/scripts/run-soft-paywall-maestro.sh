@@ -50,18 +50,37 @@ PY
 xcrun simctl io "$simulator_id" recordVideo --codec=h264 "$evidence_dir/experience.mp4" \
     > "$evidence_dir/recording.log" 2>&1 &
 recording_pid=$!
+recording_started_at=$SECONDS
+recording_result=0
 stop_recording() {
-    kill -INT "$recording_pid" 2>/dev/null || true
-    wait "$recording_pid" || true
+    if ! kill -0 "$recording_pid" 2>/dev/null; then
+        recording_result=1
+    else
+        kill -INT "$recording_pid" 2>/dev/null || recording_result=1
+    fi
+    local recorder_exit=0
+    wait "$recording_pid" || recorder_exit=$?
+    if [[ "$recorder_exit" != 0 && "$recorder_exit" != 130 ]]; then
+        recording_result=1
+    fi
 }
 trap stop_recording EXIT
+sleep 1
+kill -0 "$recording_pid"
 set +e
 maestro --device "$simulator_id" test --format JUNIT \
     --output "$evidence_dir/result.xml" --debug-output "$evidence_dir/maestro" \
     maestro/v1.9.14/01-soft-paywall.yaml > "$evidence_dir/maestro.log" 2>&1
 maestro_result=$?
 set -e
+recording_elapsed=$((SECONDS - recording_started_at))
 stop_recording
 trap - EXIT
 printf '%s\n' "$maestro_result" > "$evidence_dir/exit-code.txt"
+if [[ "$recording_result" != 0 || ! -s "$evidence_dir/experience.mp4" ]]; then
+    printf '%s\n' 'Simulator recording failed or ended before the journey completed.' >&2
+    exit 1
+fi
+xcrun swift scripts/verify-maestro-recording.swift "$evidence_dir/experience.mp4" "$recording_elapsed" \
+    > "$evidence_dir/video-validation.json"
 exit "$maestro_result"

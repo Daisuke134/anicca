@@ -55,6 +55,7 @@ jobs:
           if-no-files-found: warn
   build:
     name: Build and unit tests (unsigned)
+    if: github.event_name != 'workflow_dispatch' || !inputs.run_maestro
     runs-on: macos-15
     defaults:
       run:
