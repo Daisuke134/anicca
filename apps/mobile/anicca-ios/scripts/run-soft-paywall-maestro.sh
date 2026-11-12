@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run against a real simulator build; configuration is supplied privately by CI.
+app_dir=$(cd "$(dirname "$0")/.." && pwd)
+cd "$app_dir"
+evidence_dir=${1:?Usage: run-soft-paywall-maestro.sh EVIDENCE_DIRECTORY}
+mkdir -p "$evidence_dir"
+evidence_dir=$(cd "$evidence_dir" && pwd)
+derived_dir=${RUNNER_TEMP:-/tmp}/anicca-soft-paywall-derived
+simulator_id=$(xcrun simctl list devices available -j | python3 -c '
+import json,sys
+for devices in json.load(sys.stdin)["devices"].values():
+    for device in devices:
+        if device.get("isAvailable") and "iPhone" in device["name"]:
+            print(device["udid"])
+            sys.exit(0)
+sys.exit("No available iPhone simulator")
+')
+xcrun simctl boot "$simulator_id"
+xcrun simctl bootstatus "$simulator_id" -b
+xcrun simctl status_bar "$simulator_id" override --time '9:41' --batteryState charged --batteryLevel 100
+
+# Avoid printing or uploading build settings containing the private xcconfig.
+xcodebuild build -project aniccaios.xcodeproj -scheme aniccaios \
+    -configuration Release -destination "platform=iOS Simulator,id=$simulator_id" \
+    -derivedDataPath "$derived_dir" CODE_SIGNING_ALLOWED=NO \
+    > "${RUNNER_TEMP:-/tmp}/anicca-soft-paywall-build.log" 2>&1
+xcrun simctl install "$simulator_id" "$derived_dir/Build/Products/Release-iphonesimulator/aniccaios.app"
+
+export MAESTRO_CLI_NO_ANALYTICS=1
+maestro --version > "$evidence_dir/maestro-version.txt"
+xcodebuild -version > "$evidence_dir/xcode-version.txt"
+xcrun simctl list devices available -j > "$evidence_dir/simulators.json"
+export SOFT_PAYWALL_SIMULATOR_ID="$simulator_id"
+export SOFT_PAYWALL_EVIDENCE_DIR="$evidence_dir"
+python3 - <<'PY'
+import datetime, json, os, pathlib, subprocess
+evidence = pathlib.Path(os.environ['SOFT_PAYWALL_EVIDENCE_DIR'])
+metadata = {
+    'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+    'recorded_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'simulator_id': os.environ['SOFT_PAYWALL_SIMULATOR_ID'],
+    'flow': 'maestro/v1.9.14/01-soft-paywall.yaml',
+    'configuration': 'real RevenueCat SDK configuration, no purchase mocks',
+}
+(evidence / 'metadata.json').write_text(json.dumps(metadata, indent=2) + '\n')
+PY
+
+xcrun simctl io "$simulator_id" recordVideo --codec=h264 "$evidence_dir/experience.mp4" \
+    > "$evidence_dir/recording.log" 2>&1 &
+recording_pid=$!
+stop_recording() {
+    kill -INT "$recording_pid" 2>/dev/null || true
+    wait "$recording_pid" || true
+}
+trap stop_recording EXIT
+set +e
+maestro --device "$simulator_id" test --format JUNIT \
+    --output "$evidence_dir/result.xml" --debug-output "$evidence_dir/maestro" \
+    maestro/v1.9.14/01-soft-paywall.yaml > "$evidence_dir/maestro.log" 2>&1
+maestro_result=$?
+set -e
+stop_recording
+trap - EXIT
+printf '%s\n' "$maestro_result" > "$evidence_dir/exit-code.txt"
+exit "$maestro_result"
