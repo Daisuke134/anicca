@@ -1,6 +1,6 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-10-20.1
-context-digest: 7c2a72ae0b66f083c12cafde115cc5079f2e9722807b42e2288aef3f370b170f
+context-digest: 5661cfbe438c7a8cfb1c8aca5dab4b7d779a72b5e3c5a2a163d3a54f2e42ec20
 
 # Life Manager
 
