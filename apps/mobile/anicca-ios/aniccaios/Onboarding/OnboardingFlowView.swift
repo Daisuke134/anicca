@@ -73,6 +73,7 @@ struct OnboardingFlowView: View {
                     }
                 }
             )
+            .environmentObject(appState)
             .interactiveDismissDisabled(true)
         }
     }

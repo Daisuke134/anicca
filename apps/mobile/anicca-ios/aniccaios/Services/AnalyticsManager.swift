@@ -204,6 +204,7 @@ final class AnalyticsManager {
             "paywall_gate_variant": gateVariant.rawValue,
             "flow_id": flowID,
         ])
+        Purchases.shared.trackCustomPaywallImpression()
     }
 
     func trackPurchaseResult(_ result: String, productID: String, flowID: String, errorCode: String? = nil) {
