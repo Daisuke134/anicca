@@ -62,7 +62,7 @@
       "url": "https://aniccaai.com/lm",
       "status": "verified",
       "expected_text": "Life Manager",
-      "verified_at": "2026-10-08T09:02:18+09:00",
+      "verified_at": "2026-10-20T20:00:00+09:00",
       "evidence": "Public page readback shows Google Calendar connection, eligible-event Travel blocks, departure reminders, Google identity and Calendar permission requirements, no Gmail access, a seven-day card-required trial, and USD 29/month after the trial."
     },
     "repository": {
@@ -199,7 +199,7 @@
   "claim_guards": [
     {
       "id": "achieved-agi",
-      "pattern": "\\b(?:(?:is|became|becomes|achieved|has achieved)\\s+(?:an?\\s+)?AGI|(?:world(?:'s|’s) first|the first)\\s+AGI)\\b"
+      "pattern": "\\b(?:(?:is|became|becomes|achieved|has achieved)\\s+(?:an?\\s+)?AGI|(?:world(?:'s|\u2019s) first|the first)\\s+AGI)\\b"
     },
     {
       "id": "numeric-users",

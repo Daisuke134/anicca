@@ -1128,3 +1128,6 @@ c760488bdc2c2f40dac93b28c7ef972b946e3b6d:aniccaios/aniccaios/Services/SingularMa
 
 # source_evidence_sha256 content digest of an evidence file; not an authentication key. Exact historical fingerprint only.
 e8c3a96f42f94f3a419fd9f343877338ecd6dbf9:docs/research/evidence/naive-live-20261104/owned-email-onboarding-v24.json:generic-api-key:62
+
+# Adjudicated Cursor Agent generic-api-key test fixture commit on 2026-11-11
+3ac666de5099d1dc1992b323d139cab4af8f5ed2:hybrid-affirmations/src/logic.mjs:generic-api-key:1
