@@ -65,10 +65,22 @@ name: First launch to free affirmations, optional Premium, and free continuation
 - takeScreenshot: soft-paywall-real-plans
 - tapOn:
     id: paywall-close-button
+# StoreKit can raise the sandbox Apple Account sign-in prompt as the
+# paywall dismisses (diagnosed from run 43280022590 video frames: the free
+# feed was already back, covered by the prompt). Dismiss it without
+# signing in before asserting the theme picker, as elsewhere in this flow.
+- tapOn:
+    text: Cancel
+    optional: true
+- waitForAnimationToEnd
 - assertVisible:
     id: theme-sandWave
 - tapOn:
     id: theme-sandWave
+- tapOn:
+    text: Cancel
+    optional: true
+- waitForAnimationToEnd
 - assertVisible:
     id: feed-scroll
 - swipe:
@@ -82,6 +94,10 @@ name: First launch to free affirmations, optional Premium, and free continuation
 - launchApp
 # StoreKit's unsigned simulator account prompt can also appear on relaunch.
 # Dismiss it without signing in, as on the existing first-launch journey.
+- tapOn:
+    text: Cancel
+    optional: true
+- waitForAnimationToEnd
 - tapOn:
     text: Cancel
     optional: true
