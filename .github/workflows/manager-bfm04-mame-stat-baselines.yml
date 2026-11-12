@@ -1,0 +1,71 @@
+name: Manager BFM-04 | Statistical baselines on the frozen BFM-02 MaMe-Re slice
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm04-mame-stat-baselines.yml"
+      - "products/manager/evals/mame_stat_baselines.py"
+      - "products/manager/evals/qwen3_mame_text_eval.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Single-threaded BLAS: two earlier receipts (runs 42491778222, 42493478706)
+# differed by exactly one near-tie case per learned method. Pinning thread
+# counts (plus RandomForest n_jobs=1) makes the receipt reproducible.
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+
+concurrency:
+  group: manager-bfm04-stat-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  statistical-baselines:
+    name: Train Mean / Ridge / Random Forest vs the identical 24 held-out contexts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout evaluated commit and frozen benchmark split
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned analysis stack
+        run: |
+          python -m pip install --disable-pip-version-check \
+            "numpy==1.26.4" "scipy==1.13.1" "scikit-learn==1.5.2"
+
+      - name: Validate the underlying BFM-02 harness tests still pass
+        working-directory: products/manager/evals
+        run: python -m unittest -v test_qwen3_mame_text_eval.py
+
+      - name: Score Train Mean / Ridge / Random Forest on the frozen slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/mame-input artifacts/out
+          python products/manager/evals/mame_stat_baselines.py \
+            --input-dir artifacts/mame-input \
+            --output artifacts/out/bfm04-stat-baselines.json
+          python - <<'PY'
+          import json
+          r = json.load(open("artifacts/out/bfm04-stat-baselines.json"))
+          for name, s in r["methods"].items():
+              assert s["n_human_non_tied"] == 18, (name, s["n_human_non_tied"])
+              print(name, "strict:", s["model_strict_win_accuracy_including_invalid"],
+                    "regret:", s["mean_model_regret_invalid_counted"])
+          PY
+
+      - name: Upload reproducible statistical-baseline receipt
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: manager-bfm04-mame-stat-baselines
+          path: artifacts/out/bfm04-stat-baselines.json
+          retention-days: 30
