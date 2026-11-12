@@ -1379,3 +1379,7 @@
 "growth_notifications_on" = "Notificações permitidas";
 "growth_notifications_off" = "Notificações desativadas ou ainda não permitidas";
 "growth_notification_settings" = "Gerenciar permissões de notificação";
+
+/* Optional Premium after the free experience. */
+"soft_paywall_free_benefit" = "Grátis: ler, salvar e compartilhar afirmações";
+"soft_paywall_premium_benefit" = "Premium: 8 temas e 4 lembretes diários";

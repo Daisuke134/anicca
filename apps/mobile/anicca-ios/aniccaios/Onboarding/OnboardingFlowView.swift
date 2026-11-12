@@ -3,18 +3,10 @@ import RevenueCat
 import RevenueCatUI
 import UserNotifications
 
-/// Goal → real affirmation → optional reminder settings → paywall.
-/// Paywall presented via .fullScreenCover + .interactiveDismissDisabled (スワイプ離脱は防止)。
-/// 2026-11-08 ハードペイウォール A/B 化: ゲートの形は RevenueCat Experiment の
-/// 割当 Offering で決まる (PaywallGateVariant)。検証群 (hard) では × を表示せず
-/// 購入成功か復元で entitled になるまで onboarding を完了させない。対照群
-/// (soft) では従来どおり × で無料完了できる。
+/// Value-first onboarding completes into the free feed, independently of purchases or network.
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
     @State private var step: OnboardingStep = .welcome
-    @State private var showPaywall: Bool = false
-    @State private var isResolvingPaywallEntry = false
-    @State private var didPurchaseOnPaywall = false
     @State private var lastTrackedStep: OnboardingStep?
     @State private var didTrackOnboardingStart = false
 
@@ -33,14 +25,10 @@ struct OnboardingFlowView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            if isResolvingPaywallEntry {
-                ProgressView()
-                    .accessibilityIdentifier("onboarding-paywall-entitlement-check")
-            }
         }
         .onAppear {
             if appState.onboardingQuestionsCompleted {
-                resolveOnboardingPaywallEntry(source: "resume")
+                completeFreeOnboarding()
                 return
             }
 
@@ -60,22 +48,6 @@ struct OnboardingFlowView: View {
             }
         }
         .onChange(of: step) { _ in recordStepView() }
-        .fullScreenCover(isPresented: $showPaywall) {
-            PaywallFlowContainer(
-                onPurchaseSuccess: { customerInfo in
-                    handlePaywallSuccess(customerInfo: customerInfo)
-                },
-                onDismiss: {
-                    if gateVariant == .soft {
-                        handlePaywallDismissedAsFree()
-                    } else {
-                        handlePaywallDismissalBlocked()
-                    }
-                }
-            )
-            .environmentObject(appState)
-            .interactiveDismissDisabled(true)
-        }
     }
 
     // MARK: - Onboarding Steps
@@ -121,7 +93,7 @@ struct OnboardingFlowView: View {
             appState.markOnboardingQuestionsCompleted()
             AnalyticsManager.shared.track(.onboardingCompleted)
             AnalyticsManager.shared.updateSKANConversionValue(1)
-            resolveOnboardingPaywallEntry(source: "completion")
+            completeFreeOnboarding()
             return
         }
 
@@ -132,80 +104,8 @@ struct OnboardingFlowView: View {
         }
     }
 
-    private func completeOnboardingForExistingPro() {
-        // v1.8.7: remote-only notifications. APNs registration is triggered on
-        // permission grant and on app foreground — nothing to schedule locally.
-        appState.markOnboardingComplete()
-    }
-
-    @MainActor
-    private func resolveOnboardingPaywallEntry(source: String) {
-        guard !isResolvingPaywallEntry else { return }
-        isResolvingPaywallEntry = true
-        Task { @MainActor in
-            let freshEntitlement = await SubscriptionManager.shared.refreshCustomerInfo()
-            let cachedEntitlement = appState.subscriptionInfo.isEntitled
-            let result: String
-            if let freshEntitlement {
-                result = freshEntitlement ? "fresh_entitled" : "fresh_not_entitled"
-            } else {
-                result = cachedEntitlement ? "unavailable_cached_entitled" : "unavailable_cached_free"
-            }
-            AnalyticsManager.shared.track(.onboardingPaywallCustomerInfoResult, properties: [
-                "source": source,
-                "result": result,
-                // A/B 露出計測: このユーザーに割り当てられたゲートを funnel で追う。
-                "paywall_gate_variant": gateVariant.rawValue,
-            ])
-
-            let decision = OnboardingPaywallDecision.resolve(
-                freshEntitlement: freshEntitlement,
-                cachedEntitlement: cachedEntitlement
-            )
-            isResolvingPaywallEntry = false
-            switch decision {
-            case .completeOnboarding:
-                AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
-                completeOnboardingForExistingPro()
-            case .presentPaywall:
-                AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.paywall.rawValue)
-                showPaywall = true
-            }
-        }
-    }
-
-    private func handlePaywallSuccess(customerInfo: CustomerInfo) {
+    private func completeFreeOnboarding() {
         AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
-        didPurchaseOnPaywall = true
-        appState.updateSubscriptionInfo(from: customerInfo)
         appState.markOnboardingComplete()
-        showPaywall = false
-    }
-
-    /// このユーザーに割り当てられたペイウォールゲート (cachedOffering 由来)。
-    private var gateVariant: PaywallGateVariant {
-        PaywallGateVariant.resolve(offeringIdentifier: appState.cachedOffering?.identifier)
-    }
-
-    /// 対照群 (ソフトペイウォール): 右上 × で課金せずメイン画面へ。
-    /// A/B の対照として 2026-11-08 に復活。検証群 (hard) では呼ばれない。
-    private func handlePaywallDismissedAsFree() {
-        AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
-        AnalyticsManager.shared.track(.onboardingPaywallDismissedFree, properties: [
-            "paywall_gate_variant": PaywallGateVariant.soft.rawValue,
-        ])
-        appState.markOnboardingComplete()
-        showPaywall = false
-    }
-
-    /// 検証群 (ハードペイウォール): 新規導線では × を表示しないため通常は
-    /// 呼ばれない。万一 dismiss が要求されても、購入成功
-    /// (handlePaywallSuccess) か復元で entitled になるまで
-    /// markOnboardingComplete を呼ばず、ペイウォールを表示したままにする。
-    /// 離脱の計測は paywall_shown → purchase_started の funnel
-    /// (paywall_gate_variant プロパティ付き) で追う。
-    private func handlePaywallDismissalBlocked() {
-        // Do not complete onboarding and do not dismiss the paywall.
-        showPaywall = true
     }
 }

@@ -116,16 +116,6 @@ final class PaywallPackageSelectionTests {
         precondition(resolveOffering(legacy, all: ["anicca_variant_b": intended])?.identifier == "anicca_variant_b")
     }
 
-    func testFreshCustomerInfoOverridesStaleCachedEntitlement() {
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: true, cachedEntitlement: false) == .completeOnboarding)
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: false, cachedEntitlement: true) == .presentPaywall)
-    }
-
-    func testUnavailableCustomerInfoFallsBackToCachedEntitlement() {
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: nil, cachedEntitlement: true) == .completeOnboarding)
-        precondition(OnboardingPaywallDecision.resolve(freshEntitlement: nil, cachedEntitlement: false) == .presentPaywall)
-    }
-
     func testDelayedLoadSelectsAnnualWithoutAnotherAppearance() {
         var selected = resolve([])
         precondition(selected == nil)
@@ -279,8 +269,6 @@ final class PaywallPackageSelectionTests {
         ("testInvalidFallbackNeverReturnsHonneProducts", testInvalidFallbackNeverReturnsHonneProducts),
         ("testAniccaOfferingMustContainOnlyAniccaProductsAndMonthlyOrAnnualPlan", testAniccaOfferingMustContainOnlyAniccaProductsAndMonthlyOrAnnualPlan),
         ("testExplicitAniccaOfferingWinsOverLegacyCurrentWithoutLifetime", testExplicitAniccaOfferingWinsOverLegacyCurrentWithoutLifetime),
-        ("testFreshCustomerInfoOverridesStaleCachedEntitlement", testFreshCustomerInfoOverridesStaleCachedEntitlement),
-        ("testUnavailableCustomerInfoFallsBackToCachedEntitlement", testUnavailableCustomerInfoFallsBackToCachedEntitlement),
         ("testDelayedLoadSelectsAnnualWithoutAnotherAppearance", testDelayedLoadSelectsAnnualWithoutAnotherAppearance),
         ("testMonthlyOnlyLoadSelectsMonthly", testMonthlyOnlyLoadSelectsMonthly),
         ("testUserMonthlyChoiceSurvivesRefreshAndRebindsToCurrentInstance", testUserMonthlyChoiceSurvivesRefreshAndRebindsToCurrentInstance),

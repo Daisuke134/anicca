@@ -183,10 +183,10 @@ final class OnboardingV2Tests: XCTestCase {
 
     // MARK: - PaywallGateVariant (2026-11-08 hard paywall A/B)
 
-    func test_gateVariant_hardOffering_resolvesHard() {
+    func test_gateVariant_oldHardOffering_resolvesSoft() {
         XCTAssertEqual(
             PaywallGateVariant.resolve(offeringIdentifier: "anicca_variant_b_hard"),
-            .hard
+            .soft
         )
     }
 
@@ -202,8 +202,8 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(PaywallGateVariant.resolve(offeringIdentifier: "default"), .soft)
     }
 
-    func test_gateVariant_closeButton_onboardingHard_isHidden() {
-        XCTAssertFalse(PaywallGateVariant.showsCloseButton(flowID: "onboarding", variant: .hard))
+    func test_gateVariant_closeButton_onboardingHard_isShown() {
+        XCTAssertTrue(PaywallGateVariant.showsCloseButton(flowID: "onboarding", variant: .hard))
     }
 
     func test_gateVariant_closeButton_onboardingSoft_isShown() {
@@ -212,6 +212,14 @@ final class OnboardingV2Tests: XCTestCase {
 
     func test_gateVariant_closeButton_settingsHard_isShown() {
         XCTAssertTrue(PaywallGateVariant.showsCloseButton(flowID: "settings_subscription", variant: .hard))
+    }
+
+    func test_theme_access_freeHasTwoChoices_andProHasEveryTheme() {
+        XCTAssertEqual(Set(ThemeID.allCases.filter { $0.isFree }), Set([.sageMist, .sandWave]))
+        for theme in ThemeID.allCases {
+            XCTAssertTrue(theme.isAvailable(isEntitled: true))
+            XCTAssertEqual(theme.isAvailable(isEntitled: false), theme.isFree)
+        }
     }
 
     // MARK: - PaywallOfferingSelection experiment priority (2026-11-08)

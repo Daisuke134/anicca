@@ -633,31 +633,14 @@ struct PaywallValueTimelineStepView: View {
     }
 }
 
-// MARK: - Paywall Flow Container
-// 2026-11-08 ハードペイウォール A/B 化: ゲートの形は RevenueCat Experiment が
-// 割り当てた Offering で決まる (PaywallGateVariant)。
-// - 検証群 (anicca_variant_b_hard): 新規導線では × を描画しない。購入成功か
-//   復元で entitled になるまで本編へ進めない。
-// - 対照群 (anicca_variant_b): 従来のソフトペイウォール (× で無料完了)。
-// 設定 (flowID == "settings_subscription") など既存ユーザーの再表示では
-// ゲートによらず × を残す。
+// MARK: - Optional Paywall
 
 struct PaywallFlowContainer: View {
     let onPurchaseSuccess: (CustomerInfo) -> Void
     let onDismiss: () -> Void
     var flowID: String = "onboarding"
     @State private var step: PaywallStep = .planSelection
-    @State private var exposedOfferingIdentifier: String?
     @EnvironmentObject private var appState: AppState
-
-    /// このユーザーに割り当てられたペイウォールゲート (cachedOffering 由来)。
-    private var gateVariant: PaywallGateVariant {
-        PaywallGateVariant.resolve(offeringIdentifier: appState.cachedOffering?.identifier)
-    }
-
-    private var showsCloseButton: Bool {
-        PaywallGateVariant.showsCloseButton(flowID: flowID, variant: gateVariant)
-    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -675,10 +658,7 @@ struct PaywallFlowContainer: View {
                 )
             }
 
-            if showsCloseButton {
-                // 既存ユーザーの再表示と、対照群 (ソフト) の新規導線のみ:
-                // 右上の × で課金せず閉じられる。
-                // primer / planSelection どちらの段でも常に表示。
+            Group {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
                         .font(.system(size: 17, weight: .semibold))
@@ -693,26 +673,5 @@ struct PaywallFlowContainer: View {
             }
         }
         .analyticsScreen(.paywall, flowID: flowID)
-        .onAppear { fireExperimentExposureIfNeeded() }
-        .onChange(of: appState.cachedOffering?.identifier) { _ in
-            fireExperimentExposureIfNeeded()
-        }
-    }
-
-    /// A/B 露出計測: 割当 Offering が確定し、このコンテナがそのゲートで表示
-    /// された時点で experiment_exposure を1回だけ発火する。Offering の到着が
-    /// 表示より遅れた場合は onChange で確定値を使って発火する (推測の variant
-    /// では発火しない)。実験の対象は新規導線 (onboarding) のみで、設定からの
-    /// 再表示はゲート対象外のため発火しない。
-    private func fireExperimentExposureIfNeeded() {
-        guard flowID == "onboarding" else { return }
-        guard let offeringIdentifier = appState.cachedOffering?.identifier else { return }
-        guard exposedOfferingIdentifier != offeringIdentifier else { return }
-        exposedOfferingIdentifier = offeringIdentifier
-        AnalyticsManager.shared.trackExperimentExposure(
-            offeringIdentifier: offeringIdentifier,
-            gateVariant: gateVariant,
-            flowID: flowID
-        )
     }
 }

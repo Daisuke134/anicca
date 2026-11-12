@@ -131,37 +131,25 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("Task { @MainActor in", purchase)
         self.assertNotIn("await MainActor.run", purchase)
 
-    def test_onboarding_end_refreshes_customer_info_before_routing_to_paywall(self):
+    def test_free_onboarding_completes_without_a_network_or_purchase_gate(self):
         onboarding = ONBOARDING.read_text(encoding="utf-8")
-        manager = SUBSCRIPTION_MANAGER.read_text(encoding="utf-8")
-
         resume = onboarding.split("if appState.onboardingQuestionsCompleted", 1)[1].split(
             "step = appState.onboardingStep", 1
         )[0]
         completion = onboarding.split("if step == .notifications", 1)[1].split(
-            "if let next = OnboardingStep", 1
+            "if let next = step.nextInitialStep", 1
         )[0]
-        self.assertIn('resolveOnboardingPaywallEntry(source: "resume")', resume)
-        self.assertIn('resolveOnboardingPaywallEntry(source: "completion")', completion)
-        entry = onboarding.split("private func resolveOnboardingPaywallEntry", 1)[1].split(
-            "private func handlePaywallSuccess", 1
-        )[0]
-        self.assertIn("await SubscriptionManager.shared.refreshCustomerInfo()", entry)
-        self.assertLess(entry.index("refreshCustomerInfo()"), entry.index("OnboardingPaywallDecision.resolve("))
-        self.assertIn("customerInfo(fetchPolicy: .fetchCurrent)", manager)
-        self.assertIn("AppState.shared.updateSubscriptionInfo(subscription)", manager)
+        self.assertIn("completeFreeOnboarding()", resume)
+        self.assertIn("completeFreeOnboarding()", completion)
+        self.assertNotIn("refreshCustomerInfo()", onboarding)
+        self.assertNotIn("fullScreenCover", onboarding)
 
-    def test_onboarding_paywall_records_bounded_entitlement_and_offering_outcomes(self):
-        onboarding = ONBOARDING.read_text(encoding="utf-8")
-        analytics = ANALYTICS.read_text(encoding="utf-8")
-        paywall = VIEW.read_text(encoding="utf-8")
-        self.assertIn(".onboardingPaywallCustomerInfoResult", onboarding)
-        self.assertIn(".onboardingPaywallOfferingLoadResult", paywall)
-        self.assertIn('case onboardingPaywallCustomerInfoResult = "onboarding_paywall_customer_info_result"', analytics)
-        self.assertIn('case onboardingPaywallOfferingLoadResult = "onboarding_paywall_offering_load_result"', analytics)
-        self.assertIn("trackedOfferingLoadOutcomes.insert(result).inserted", paywall)
+    def test_soft_paywall_does_not_emit_retired_hard_experiment_exposure(self):
+        container = PAYWALL_CONTAINER.read_text(encoding="utf-8").split("struct PaywallFlowContainer", 1)[1]
+        self.assertNotIn("trackExperimentExposure", container)
+        self.assertIn('accessibilityIdentifier("paywall-close-button")', container)
 
-    def test_onboarding_end_opens_plan_selection_and_records_paywall_shown(self):
+    def test_optional_paywall_opens_plan_selection_and_records_paywall_shown(self):
         container = PAYWALL_CONTAINER.read_text(encoding="utf-8").split(
             "struct PaywallFlowContainer", 1
         )[1]
@@ -243,14 +231,14 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn('"flow_id": flowID', exposure_method)
         self.assertIn("Purchases.shared.trackCustomPaywallImpression()", exposure_method)
 
-        # Onboarding fullScreenCover must pass appState environment object so PaywallFlowContainer inherits offering updates
-        cover = onboarding.split(".fullScreenCover(isPresented: $showPaywall)", 1)[1].split(".interactiveDismissDisabled(true)", 1)[0]
+        # Retain the historical helper, but the new soft experience must not
+        # be recorded as exposure to the retired hard-paywall experiment.
+        self.assertNotIn("trackExperimentExposure(", onboarding)
+        self.assertNotIn("trackExperimentExposure(", container)
+        themes = SETTINGS.read_text(encoding="utf-8").split("struct ThemePickerView", 1)[1]
+        cover = themes.split(".fullScreenCover(isPresented: $showThemePaywall)", 1)[1]
         self.assertIn(".environmentObject(appState)", cover)
-
-        # PaywallFlowContainer must trigger exposure on appearance and cached offering changes
-        self.assertIn(".onAppear { fireExperimentExposureIfNeeded() }", container)
-        self.assertIn(".onChange(of: appState.cachedOffering?.identifier)", container)
-        self.assertIn("AnalyticsManager.shared.trackExperimentExposure(", container)
+        self.assertIn('flowID: "premium_theme"', cover)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

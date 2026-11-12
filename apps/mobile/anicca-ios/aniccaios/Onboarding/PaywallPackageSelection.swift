@@ -46,40 +46,18 @@ enum PaywallStorefrontEligibility {
 }
 
 
-/// A/B gate for the paywall, driven by which RevenueCat offering the
-/// RevenueCat Experiment assigned to this user (delivered as
-/// `offerings.current`).
-///
-/// - Control offering `anicca_variant_b`: soft paywall — the onboarding
-///   close button stays and tapping it completes onboarding for free.
-/// - Treatment offering `anicca_variant_b_hard`: hard paywall — no close
-///   button in onboarding; onboarding completes only on purchase/restore
-///   entitlement.
-///
-/// Kept free of RevenueCat types so the assignment rules can be unit
-/// tested. Decided 2026-11-08: hard paywall rolls out behind an A/B
-/// experiment instead of the previous all-users soft gate.
+/// Soft entry applies even while RevenueCat still assigns the retired hard offering.
+/// Keep historical identifiers for offering selection and analytics compatibility.
 enum PaywallGateVariant: String, Equatable {
     case soft
     case hard
 
-    /// Offering identifier of the hard-paywall treatment offering.
     static let hardOfferingIdentifier = "anicca_variant_b_hard"
-
-    /// RevenueCat Experiment identifier for this gate A/B (2026-11-08).
-    /// Recorded on the `experiment_exposure` analytics event.
     static let experimentIdentifier = "HARD-PAYWALL-20261108"
 
-    static func resolve(offeringIdentifier: String?) -> PaywallGateVariant {
-        offeringIdentifier == hardOfferingIdentifier ? .hard : .soft
-    }
+    static func resolve(offeringIdentifier: String?) -> PaywallGateVariant { .soft }
 
-    /// The close button (free exit) is shown for existing-user surfaces
-    /// (any flow other than onboarding) regardless of the gate, and in
-    /// onboarding only for the soft gate.
-    static func showsCloseButton(flowID: String, variant: PaywallGateVariant) -> Bool {
-        flowID != "onboarding" || variant == .soft
-    }
+    static func showsCloseButton(flowID: String, variant: PaywallGateVariant) -> Bool { true }
 }
 
 enum PaywallOfferingSelection {
@@ -123,17 +101,5 @@ enum PaywallOfferingSelection {
     static func isUsableAnicca(productIdentifiers: [String], hasAnnualOrMonthlyPackage: Bool) -> Bool {
         guard hasAnnualOrMonthlyPackage, !productIdentifiers.isEmpty else { return false }
         return productIdentifiers.allSatisfy { $0.hasPrefix("ai.anicca.app.ios.") }
-    }
-}
-
-enum OnboardingPaywallDecision: Equatable {
-    case completeOnboarding
-    case presentPaywall
-
-    static func resolve(freshEntitlement: Bool?, cachedEntitlement: Bool) -> Self {
-        guard let freshEntitlement else {
-            return cachedEntitlement ? .completeOnboarding : .presentPaywall
-        }
-        return freshEntitlement ? .completeOnboarding : .presentPaywall
     }
 }

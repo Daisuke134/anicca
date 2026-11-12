@@ -1379,3 +1379,7 @@
 "growth_notifications_on" = "Notifications autorisées";
 "growth_notifications_off" = "Notifications désactivées ou pas encore autorisées";
 "growth_notification_settings" = "Gérer les autorisations de notification";
+
+/* Optional Premium after the free experience. */
+"soft_paywall_free_benefit" = "Gratuit : lire, enregistrer et partager";
+"soft_paywall_premium_benefit" = "Premium : 8 thèmes et 4 rappels par jour";
