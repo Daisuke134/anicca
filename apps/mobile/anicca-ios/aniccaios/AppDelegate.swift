@@ -60,6 +60,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Distinct open days for post-value App Store review prompts.
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
+            // Distinct open days for the second-chance notification priming.
+            NotificationPrimingCoordinator.shared.recordAppOpen()
         }
         // Best-effort: recover APNs token registration if it was delayed on first run.
         Task { await registerForRemoteIfAuthorized() }
