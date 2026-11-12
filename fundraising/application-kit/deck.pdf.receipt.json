@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "context_version": "2026-10-20.1",
-  "context_digest": "7c2a72ae0b66f083c12cafde115cc5079f2e9722807b42e2288aef3f370b170f",
+  "context_digest": "a2a6f2be251c15beb045c04db613e32bab010a2cd9f138be3cceb1625b0906f8",
   "source": "fundraising/application-kit/deck.md",
-  "pdf_sha256": "d6ef14c6324df85bad11b231183fcc340ad9b97f219cbd0aa0171668715deaad"
+  "pdf_sha256": "4b3f8f7575157ed6491779584bdf01ea43a4d6b4b998390b9a4439e40c78af5c"
 }
