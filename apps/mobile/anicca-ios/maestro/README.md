@@ -59,3 +59,12 @@ product assertions must not be made optional to hide a failure.
 Simulator injection verifies routing, not real APNs delivery.
 
 [Maestro CLI reference](https://docs.maestro.dev/maestro-cli/maestro-cli-commands-and-options)
+
+## Final 1.9.14 verification budget
+
+The real job uses standard `macos-15-intel`, Xcode26.2/iOS26.2 and a120-minute
+job limit. The prior40-minute limit cancelled run43268640984 after the real
+build reached recording; its MP4 is incomplete and not acceptance evidence.
+For the final delegated verification, dispatch once only. If that run fails or
+is cancelled, preserve its actual result and report the blocker; do not rerun
+it or weaken assertions. This includes a host-admission failure.
