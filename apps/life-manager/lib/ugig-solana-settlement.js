@@ -89,12 +89,15 @@ async function verifyUgigSolanaInvoice(delivery, invoice, options = {}) {
 
   const transaction = await options.rpcCall("getTransaction", [
     signature,
-    { commitment: "finalized", maxSupportedTransactionVersion: 0 },
+    { commitment: "finalized", maxSupportedTransactionVersion: 1 },
   ]);
   if (!transaction || transaction.meta?.err != null) fail("Solana payout transaction failed or is unavailable");
   if (!transaction.transaction?.signatures?.includes(signature)) fail("Solana transaction signature does not match invoice");
 
-  const keys = (transaction.transaction?.message?.accountKeys || []).map(accountKeyString);
+  const staticKeys = (transaction.transaction?.message?.accountKeys || []).map(accountKeyString);
+  const loadedWritable = (transaction.meta?.loadedAddresses?.writable || []).map(accountKeyString);
+  const loadedReadonly = (transaction.meta?.loadedAddresses?.readonly || []).map(accountKeyString);
+  const keys = staticKeys.concat(loadedWritable, loadedReadonly);
   const recipientIndex = keys.indexOf(recipient);
   if (recipientIndex < 0) fail("Solana payout recipient is absent from transaction");
   const payer = keys[0];
