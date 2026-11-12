@@ -64,6 +64,7 @@ function rpcFixture(overrides = {}) {
     if (method === "getTransaction") {
       assert.equal(params[0], SIGNATURE);
       assert.equal(params[1].commitment, "finalized");
+      assert.equal(params[1].maxSupportedTransactionVersion, 1);
       return transaction;
     }
     throw new Error(`unexpected RPC method ${method}`);
@@ -177,3 +178,48 @@ test("the settlement bridge verifies before writing and preserves database idemp
   assert.equal(result.duplicate, true);
   assert.equal(result.entry_key, `ugig:invoice:${INVOICE.id}:merchant-payout`);
 });
+
+test("accepts version 1 transactions with recipient in loadedAddresses from address lookup table", async () => {
+  const ALT_RECIPIENT = "ALTRecipient11111111111111111111111111111111";
+  const altDelivery = {
+    ...DELIVERY,
+    merchant_wallet_address: ALT_RECIPIENT,
+  };
+  const altInvoice = {
+    ...INVOICE,
+    metadata: {
+      ...INVOICE.metadata,
+      merchant_wallet_address: ALT_RECIPIENT,
+    },
+  };
+  const v1Transaction = {
+    slot: 351000001,
+    blockTime: 1785232801,
+    version: 1,
+    transaction: {
+      signatures: [SIGNATURE],
+      message: { accountKeys: [PAYER] },
+    },
+    meta: {
+      err: null,
+      loadedAddresses: {
+        writable: [ALT_RECIPIENT],
+        readonly: [],
+      },
+      preBalances: [1_000_000_000, 10_000_000],
+      postBalances: [994_995_000, 15_000_000],
+    },
+  };
+
+  const proof = await verifyUgigSolanaInvoice(altDelivery, altInvoice, {
+    rpcCall: rpcFixture({ transaction: v1Transaction }),
+    ownedWalletAddresses: [ALT_RECIPIENT],
+  });
+
+  assert.equal(proof.signature, SIGNATURE);
+  assert.equal(proof.recipient, ALT_RECIPIENT);
+  assert.equal(proof.payer, PAYER);
+  assert.equal(proof.received_lamports, "5000000");
+  assert.equal(proof.finalized, true);
+});
+
