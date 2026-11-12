@@ -23,7 +23,7 @@ struct SettingsSheet: View {
         List {
             Section {
                 NavigationLink {
-                    ThemePickerView()
+                    ThemePickerView(onPremiumActivated: { dismiss() })
                         .environmentObject(themeStore)
                         .analyticsScreen(.feedThemes, flowID: "feed")
                 } label: {
@@ -118,6 +118,7 @@ struct SettingsSheet: View {
 
 /// 8 theme grid. Tap = select + persist + dismiss.
 struct ThemePickerView: View {
+    var onPremiumActivated: (() -> Void)? = nil
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.dismiss) private var dismiss
 
@@ -182,7 +183,11 @@ struct ThemePickerView: View {
                     if let pendingTheme { themeStore.select(pendingTheme) }
                     pendingTheme = nil
                     showThemePaywall = false
-                    dismiss()
+                    if let onPremiumActivated {
+                        onPremiumActivated()
+                    } else {
+                        dismiss()
+                    }
                 },
                 onDismiss: {
                     pendingTheme = nil

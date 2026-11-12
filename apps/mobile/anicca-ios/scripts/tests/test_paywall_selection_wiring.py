@@ -240,6 +240,14 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn(".environmentObject(appState)", cover)
         self.assertIn('flowID: "premium_theme"', cover)
 
+    def test_premium_theme_success_closes_the_settings_owner_sheet(self):
+        settings, themes = SETTINGS.read_text(encoding="utf-8").split("struct ThemePickerView", 1)
+        self.assertIn("ThemePickerView(onPremiumActivated: { dismiss() })", settings)
+        success = themes.split("onPurchaseSuccess: { customerInfo in", 1)[1].split("onDismiss:", 1)[0]
+        self.assertIn("if let onPremiumActivated", success)
+        self.assertIn("onPremiumActivated()", success)
+        self.assertIn("guard appState.subscriptionInfo.isEntitled", success)
+
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify
         # actual selection behavior and reference identity in the Swift runtime.
