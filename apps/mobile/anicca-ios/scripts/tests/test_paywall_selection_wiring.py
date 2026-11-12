@@ -228,6 +228,30 @@ class PaywallSelectionWiringTests(unittest.TestCase):
             self.assertIn(call, source)
             self.assertNotIn("track(.onboardingPaywallPurchased)", source)
 
+    def test_experiment_exposure_wires_mixpanel_and_revenuecat_custom_impression(self):
+        analytics = ANALYTICS.read_text(encoding="utf-8")
+        onboarding = ONBOARDING.read_text(encoding="utf-8")
+        container = PAYWALL_CONTAINER.read_text(encoding="utf-8").split("struct PaywallFlowContainer", 1)[1]
+
+        # AnalyticsManager must fire both Mixpanel experiment_exposure and RevenueCat trackCustomPaywallImpression
+        exposure_method = analytics.split("func trackExperimentExposure(", 1)[1].split("func trackPurchaseResult(", 1)[0]
+        self.assertIn("track(.experimentExposure, properties: [", exposure_method)
+        self.assertIn('"experiment_id": PaywallGateVariant.experimentIdentifier', exposure_method)
+        self.assertIn('"variant": gateVariant.rawValue', exposure_method)
+        self.assertIn('"offering_id": offeringIdentifier ?? "unknown"', exposure_method)
+        self.assertIn('"paywall_gate_variant": gateVariant.rawValue', exposure_method)
+        self.assertIn('"flow_id": flowID', exposure_method)
+        self.assertIn("Purchases.shared.trackCustomPaywallImpression()", exposure_method)
+
+        # Onboarding fullScreenCover must pass appState environment object so PaywallFlowContainer inherits offering updates
+        cover = onboarding.split(".fullScreenCover(isPresented: $showPaywall)", 1)[1].split(".interactiveDismissDisabled(true)", 1)[0]
+        self.assertIn(".environmentObject(appState)", cover)
+
+        # PaywallFlowContainer must trigger exposure on appearance and cached offering changes
+        self.assertIn(".onAppear { fireExperimentExposureIfNeeded() }", container)
+        self.assertIn(".onChange(of: appState.cachedOffering?.identifier)", container)
+        self.assertIn("AnalyticsManager.shared.trackExperimentExposure(", container)
+
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify
         # actual selection behavior and reference identity in the Swift runtime.
