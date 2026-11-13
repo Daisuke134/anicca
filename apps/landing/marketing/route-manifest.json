@@ -1,113 +1,113 @@
 {
-  "kind": "production marketing route package; not a full site export or deployment",
-  "source_authority": "https://github.com/Daisuke134/life-manager",
-  "approved_design_commit": "6f1d50b649f4b550ce334903910996c6148486ce",
-  "legacy_baseline_commit": "64ae00d6fedc53206251d3e2426023c2633f8d68",
-  "files": [
-    {
-      "source": "pages/en.html",
-      "public_route": "/",
-      "export_path": "index.html",
-      "sha256": "433f6936b7c1413fc58dea7270219ca40b2b421ba586355087b2d960dc1f755e"
-    },
-    {
-      "source": "pages/en.html",
-      "public_route": "/en",
-      "export_path": "en.html",
-      "sha256": "433f6936b7c1413fc58dea7270219ca40b2b421ba586355087b2d960dc1f755e"
-    },
-    {
-      "source": "pages/ja.html",
-      "public_route": "/ja",
-      "export_path": "ja.html",
-      "sha256": "969264b9fa29609f8ecd919701d48e05c935010db0cec1b54ce0855e28d5c9d8"
-    },
-    {
-      "source": "pages/products-en.html",
-      "public_route": "/dais",
-      "export_path": "dais.html",
-      "sha256": "1482a2f113bb8a28420f7241f9d9b05cbc8152fb62fe7c210a53ae4dfe761d35"
-    },
-    {
-      "source": "pages/products.html",
-      "public_route": "/dais/ja",
-      "export_path": "dais/ja.html",
-      "sha256": "ba4f05f7a36c5f35ae987517f1a4735b43f3bcfef9cf8003caba675c5e0587cc"
-    },
-    {
-      "source": "pages/life-manager-en.html",
-      "public_route": "/lm",
-      "export_path": "lm.html",
-      "sha256": "e68597d5877312f4a80c7c649f236556258f71ccc3cb813f8ce460a54c6f1326"
-    },
-    {
-      "source": "pages/life-manager.html",
-      "public_route": "/lm/ja",
-      "export_path": "lm/ja.html",
-      "sha256": "65de56027d45fbb1281d9da4c05bc3954ce6e6cf2065558ab15f79139b820a2a"
-    },
-    {
-      "source": "assets/styles.css",
-      "export_path": "assets/manager-site/styles.css",
-      "sha256": "26ede2e686c1d2fd9282ff30b5ef68774cf98a9951cc6ac7c397736dcc9ed693"
-    },
-    {
-      "source": "assets/writer-cta-url.js",
-      "export_path": "assets/manager-site/writer-cta-url.js",
-      "sha256": "b38abbcd5fa96835d54abe9780a3bdd7a34413e0b5526b28855a07f378847e86"
-    },
-    {
-      "source": "assets/published-apps.json",
-      "export_path": "assets/manager-site/published-apps.json",
-      "sha256": "e6af777ac750743401f17a0537ce344a3bbb3adba1a9a15b2e88eecf70976ba1"
-    },
-    {
-      "source": "assets/apps/6755129214.webp",
-      "export_path": "assets/manager-site/apps/6755129214.webp",
-      "sha256": "4dd295915eb5c59828b79b61dc12db43fb9886b4bd15db77eb66be63960983c4"
-    },
-    {
-      "source": "assets/apps/6757726663.webp",
-      "export_path": "assets/manager-site/apps/6757726663.webp",
-      "sha256": "b9f6e08fa293f460e6f32bf5c40ff408e1d3846a0dc643289fb25e59cc3a2718"
-    },
-    {
-      "source": "assets/apps/6759514159.png",
-      "export_path": "assets/manager-site/apps/6759514159.png",
-      "sha256": "9dc87b7f546c507f52d7794fab3e46fb2fd05f5a691395c0a969813d18393a80"
-    },
-    {
-      "source": "assets/apps/6759667221.webp",
-      "export_path": "assets/manager-site/apps/6759667221.webp",
-      "sha256": "7654d9425a9d22f0423655bc2b5012b53267440c42986268a2f6912e324b1def"
-    },
-    {
-      "source": "assets/apps/6762143790.webp",
-      "export_path": "assets/manager-site/apps/6762143790.webp",
-      "sha256": "9e29a618b27d43304f2395f59094f2b52eb92df6ea8bf354a24fa53d9fec592d"
-    },
-    {
-      "source": "assets/apps/6766485903.webp",
-      "export_path": "assets/manager-site/apps/6766485903.webp",
-      "sha256": "19d4dff6f96ffa00d6ecae1007d5d76178f306bcb18a6dfec32fdbf56419970c"
-    },
-    {
-      "source": "pages/about.html",
-      "public_route": "/about",
-      "export_path": "about.html",
-      "sha256": "cc153a155ab697595bad478c30e6077d781631b0a92f5741a78ea494fd1e7f78"
-    },
-    {
-      "source": "pages/about-ja.html",
-      "public_route": "/about/ja",
-      "export_path": "about/ja.html",
-      "sha256": "2ceb53260984cdf1f42412fc2a5f82868c32fbd3d678eb66214512c2f3ec5040"
-    },
-    {
-      "source": "assets/public-resume.pdf",
-      "public_route": "/cv.pdf",
-      "export_path": "cv.pdf",
-      "sha256": "d8adabc76984dbfe3125cf25a0ccc387c4e63c0f4d69160981762d2b822c5aa1"
-    }
-  ]
+ "kind": "production marketing route package; not a full site export or deployment",
+ "source_authority": "https://github.com/Daisuke134/life-manager",
+ "approved_design_commit": "6f1d50b649f4b550ce334903910996c6148486ce",
+ "legacy_baseline_commit": "64ae00d6fedc53206251d3e2426023c2633f8d68",
+ "files": [
+  {
+   "source": "pages/en.html",
+   "public_route": "/",
+   "export_path": "index.html",
+   "sha256": "95cf79864842651ac8b15223416d1fa17de78f6dc0eb548c775443be68fc340c"
+  },
+  {
+   "source": "pages/en.html",
+   "public_route": "/en",
+   "export_path": "en.html",
+   "sha256": "95cf79864842651ac8b15223416d1fa17de78f6dc0eb548c775443be68fc340c"
+  },
+  {
+   "source": "pages/ja.html",
+   "public_route": "/ja",
+   "export_path": "ja.html",
+   "sha256": "82fb6a9f07d4a1df9fb1b6874ea25e3c83cec64ae81319536872ac487c2bcd5b"
+  },
+  {
+   "source": "pages/products-en.html",
+   "public_route": "/dais",
+   "export_path": "dais.html",
+   "sha256": "1482a2f113bb8a28420f7241f9d9b05cbc8152fb62fe7c210a53ae4dfe761d35"
+  },
+  {
+   "source": "pages/products.html",
+   "public_route": "/dais/ja",
+   "export_path": "dais/ja.html",
+   "sha256": "ba4f05f7a36c5f35ae987517f1a4735b43f3bcfef9cf8003caba675c5e0587cc"
+  },
+  {
+   "source": "pages/life-manager-en.html",
+   "public_route": "/lm",
+   "export_path": "lm.html",
+   "sha256": "e68597d5877312f4a80c7c649f236556258f71ccc3cb813f8ce460a54c6f1326"
+  },
+  {
+   "source": "pages/life-manager.html",
+   "public_route": "/lm/ja",
+   "export_path": "lm/ja.html",
+   "sha256": "65de56027d45fbb1281d9da4c05bc3954ce6e6cf2065558ab15f79139b820a2a"
+  },
+  {
+   "source": "assets/styles.css",
+   "export_path": "assets/manager-site/styles.css",
+   "sha256": "26ede2e686c1d2fd9282ff30b5ef68774cf98a9951cc6ac7c397736dcc9ed693"
+  },
+  {
+   "source": "assets/writer-cta-url.js",
+   "export_path": "assets/manager-site/writer-cta-url.js",
+   "sha256": "b38abbcd5fa96835d54abe9780a3bdd7a34413e0b5526b28855a07f378847e86"
+  },
+  {
+   "source": "assets/published-apps.json",
+   "export_path": "assets/manager-site/published-apps.json",
+   "sha256": "e6af777ac750743401f17a0537ce344a3bbb3adba1a9a15b2e88eecf70976ba1"
+  },
+  {
+   "source": "assets/apps/6755129214.webp",
+   "export_path": "assets/manager-site/apps/6755129214.webp",
+   "sha256": "4dd295915eb5c59828b79b61dc12db43fb9886b4bd15db77eb66be63960983c4"
+  },
+  {
+   "source": "assets/apps/6757726663.webp",
+   "export_path": "assets/manager-site/apps/6757726663.webp",
+   "sha256": "b9f6e08fa293f460e6f32bf5c40ff408e1d3846a0dc643289fb25e59cc3a2718"
+  },
+  {
+   "source": "assets/apps/6759514159.png",
+   "export_path": "assets/manager-site/apps/6759514159.png",
+   "sha256": "9dc87b7f546c507f52d7794fab3e46fb2fd05f5a691395c0a969813d18393a80"
+  },
+  {
+   "source": "assets/apps/6759667221.webp",
+   "export_path": "assets/manager-site/apps/6759667221.webp",
+   "sha256": "7654d9425a9d22f0423655bc2b5012b53267440c42986268a2f6912e324b1def"
+  },
+  {
+   "source": "assets/apps/6762143790.webp",
+   "export_path": "assets/manager-site/apps/6762143790.webp",
+   "sha256": "9e29a618b27d43304f2395f59094f2b52eb92df6ea8bf354a24fa53d9fec592d"
+  },
+  {
+   "source": "assets/apps/6766485903.webp",
+   "export_path": "assets/manager-site/apps/6766485903.webp",
+   "sha256": "19d4dff6f96ffa00d6ecae1007d5d76178f306bcb18a6dfec32fdbf56419970c"
+  },
+  {
+   "source": "pages/about.html",
+   "public_route": "/about",
+   "export_path": "about.html",
+   "sha256": "cc153a155ab697595bad478c30e6077d781631b0a92f5741a78ea494fd1e7f78"
+  },
+  {
+   "source": "pages/about-ja.html",
+   "public_route": "/about/ja",
+   "export_path": "about/ja.html",
+   "sha256": "2ceb53260984cdf1f42412fc2a5f82868c32fbd3d678eb66214512c2f3ec5040"
+  },
+  {
+   "source": "assets/public-resume.pdf",
+   "public_route": "/cv.pdf",
+   "export_path": "cv.pdf",
+   "sha256": "d8adabc76984dbfe3125cf25a0ccc387c4e63c0f4d69160981762d2b822c5aa1"
+  }
+ ]
 }
