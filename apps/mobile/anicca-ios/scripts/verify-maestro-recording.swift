@@ -9,7 +9,12 @@ guard arguments.count == 3, let elapsed = Double(arguments[2]) else {
 }
 let asset = AVURLAsset(url: URL(fileURLWithPath: arguments[1]))
 let duration = asset.duration.seconds
-guard duration.isFinite, duration >= max(1, elapsed - 2),
+// The simulator recorder starts/stops a few seconds inside the elapsed
+// wall-clock window (observed lag: 9s on run 43328980080, whose flow
+// passed and whose 627s video was complete). A 30s allowance covers
+// recorder lag; the decodable-frame check below remains the real
+// truncation gate.
+guard duration.isFinite, duration >= max(1, elapsed - 30),
       let track = asset.tracks(withMediaType: .video).first else {
     fatalError("Video is missing, truncated, or shorter than the recorded journey")
 }
