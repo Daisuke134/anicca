@@ -1,6 +1,8 @@
-name: Manager BB-43 wave 3 | BehaviorBench final two shards (qwen3 multiround guessing + push_pull), watchdog
+name: Manager BB-43 wave 4 | BehaviorBench last shard (qwen3 multiround guessing) split 4x125, watchdog
 
-# anicca-ops Issue #43, wave 3 (2026-11-13, Muse): re-runs ONLY the two shards cancelled in wave 2 run 43187535316
+# anicca-ops Issue #43, wave 4 (2026-11-13, 参謀): wave 3 run 43335208467 guessing shard 0..500 hit the 355-min limit (job 131589550471).
+# Re-runs ONLY that task, same pinned conditions, split into 4 sub-shards of 125 items via the existing LO/HI slicing.
+# (wave 3 header follows) re-runs ONLY the two shards cancelled in wave 2 run 43187535316
 # (qwen3-4b-instruct-2507 multiround_behavior_guessing and multiround_behavior_push_pull, receipts 0/500).
 # Same pinned evaluator/dataset revisions and conditions as wave 2. Successful wave-2 shards are NOT re-run. Research-purpose evaluation only. Be.FM weights are used
 # under the Be.FM Terms (non-commercial research evaluation, no commercial
@@ -16,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: manager-bb43w3-${{ github.ref }}
+  group: manager-bb43w4-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -29,14 +31,10 @@ jobs:
       matrix:
         arm: [qwen3-4b-instruct-2507]
         task_shard:
-          - "pers_score_pred:2:668:1000:big_five/pers_score_pred/test.jsonl"
-          - "surv_resp_pred:2:668:1000:big_five/surv_resp_pred/test.jsonl"
-          - "missing_surv_resp:2:668:1000:big_five/missing_surv_resp/test.jsonl"
-          - "seq_surv_resp:2:668:1000:big_five/seq_surv_resp/test.jsonl"
-          - "demo_pred_age:2:668:1000:big_five/demo_pred_age/test.jsonl"
-          - "acrossdim_pers_score:2:668:1000:big_five/acrossdim_pers_score/test.jsonl"
-          - "multiround_behavior_guessing:0:0:500:moblab/multiround_behavior/guessing_multiround_test.jsonl"
-          - "multiround_behavior_push_pull:0:0:500:moblab/multiround_behavior/push_pull_multiround_test.jsonl"
+          - "multiround_behavior_guessing:0:0:125:moblab/multiround_behavior/guessing_multiround_test.jsonl"
+          - "multiround_behavior_guessing:1:125:250:moblab/multiround_behavior/guessing_multiround_test.jsonl"
+          - "multiround_behavior_guessing:2:250:375:moblab/multiround_behavior/guessing_multiround_test.jsonl"
+          - "multiround_behavior_guessing:3:375:500:moblab/multiround_behavior/guessing_multiround_test.jsonl"
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       EVAL_REV: ddd646ed2bbecdb79094eb56763ee7664d2f8e1a
@@ -137,6 +135,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bb43w2-${{ env.ARM }}-${{ env.TASK }}-${{ env.SHARD }}
+          name: bb43w4-${{ env.ARM }}-${{ env.TASK }}-${{ env.SHARD }}
           path: receipt/
           retention-days: 30
