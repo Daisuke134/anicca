@@ -1,6 +1,19 @@
 <!-- startup-context-version: 2026-10-20.1 -->
 <!-- startup-context-digest: a2a6f2be251c15beb045c04db613e32bab010a2cd9f138be3cceb1625b0906f8 -->
-# Local Life Manager
+# Anicca
+
+このリポジトリは、苦しみを終わらせるための行動介入に取り組む、オープンな会社 **Anicca** の公開旗艦です。開けるものは全てここに置きます（製品のコード、研究、評価）。資格情報、運用の生記録、顧客の情報はこのリポジトリには置かず、別の非公開の運用リポに置きます。
+
+- 会社: Anicca
+- モデル: **Manager**（通知や返信、提出物などの刺激に対して人がどう反応するかを学び、人が本当に欲しい反応が最大になる入力を選ぶモデル）
+- 評価: **ManagerBench**（AI が「人が欲しいもの」を作れたかどうかを測る、1つのベンチマーク。ケースは「状況 → AI が作ったもの（刺激） → 人の実測の反応」の形）
+- 製品: **Anicca**（アファメーションとナッジのアプリ。iOS のコードは `apps/`）と、無人で仕事を回す **Life Manager**（下記）
+
+入口: [START-HERE.md](START-HERE.md) · 研究記事: [aniccaai.com/blog](https://aniccaai.com/blog) · 会社の数字: [aniccaai.com/open](https://aniccaai.com/open) · ライセンス: MIT（[LICENSE](LICENSE)）
+
+---
+
+## Local Life Manager
 
 **AIエージェントが事業をゼロから作り、人の継続介入なしで運営する。オープンソースのmoney printerです。**
 
