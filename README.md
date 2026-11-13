@@ -1,6 +1,19 @@
 <!-- startup-context-version: 2026-10-20.1 -->
 <!-- startup-context-digest: a2a6f2be251c15beb045c04db613e32bab010a2cd9f138be3cceb1625b0906f8 -->
-# Life Manager
+# Anicca
+
+This repository is the public flagship of **Anicca**, an open company working to end suffering through behavior intervention. Everything we can open lives here — product code, research, and evaluations. Credentials, raw operations records, and customer data are never published in this repository; they stay in a separate private operations repository.
+
+- **Company**: Anicca
+- **Model**: **Manager** — a model that learns how people respond to a stimulus (a notification, a message, a deliverable) and chooses the input most likely to produce the response people actually want.
+- **Eval**: **ManagerBench** — one benchmark: can AI make something people want? Every case is *situation → what the AI made (stimulus) → the person's measured response*.
+- **Product**: **Anicca** — the affirmation and nudge app people touch (iOS code under `apps/`). **Life Manager**, the no-human-in-the-loop work system, is documented in full below.
+
+**Start here**: [START-HERE.md](START-HERE.md) · Research: [aniccaai.com/blog](https://aniccaai.com/blog) · Live company numbers: [aniccaai.com/open](https://aniccaai.com/open) · License: MIT ([LICENSE](LICENSE))
+
+---
+
+## Life Manager
 
 **No Human in the Loop. No Human Credentials.**
 
