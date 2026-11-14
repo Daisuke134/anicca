@@ -125,24 +125,9 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(event.rawValue, "paywall_primer_viewed")
     }
 
-    func test_analytics_paywallTimelineViewed_exists() {
-        let event = AnalyticsEvent.paywallTimelineViewed
-        XCTAssertEqual(event.rawValue, "paywall_timeline_viewed")
-    }
-
     func test_analytics_paywallPlanSelectionViewed_exists() {
         let event = AnalyticsEvent.paywallPlanSelectionViewed
         XCTAssertEqual(event.rawValue, "paywall_plan_selection_viewed")
-    }
-
-    func test_analytics_paywallDrawerViewed_exists() {
-        let event = AnalyticsEvent.paywallDrawerViewed
-        XCTAssertEqual(event.rawValue, "paywall_drawer_viewed")
-    }
-
-    func test_analytics_paywallDrawerConverted_exists() {
-        let event = AnalyticsEvent.paywallDrawerConverted
-        XCTAssertEqual(event.rawValue, "paywall_drawer_converted")
     }
 
     // MARK: - PaywallGateVariant (2026-11-08 hard paywall A/B)

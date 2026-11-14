@@ -529,3 +529,30 @@ R3-3は `DailyAffirmationStore.Presentation(quote, deliveryId)` を保存/復元
 - XCTest は VM に Xcode が無いため未実行のまま。判定は GitHub Actions（macOS）の同一 SHA の結果で行う。
 
 **D-01〜D-16は引き続き全件未完了。** 閉鎖は再撮影フレームの目視確認でのみ行う。
+
+## 第5ラウンド — テストターゲットの既存破損の修正（2026-11-14）
+
+### 根拠と変更
+
+委任元が GitHub Actions run `43586731563`（PR #9352、HEAD `50d61c59a`）の artifact を実読した結果: `build-output.log` は1902行でアプリ本体の `error:` は0件。`test-output.log` のテストビルドエラーは3件で、すべて `OnboardingV2Tests.swift` の129・139・144行にある `AnalyticsEvent.paywallTimelineViewed` / `.paywallDrawerViewed` / `.paywallDrawerConverted` の未定義参照だった。この実行結果は委任元提供の一次証拠であり、本ラウンドで Actions や XCTest を実行した結果ではない。
+
+`git show 2bac2ac6c:apps/mobile/anicca-ios/aniccaios/Services/AnalyticsManager.swift` と現行HEADを照合し、旧3イベントは基点時点でも現行コードでも存在しないことを再確認した。第1ラウンド以前からの既存のテスト破損であり、今回の修正差分がイベントを消したものではない。対象の旧タイムライン／ドロワー形式のUIは監査修正で置き換え済みで、現行 `PaywallFlowContainer` は `PaywallPrimerStepView` / `PaywallVariantBView` を使用する。
+
+実在しない画面の計測イベントを列挙型へ足し戻さず、次の3テストだけを削除した。
+
+- `test_analytics_paywallTimelineViewed_exists`
+- `test_analytics_paywallDrawerViewed_exists`
+- `test_analytics_paywallDrawerConverted_exists`
+
+`paywallPrimerViewed` / `paywallPlanSelectionViewed` を含む他のテストは変更していない。開始HEADとの文字列比較で、指定3関数の15行削除以外は完全一致することを確認した。変更ファイルは `aniccaiosTests/OnboardingV2Tests.swift` と本記録の2つだけ。アプリ本体、列挙型、CI、監査ファイル（anicca-ops側）は変更しない。
+
+### 検証と引き継ぎ
+
+- 作業開始時のGit実読: root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git`、HEAD `50d61c59a5304b69579a60c674b90174f46a9a9e`。既存の未追跡 `error.log` は保持。
+- `bash scripts/verify-source-boundary.sh`: 旧固定パスを要求して exit 2。指定ツリー・改名後originの先行承認を適用し、境界スクリプトは変更していない。今回の2ファイル限定・統合操作禁止を優先し、共通手順のBOARD追記やcommit/pushは行わない。
+- 手順の実読: `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` 配下の `using-superpowers/SKILL.md` と `references/codex-tools.md`、`systematic-debugging/SKILL.md`、`verification-before-completion/SKILL.md`、`requesting-code-review/SKILL.md` と `code-reviewer.md`。Astra Advisorは公開ツールに存在しない。Ponytailの最小解確認として既存の現行イベントテストを保持し、新規コード・依存は追加しない。
+- Python検査: `apps/mobile/anicca-ios` 配下で `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests` を実行。`Ran 44 tests in 34.881s`、`OK (skipped=2)`、exit 0（42成功・2skip）。skipはSwiftコンパイラとSwiftランタイムが無いための既存2件。環境変数は検査時のbytecodeファイル生成を抑えるために指定した。
+- VMに `xcodebuild` / `swiftc` は無く、XCTestは未実行。Python検査や差分確認をXCTest成功とは扱わず、判定は委任元のpush後の同一SHAのActionsで行う。
+- `git diff --check` は成功。Solの独立読み取り専用レビュー（実指定 `gpt-6-sol` / effort `medium`）は指摘0件・blocking 0件。指定3関数だけの削除、近傍テストの保持、基点と現行のイベント不在、証拠の出所と未検証事項の記載を確認した。
+
+指定worktreeに未コミット差分を保持して引き渡す。commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。**D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
