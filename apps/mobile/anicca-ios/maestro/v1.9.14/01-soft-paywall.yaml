@@ -26,6 +26,13 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: onboarding-depth-daily
 - assertVisible:
     id: onboarding-first-affirmation
+# Phase 1: the preview affirmation is picked by the personalization
+# selector (epsilon-greedy), so its wording is not fixed. Capture the
+# text actually shown here and require that same text in the Liked
+# sheet below, instead of asserting the pre-Phase-1 fixed quote.
+- copyTextFrom:
+    id: onboarding-first-affirmation
+- evalScript: ${output.savedAffirmation = maestro.copiedText}
 - tapOn:
     id: onboarding-first-save
 - tapOn:
@@ -73,7 +80,7 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: quote-like
 - tapOn:
     id: feed-saved
-- assertVisible: "I am worthy of the love I give and receive."
+- assertVisible: ${output.savedAffirmation}
 - tapOn: Close
 - tapOn:
     id: feed-themes
