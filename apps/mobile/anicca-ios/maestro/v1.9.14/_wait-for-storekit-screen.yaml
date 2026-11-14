@@ -1,0 +1,13 @@
+appId: ai.anicca.app.ios
+name: Dismiss StoreKit sign-in before the caller waits for its screen
+---
+# Only dismiss dialogs here; the caller owns the literal-ID extendedWaitUntil.
+# No dialog means no loop body. Bound repeated prompts to five attempts.
+- repeat:
+    times: 5
+    while:
+      visible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+    commands:
+      - runFlow: _dismiss-apple-account.yaml
+      - waitForAnimationToEnd:
+          timeout: 1000

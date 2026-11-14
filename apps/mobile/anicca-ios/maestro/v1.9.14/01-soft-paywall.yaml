@@ -1,5 +1,5 @@
 appId: ai.anicca.app.ios
-name: First launch to free affirmations, optional Premium, and free continuation
+name: Adaptive personalized onboarding, optional Premium, and audit frames 00–16
 ---
 - clearState
 - clearKeychain
@@ -7,36 +7,213 @@ name: First launch to free affirmations, optional Premium, and free continuation
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
-- tapOn:
-    text: "Cancel|Not Now"
-    optional: true
-- extendedWaitUntil:
-    visible:
-      id: onboarding-goal-continue
-    timeout: 60000
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: _wait-for-storekit-screen.yaml
+      - extendedWaitUntil:
+          visible:
+            id: onboarding-welcome-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - takeScreenshot: 00-welcome
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - tapOn:
+          id: onboarding-welcome-cta
 - tapOn:
     id: onboarding-goal-self_love
+- takeScreenshot: 01-q1-goal
 - tapOn:
     id: onboarding-goal-continue
 - assertVisible:
+    id: onboarding-name-field
+- takeScreenshot: 01b-name
+- tapOn:
+    id: onboarding-name-continue
+- assertVisible:
+    id: onboarding-birth_context-title
+- takeScreenshot: 01c-birth-context
+- tapOn:
+    id: onboarding-birth_context-skip
+- assertVisible:
+    id: onboarding-mood_baseline-title
+- tapOn:
+    id: onboarding-mood_baseline-heavy
+- takeScreenshot: 01d-mood-baseline
+- tapOn:
+    id: onboarding-mood_baseline-continue
+# Select sleep before anxiety; the displayed module order is still fixed.
+- scrollUntilVisible:
+    element:
+      id: onboarding-struggle-sleep
+    direction: DOWN
+- tapOn:
+    id: onboarding-struggle-sleep
+- scrollUntilVisible:
+    element:
+      id: onboarding-struggle-anxiety
+    direction: UP
+- tapOn:
+    id: onboarding-struggle-anxiety
+- takeScreenshot: 02-q2-pain-points
+- tapOn:
+    id: onboarding-struggles-next
+- assertNotVisible:
+    id: onboarding-stress_trigger-title
+- assertNotVisible:
+    id: onboarding-self_criticism-title
+- assertNotVisible:
+    id: onboarding-avoidance_task-title
+- assertVisible:
+    id: onboarding-anxiety_target-title
+- tapOn:
+    id: onboarding-anxiety_target-health
+- takeScreenshot: 02b-anxiety-target
+- tapOn:
+    id: onboarding-anxiety_target-continue
+- assertVisible:
+    id: onboarding-sleep_reason-title
+- tapOn:
+    id: onboarding-sleep_reason-screens
+- takeScreenshot: 02c-sleep-reason
+- tapOn:
+    id: onboarding-sleep_reason-continue
+- assertVisible:
+    id: onboarding-bedtime-title
+- tapOn:
+    id: onboarding-bedtime-22_to_24
+- takeScreenshot: 02d-bedtime
+- tapOn:
+    id: onboarding-bedtime-continue
+- assertVisible:
+    id: onboarding-wake_time-title
+- tapOn:
+    id: onboarding-wake_time-6_to_8
+- takeScreenshot: 02e-wake-time
+- tapOn:
+    id: onboarding-wake_time-continue
+- assertVisible:
+    id: onboarding-depth-daily
+- tapOn:
+    id: onboarding-depth-daily
+- takeScreenshot: 03-q3-frequency
+- tapOn:
+    id: onboarding-depth-continue
+- assertVisible:
+    id: onboarding-belief_themes-title
+- tapOn:
+    id: onboarding-belief_themes-self_trust
+- takeScreenshot: 03b-belief-themes
+- tapOn:
+    id: onboarding-belief_themes-continue
+- assertVisible:
+    id: onboarding-tone-title
+- tapOn:
+    id: onboarding-tone-gentle
+- takeScreenshot: 03c-tone
+- tapOn:
+    id: onboarding-tone-continue
+- assertVisible:
+    id: onboarding-life_context-title
+- tapOn:
+    id: onboarding-life_context-study
+- takeScreenshot: 03d-life-context
+- tapOn:
+    id: onboarding-life_context-continue
+- assertVisible:
+    id: onboarding-routine_anchors-title
+- tapOn:
+    id: onboarding-routine_anchors-lunch
+- takeScreenshot: 03e-routine-anchors
+- tapOn:
+    id: onboarding-routine_anchors-continue
+- assertVisible:
+    id: onboarding-prior_attempts-title
+- tapOn:
+    id: onboarding-prior_attempts-meditation
+- tapOn:
+    id: onboarding-prior_attempts-journaling
+- takeScreenshot: 03f-prior-attempts
+- tapOn:
+    id: onboarding-prior_attempts-continue
+- assertVisible:
+    id: onboarding-prior_helpfulness-title
+- tapOn:
+    id: onboarding-prior_helpfulness-meditation
+- takeScreenshot: 03g-prior-helpfulness
+- tapOn:
+    id: onboarding-prior_helpfulness-continue
+- assertVisible:
+    id: onboarding-start_reason-title
+- tapOn:
+    id: onboarding-start_reason-overwhelmed
+- takeScreenshot: 03h-start-reason
+- tapOn:
+    id: onboarding-start_reason-continue
+- assertVisible:
+    id: onboarding-quiet_hours-title
+- tapOn:
+    id: onboarding-quiet_hours-overnight
+- takeScreenshot: 03i-quiet-hours
+- tapOn:
+    id: onboarding-quiet_hours-continue
+- extendedWaitUntil:
+    visible:
+      id: onboarding-first-affirmation
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: 04-preview-first-affirmation
+# The selector can explore; compare the actual text rather than a fixed quote.
+- copyTextFrom:
     id: onboarding-first-affirmation
+- evalScript: ${output.savedAffirmation = maestro.copiedText}
 - tapOn:
     id: onboarding-first-save
 - tapOn:
     id: onboarding-first-continue
+- takeScreenshot: 05-notification-setup
 - tapOn:
     id: onboarding-reminder-continue
+- takeScreenshot: 06-reminder-permission
 - tapOn:
     id: onboarding-notifications-skip
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: _wait-for-storekit-screen.yaml
+      - extendedWaitUntil:
+          visible:
+            id: paywall-plan-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - takeScreenshot: 07-paywall
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - tapOn:
+          id: paywall-close-button
+- runFlow: _dismiss-apple-account.yaml
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: feed-scroll
+      id: onboarding-first-intervention
     timeout: 15000
-- assertNotVisible:
-    id: paywall-plan-cta
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: onboarding-first-intervention
+- evalScript: ${output.intervention = maestro.copiedText}
+- takeScreenshot: 08-first-intervention
+- tapOn:
+    id: onboarding-intervention-continue
+- extendedWaitUntil:
+    visible:
+      id: feed-today
+    timeout: 15000
 - copyTextFrom:
     id: quote-text
-- evalScript: ${output.firstQuote = maestro.copiedText}
+- assertTrue: ${maestro.copiedText === output.intervention}
+- takeScreenshot: 09-feed-home
+# Default home stays on this person's daily word when swiped.
 - swipe:
     start: 50%, 75%
     end: 50%, 25%
@@ -44,81 +221,114 @@ name: First launch to free affirmations, optional Premium, and free continuation
 - waitForAnimationToEnd
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText !== output.firstQuote}
-- takeScreenshot: soft-paywall-free-feed
-- tapOn:
-    id: quote-like
+- assertTrue: ${maestro.copiedText === output.intervention}
+# Since the Round 11 carryover, the home word is the preview word, already
+# kept by the preview save above — tapping quote-like here would unlike it.
+# The Liked sheet must therefore already contain the saved affirmation.
 - tapOn:
     id: feed-saved
-- assertVisible: "I am worthy of the love I give and receive."
+- assertVisible: ${output.savedAffirmation}
+- takeScreenshot: 10-liked-sheet
 - tapOn: Close
 - tapOn:
     id: feed-themes
+- assertVisible:
+    id: theme-selected-sageMist
+- takeScreenshot: 11-theme-picker
 - tapOn:
     id: theme-silkDusk
-- extendedWaitUntil:
-    visible:
-      id: paywall-plan-cta
-    timeout: 60000
-- assertVisible: "Free: read, save and share affirmations"
-- assertVisible: "Premium: all 8 themes and 4 daily reminders"
-- takeScreenshot: soft-paywall-real-plans
-- tapOn:
-    id: paywall-close-button
-# StoreKit can raise the sandbox Apple Account sign-in prompt as the
-# paywall dismisses (diagnosed from run 43280022590 video frames: the free
-# feed was already back, covered by the prompt). Dismiss it without
-# signing in before asserting the theme picker, as elsewhere in this flow.
-- tapOn:
-    text: Cancel
-    optional: true
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: _dismiss-apple-account.yaml
+      # A failed attempt may have left the alternative-plans sheet open.
+      - runFlow:
+          when:
+            visible:
+              id: paywall-other-plans-close
+          commands:
+            - tapOn:
+                id: paywall-other-plans-close
+      - runFlow: _wait-for-storekit-screen.yaml
+      - extendedWaitUntil:
+          visible:
+            id: paywall-plan-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - takeScreenshot: 14-premium-from-themes
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - runFlow:
+          when:
+            visible:
+              id: paywall-other-plans
+          commands:
+            - tapOn:
+                id: paywall-other-plans
+            - runFlow: _dismiss-apple-account.yaml
+            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+            - takeScreenshot: 14b-alternative-plans
+            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+            - tapOn:
+                id: paywall-other-plans-close
+      - tapOn:
+          id: paywall-close-button
+# Unsigned StoreKit can show a sandbox sign-in prompt. Do not sign in.
+- runFlow: _dismiss-apple-account.yaml
 - waitForAnimationToEnd
 - assertVisible:
     id: theme-sandWave
 - tapOn:
     id: theme-sandWave
-- tapOn:
-    text: Cancel
-    optional: true
+- runFlow: _dismiss-apple-account.yaml
 - waitForAnimationToEnd
 - assertVisible:
-    id: feed-scroll
-- swipe:
-    start: 50%, 75%
-    end: 50%, 25%
-    duration: 450
-- assertVisible:
+    id: feed-today
+- copyTextFrom:
     id: quote-text
-- takeScreenshot: soft-paywall-free-continuation
+- assertTrue: ${maestro.copiedText === output.intervention}
+- takeScreenshot: 12-feed-sand-theme
 - stopApp
 - launchApp
-# StoreKit's unsigned simulator account prompt can also appear on relaunch.
-# Dismiss it without signing in, as on the existing first-launch journey.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+          commands:
+            - tapOn:
+                text: Cancel
+                optional: true
+      - waitForAnimationToEnd
+      - runFlow: _wait-for-storekit-screen.yaml
+      - extendedWaitUntil:
+          visible:
+            id: feed-today
+          timeout: 15000
+      - assertNotVisible:
+          id: onboarding-goal-continue
+      - assertNotVisible:
+          id: paywall-plan-cta
+      - copyTextFrom:
+          id: quote-text
+      - assertTrue: ${maestro.copiedText === output.intervention}
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - takeScreenshot: 13-feed-after-relaunch
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
 - tapOn:
-    text: Cancel
-    optional: true
-- waitForAnimationToEnd
+    id: feed-themes
+- assertVisible:
+    id: theme-selected-sandWave
+- takeScreenshot: 13b-selected-theme-after-relaunch
+- tapOn: Close
 - tapOn:
-    text: Cancel
-    optional: true
-- waitForAnimationToEnd
-- extendedWaitUntil:
-    visible:
-      id: feed-scroll
-    timeout: 15000
-- assertNotVisible:
-    id: onboarding-goal-continue
-- assertNotVisible:
-    id: paywall-plan-cta
-- copyTextFrom:
-    id: quote-text
-- evalScript: ${output.relaunchedQuote = maestro.copiedText}
-- swipe:
-    start: 50%, 75%
-    end: 50%, 25%
-    duration: 450
-- waitForAnimationToEnd
-- copyTextFrom:
-    id: quote-text
-- assertTrue: ${maestro.copiedText !== output.relaunchedQuote}
-- takeScreenshot: soft-paywall-free-after-relaunch
+    id: feed-settings
+- takeScreenshot: 15-feed-settings
+- tapOn:
+    id: settings-done
+- tapOn:
+    id: feed-reminders
+- takeScreenshot: 16-notifications-sheet
+- tapOn: Close

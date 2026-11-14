@@ -1,0 +1,38 @@
+appId: ai.anicca.app.ios
+name: Fresh onboarding through the pain-point question
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow: _wait-for-storekit-screen.yaml
+      - extendedWaitUntil:
+          visible:
+            id: onboarding-welcome-cta
+          timeout: 60000
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
+      - tapOn:
+          id: onboarding-welcome-cta
+- tapOn:
+    id: onboarding-goal-self_love
+- tapOn:
+    id: onboarding-goal-continue
+- assertVisible:
+    id: onboarding-name-field
+- tapOn:
+    id: onboarding-name-continue
+- assertVisible:
+    id: onboarding-birth_context-title
+- tapOn:
+    id: onboarding-birth_context-skip
+- tapOn:
+    id: onboarding-mood_baseline-neutral
+- tapOn:
+    id: onboarding-mood_baseline-continue
+- assertVisible:
+    id: onboarding-struggle-stress
