@@ -39,9 +39,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         SingularManager.shared.configure(launchOptions: launchOptions)
 
         // ASA Attribution取得 → app_opened トラック（この順序が重要）
+        let launchHistoryKey = "analytics_has_launched_before"
+        let isFirstLaunch = !UserDefaults.standard.bool(forKey: launchHistoryKey)
+        if isFirstLaunch {
+            UserDefaults.standard.set(true, forKey: launchHistoryKey)
+        }
         Task {
             await ASAAttributionManager.shared.fetchAttributionIfNeeded()
-            AnalyticsManager.shared.track(.appOpened)
+            AnalyticsManager.shared.track(.appOpened, properties: ["first_launch": isFirstLaunch])
         }
 
         Task {

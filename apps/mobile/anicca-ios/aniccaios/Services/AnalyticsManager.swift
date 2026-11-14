@@ -242,6 +242,11 @@ final class AnalyticsManager {
         if let currency = package.storeProduct.currencyCode { properties["currency"] = currency }
 
         track(.purchaseResult, properties: properties)
+        // Keep a named completion event for the cross-app funnel. Cancellation
+        // paths only emit purchase_result(result=cancelled), so completion and
+        // cancellation cannot collapse into the same event count. app_id and
+        // app_environment are added by track(_:properties:) via context.
+        track(.purchaseCompleted, properties: properties)
         if flowID == "onboarding" || flowID == "legacy_paywall" {
             track(.onboardingPaywallPurchased, properties: ["flow_id": flowID])
         }
@@ -304,6 +309,7 @@ enum AnalyticsEvent: String {
     case nudgeDecisionMade = "nudge_decision_made"
     case purchaseStarted = "purchase_started"
     case purchaseResult = "purchase_result"
+    case purchaseCompleted = "purchase_completed"
     case restoreStarted = "restore_started"
     case restoreResult = "restore_result"
     case experimentExposure = "experiment_exposure"
