@@ -64,9 +64,12 @@ on identical rows. Primary metric: Qini coefficient (sklift) with a
 exceed the random-targeting p95. Full numbers: `results/` and the v0
 README. The base model scores Qini 0.0739, CI [−0.0458, 0.1853] —
 **gate FAIL** (random p95 = 0.0715). Manager v0 scores Qini
-**−0.0342**, CI [−0.0985, 0.0230] — **gate FAIL**, and below its own
-base model on this protocol. That negative result is the v0 result;
-the write-up (v0 README §3) discusses what it does and does not mean.
+**0.0041**, CI [−0.0839, 0.1045] — **gate FAIL**: no measurable
+uplift skill, and a point estimate below its own base model. That
+negative result is the v0 result; the write-up (v0 README §3)
+discusses what it does and does not mean. All scores are computed in
+fp32 — scoring dtype is part of the protocol (bf16 logit noise moves
+this metric materially; see the write-up's measurement note).
 
 ## Reproduce the eval
 
@@ -77,8 +80,10 @@ python eval_uplift.py --source hillstrom.csv.gz \
   --out eval_manager-v0.json
 ```
 
-The harness is verified to reproduce every classical-arm number of the
-original base-model run exactly (prior / random / T-learner).
+The harness is verified against the original base-model run: every
+classical-arm number reproduces exactly (prior / random / T-learner),
+and the LLM arm reproduces to ~1e-5 when scoring in fp32
+(`results/eval_base_rerun_fp32.json`).
 
 ## Limitations
 

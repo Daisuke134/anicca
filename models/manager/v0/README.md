@@ -50,7 +50,7 @@ no Kaggle/Colab credential exists; paid compute is against standing
 rules. v0 is therefore the smallest run that executes end to end for
 real. Training wall time: 3,164 s (~53 min) for 63 steps (bf16,
 checkpointed every 25 steps); eval scoring of 2,000 prompts took
-798 s. Two earlier attempts that did not produce the published
+~1,900 s per model in fp32. Two earlier attempts that did not produce the published
 weights — and exactly why — are recorded in the run record §1.5;
 nothing about them is hidden.
 
@@ -85,7 +85,7 @@ mean Qini −0.0070, p95 **0.0715**.
 | random targeting (200 draws) | −0.0070 (p95 **0.0715**) | — | — | — |
 | T-learner (logistic regression) | **0.1017** | [0.0079, 0.2128] | 0.0479 | 0.0671 |
 | base model (SmolLM2-135M-Instruct) | 0.0739 | [−0.0458, 0.1853] | 0.0345 | 0.0753 |
-| **Manager v0 (this run)** | **−0.0342** | [−0.0985, 0.0230] | −0.0155 | 0.0358 |
+| **Manager v0 (this run)** | **0.0041** | [−0.0839, 0.1045] | 0.0027 | 0.0746 |
 
 Gate check (lower CI > random p95 = 0.0715): **no arm passes on the
 1,000-row subsample** — including the T-learner, whose confidence
@@ -96,19 +96,29 @@ subsample costs statistical power; that is a recorded limitation of
 this v0 protocol, not a change of the preregistered gate.
 
 The headline result is negative and we report it as measured:
-**post-training made the uplift ranking worse than the untrained base
-model** (Qini −0.0342 vs +0.0739; both CIs cross zero). Training itself
-was healthy (completion loss 0.82 → 0.09) — the model learned the
-outcome distribution. What it did not learn is the *contrast*: each
-training row shows one person under one arm only, so the
-treated-minus-control difference of two separately-estimated
-probabilities is dominated by everything except the arm. Hypotheses
-for v1, labeled as hypotheses: (i) supervise the contrast directly
-(both-arm or pseudo-outcome targets in the X-learner style);
-(ii) far more rows and gentler optimization (1 epoch at lr 1e-3 on
-1,000 rows is a smoke run, not a training regime); (iii) score with a
-calibrated head instead of next-token differences. The eval harness —
-not enthusiasm — will judge each.
+**Manager v0 shows no measurable uplift skill** (Qini 0.0041, CI
+[−0.0839, 0.1045] — statistically indistinguishable from random
+targeting) **and its point estimate sits below the untrained base
+model** (+0.0739). Training itself was healthy (completion loss
+0.82 → 0.09) — the model learned the outcome distribution. What it
+did not learn is the *contrast*: each training row shows one person
+under one arm only, so the treated-minus-control difference of two
+separately-estimated probabilities is dominated by everything except
+the arm. Hypotheses for v1, labeled as hypotheses: (i) supervise the
+contrast directly (both-arm or pseudo-outcome targets in the
+X-learner style); (ii) far more rows and gentler optimization
+(1 epoch at lr 1e-3 on 1,000 rows is a smoke run, not a training
+regime); (iii) score with a calibrated head instead of next-token
+differences. The eval harness — not enthusiasm — will judge each.
+
+A measurement note that cost us a day: scoring dtype is part of this
+protocol. Our first scoring pass ran in bf16 (the merged weights'
+stored dtype) and produced Qini −0.0342 for Manager v0 and −0.0005
+for the base model; in fp32 the base model reproduces its original
+run (0.0739) and Manager v0 scores 0.0041. bf16 next-token logit
+noise is larger than the probability differences being ranked. All
+numbers in this write-up are fp32 (`results/eval_base_rerun_fp32.json`
+documents the verification).
 
 ## 4. What we conclude
 

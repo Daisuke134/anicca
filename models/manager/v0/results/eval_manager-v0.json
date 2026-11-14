@@ -9,7 +9,7 @@
  "ate_eval": 0.04548418193672776,
  "random_qini_mean": -0.006970307659369377,
  "random_qini_p95": 0.07150743083005084,
- "llm_scoring_sec": 797.7451677322388,
+ "llm_scoring_sec": 1954.7791090011597,
  "arms": {
   "population_prior": {
    "qini": 0.0,
@@ -26,18 +26,18 @@
    ]
   },
   "manager-v0": {
-   "qini": -0.03424496020303696,
-   "auuc": -0.015520834120656324,
-   "uplift_at_30pct": 0.03579059829059829,
+   "qini": 0.0040534712659069045,
+   "auuc": 0.0027171215544831316,
+   "uplift_at_30pct": 0.07462553891284057,
    "qini_boot95": [
-    -0.09852263639173382,
-    0.023018543358699264
+    -0.0838678196869654,
+    0.10450410545638097
    ]
   }
  },
  "gate_vs_random": {
   "rule": "MG-06 training gate: uplift ranking beats random targeting (lower 95% CI > random p95)",
-  "lower_ci": -0.09852263639173382,
+  "lower_ci": -0.0838678196869654,
   "random_p95": 0.07150743083005084,
   "pass": false
  }

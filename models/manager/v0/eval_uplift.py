@@ -22,9 +22,14 @@ Eval protocol (declared before scoring; identical for every arm):
 
 Reconstruction note (2026-11-14): the first version of this harness was
 lost with a workspace cleanup before publication. This version was
-rebuilt from the surviving result file and data, and is verified to
-reproduce every classical-arm number of the original base-model run
-exactly (prior, random mean/p95, T-learner Qini / AUUC / uplift@30 / CI).
+rebuilt from the surviving result file and data, and is verified
+against the original base-model run: every classical-arm number
+reproduces exactly (prior, random mean/p95, T-learner Qini / AUUC /
+uplift@30 / CI), and the LLM arm reproduces to ~1e-5 (Qini 0.07387 vs
+0.07386, uplift@30 exact) PROVIDED scoring runs in fp32. Scoring dtype
+is part of the protocol: in bf16 the same base model scores Qini
+-0.0005 — bf16 next-token logit noise swamps the tiny probability
+differences this metric ranks on. All published v0 numbers are fp32.
 
 Usage:
     python eval_uplift.py --source hillstrom.csv.gz --model <path-or-hf-id> \
@@ -90,7 +95,7 @@ def arm_metrics(y, t, s, rng, bootstrap=True):
 
 
 @torch.no_grad()
-def llm_scores(model_id, df, ite, pos):
+def llm_scores(model_id, df, ite, pos, dtype=torch.float32):
     tok = AutoTokenizer.from_pretrained(model_id)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
@@ -98,7 +103,10 @@ def llm_scores(model_id, df, ite, pos):
     id0 = tok("0", add_special_tokens=False)["input_ids"]
     assert len(id1) == 1 and len(id0) == 1, (id1, id0)
     id1, id0 = id1[0], id0[0]
-    model = AutoModelForCausalLM.from_pretrained(model_id)
+    # Scoring dtype is fixed to fp32 for every arm: bf16 next-token
+    # logit noise is large enough to move this rank-based metric
+    # (measured: base-model Qini +0.0739 in fp32 vs -0.0005 in bf16).
+    model = AutoModelForCausalLM.from_pretrained(model_id, dtype=dtype)
     model.eval()
 
     prompts, meta = [], []
