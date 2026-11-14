@@ -63,9 +63,10 @@ on identical rows. Primary metric: Qini coefficient (sklift) with a
 500-resample bootstrap 95% CI. Gate (preregistered): lower CI must
 exceed the random-targeting p95. Full numbers: `results/` and the v0
 README. The base model scores Qini 0.0739, CI [−0.0458, 0.1853] —
-**gate FAIL** (random p95 = 0.0715). Manager v0's own scores are in
-`results/eval_manager-v0.json` and the v0 README; whatever they are,
-they are the v0 result.
+**gate FAIL** (random p95 = 0.0715). Manager v0 scores Qini
+**−0.0342**, CI [−0.0985, 0.0230] — **gate FAIL**, and below its own
+base model on this protocol. That negative result is the v0 result;
+the write-up (v0 README §3) discusses what it does and does not mean.
 
 ## Reproduce the eval
 

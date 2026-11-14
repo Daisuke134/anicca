@@ -28,6 +28,8 @@ treatment × visit: **train 29,885 / test 12,808**. Identical to the
 MG-06 baseline (anicca-ops `files/eval/mg06/mg06_hillstrom_baseline.py`),
 whose published numbers this pipeline reproduces exactly.
 
+The exact files used by the run are in `data/` in this directory.
+
 ## Files produced by `build_dataset.py`
 
 | file | content |

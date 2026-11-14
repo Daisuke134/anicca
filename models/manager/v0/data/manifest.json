@@ -1,0 +1,23 @@
+{
+  "source_file": "/home/hatch/workspace/manager-v0-work/data/hillstrom.csv.gz",
+  "source_sha256": "bab6578f60db5d792f1c2372c502f029152a5249cf5ea84390f3b7f885d7234f",
+  "source": "Hillstrom MineThatData e-mail challenge (2008), public S3 mirror used by MG-06 prereg",
+  "rows_two_arm": 42693,
+  "n_train": 29885,
+  "n_test": 12808,
+  "split": "70/30 stratified by treatment x visit, random_state=0 (frozen, MG-06 prereg section 3)",
+  "sft_n": 2000,
+  "sft_treated_share": 0.4985,
+  "sft_visit_rate": 0.124,
+  "features": [
+    "recency",
+    "history",
+    "mens",
+    "womens",
+    "zip_code",
+    "newbie",
+    "channel"
+  ],
+  "outcome": "visit",
+  "license_note": "Hillstrom challenge data is distributed for research/analysis use by MineThatData; this repo redistributes only serialized derivatives needed to reproduce the run, with attribution. See DATA_CARD.md."
+}

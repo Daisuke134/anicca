@@ -48,7 +48,11 @@ VM. The team's only Hugging Face credential is read-only (verified:
 `create_repo` returns 403), so no hosted GPU job could be launched;
 no Kaggle/Colab credential exists; paid compute is against standing
 rules. v0 is therefore the smallest run that executes end to end for
-real. {{TRAIN_RUNTIME}}
+real. Training wall time: 3,164 s (~53 min) for 63 steps (bf16,
+checkpointed every 25 steps); eval scoring of 2,000 prompts took
+798 s. Two earlier attempts that did not produce the published
+weights — and exactly why — are recorded in the run record §1.5;
+nothing about them is hidden.
 
 **Eval.** `eval_uplift.py`: a fixed 1,000-row stratified subsample of
 the frozen test split, declared before scoring. Arms on identical
@@ -75,9 +79,36 @@ today: **0** — the app does not yet export `delivery_id` +
 Eval rows: n=1,000. ATE on eval rows: 0.0455. Random targeting:
 mean Qini −0.0070, p95 **0.0715**.
 
-{{RESULTS_TABLE}}
+| arm | Qini | 95% CI | AUUC | uplift@30% |
+|---|---|---|---|---|
+| population prior | 0.0000 | — | 0.0000 | 0.0749 |
+| random targeting (200 draws) | −0.0070 (p95 **0.0715**) | — | — | — |
+| T-learner (logistic regression) | **0.1017** | [0.0079, 0.2128] | 0.0479 | 0.0671 |
+| base model (SmolLM2-135M-Instruct) | 0.0739 | [−0.0458, 0.1853] | 0.0345 | 0.0753 |
+| **Manager v0 (this run)** | **−0.0342** | [−0.0985, 0.0230] | −0.0155 | 0.0358 |
 
-{{RESULTS_INTERPRETATION}}
+Gate check (lower CI > random p95 = 0.0715): **no arm passes on the
+1,000-row subsample** — including the T-learner, whose confidence
+interval widens at this n (on the full frozen test set the same
+T-learner passed the preregistered H1 gate: Qini 0.0712, CI
+[0.0437, 0.0997] vs random p95 0.0201; prereg section 7). The CPU
+subsample costs statistical power; that is a recorded limitation of
+this v0 protocol, not a change of the preregistered gate.
+
+The headline result is negative and we report it as measured:
+**post-training made the uplift ranking worse than the untrained base
+model** (Qini −0.0342 vs +0.0739; both CIs cross zero). Training itself
+was healthy (completion loss 0.82 → 0.09) — the model learned the
+outcome distribution. What it did not learn is the *contrast*: each
+training row shows one person under one arm only, so the
+treated-minus-control difference of two separately-estimated
+probabilities is dominated by everything except the arm. Hypotheses
+for v1, labeled as hypotheses: (i) supervise the contrast directly
+(both-arm or pseudo-outcome targets in the X-learner style);
+(ii) far more rows and gentler optimization (1 epoch at lr 1e-3 on
+1,000 rows is a smoke run, not a training regime); (iii) score with a
+calibrated head instead of next-token differences. The eval harness —
+not enthusiasm — will judge each.
 
 ## 4. What we conclude
 
@@ -85,10 +116,11 @@ mean Qini −0.0070, p95 **0.0715**.
   preregistered uplift eval → a product case format, all executable
   from this directory. That circuit — not any single score — is the
   v0 deliverable, because every later version plugs into it.
-- A 135M model with 2,000 SFT rows is, at best, in the same band as a
-  logistic-regression T-learner on this task. Nobody should read more
-  into v0 than that; the preregistered gate, not enthusiasm, decides
-  what gets promoted.
+- On this protocol the trained 135M model is worse than its own base
+  and worse than a logistic-regression T-learner. SFT on factual
+  outcomes is not, by itself, an uplift learner. Nobody should read
+  more into v0 than that; the preregistered gate, not enthusiasm,
+  decides what gets promoted.
 - The binding constraint is now product data: Manager cannot learn
   from Anicca until the app exports deliveries with assignment
   probabilities. That is an app-side change, specified and handed off.
