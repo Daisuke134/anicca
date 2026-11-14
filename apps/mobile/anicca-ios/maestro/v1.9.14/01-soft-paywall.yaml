@@ -10,11 +10,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - retry:
     maxRetries: 2
     commands:
-      - runFlow:
-          file: _wait-for-storekit-screen.yaml
-          env:
-            READY_ID: onboarding-welcome-cta
-            WAIT_TIMEOUT_MS: 60000
+      - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
             id: onboarding-welcome-cta
@@ -185,11 +181,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - retry:
     maxRetries: 2
     commands:
-      - runFlow:
-          file: _wait-for-storekit-screen.yaml
-          env:
-            READY_ID: paywall-plan-cta
-            WAIT_TIMEOUT_MS: 60000
+      - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
             id: paywall-plan-cta
@@ -256,11 +248,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
           commands:
             - tapOn:
                 id: paywall-other-plans-close
-      - runFlow:
-          file: _wait-for-storekit-screen.yaml
-          env:
-            READY_ID: paywall-plan-cta
-            WAIT_TIMEOUT_MS: 60000
+      - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
             id: paywall-plan-cta
@@ -305,11 +293,6 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     maxRetries: 2
     commands:
       - runFlow:
-          file: _wait-for-storekit-screen.yaml
-          env:
-            READY_ID: feed-today
-            WAIT_TIMEOUT_MS: 15000
-      - runFlow:
           when:
             visible: "(?i)sign in to (your )?apple (account|id)"
           commands:
@@ -317,6 +300,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
                 text: Cancel
                 optional: true
       - waitForAnimationToEnd
+      - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
             id: feed-today

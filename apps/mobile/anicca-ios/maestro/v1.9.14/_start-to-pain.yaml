@@ -10,11 +10,7 @@ name: Fresh onboarding through the pain-point question
 - retry:
     maxRetries: 2
     commands:
-      - runFlow:
-          file: _wait-for-storekit-screen.yaml
-          env:
-            READY_ID: onboarding-welcome-cta
-            WAIT_TIMEOUT_MS: 60000
+      - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
             id: onboarding-welcome-cta

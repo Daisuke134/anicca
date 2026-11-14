@@ -720,3 +720,48 @@ rg -n '\bactor\s+\w+|mutating func|nonisolated' apps/mobile/anicca-ios --glob '*
 変更対象は `maestro/v1.9.14/` のフロー5ファイル（helper新規2件含む）、`scripts/run-soft-paywall-maestro.sh`、本記録の **計7ファイルのみ**。Swift、境界スクリプト、anicca-ops側監査、BOARDは変更しない。指定worktree・branchに未コミット差分として保持し、commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。
 
 **判定は統合側がpush後に実行するActionsの両Maestroフロー、`frames/` の実画像、動画で行う。D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
+
+## 第9ラウンド — Maestro待機の単純化（2026-11-14）
+
+### 提供された実測と原因の読み筋
+
+一次証拠は [Maestro run 43600894800](https://github.com/Daisuke134/anicca/actions/runs/43600894800)、HEAD `50597d6a1`。以下は委任元がartifactの `result.xml` と `maestro.log` を実読して提供した情報であり、本担当によるartifact再取得・実走の結果ではない。Releaseビルド成功、PRビルド＋単体テストは run `43600895804` でsuccess。両Maestroフローは約6分で失敗した。
+
+両フローの失敗文（提供原文）:
+
+```text
+Assertion is false: false is true
+```
+
+適応フローの `maestro-run.*/adaptive/.../logs/maestro.log` に表示された条件（提供原文）:
+
+```text
+Run flow when id: ${READY_ID} is visible and "(?i)sign in to (your )?apple (account|id)" is not visible
+```
+
+この内側runFlowはポーリングごとに `SKIPPED` を繰り返した。呼び出し側は `READY_ID: onboarding-welcome-cta` と `WAIT_TIMEOUT_MS: 60000` を渡していたが、ループは約33秒で抜け、末尾の `assertTrue: ${output.storeKitScreenReady}` が失敗。リトライでも同じ失敗が発生した（14:17:10、14:18:21）。消去サブフローがダイアログ不在時に `SKIPPED` になること自体は正常だった。
+
+原因の読み筋は、置換が効いていないとみられる入れ子条件にJSフラグの更新と合否を依存させた設計であり、アプリの欠陥を示すものではない。ログがテンプレートを生表示しただけという可能性は排除できず、33秒で終了した内部理由も未確定。どちらの解釈でも、この間接的な合否ゲートを除去する。第8ラウンド前の run `43595457904` は素の待機で困りごと選択・stress深掘りまで進めたことが、戻す形の先例となる。
+
+### 変更内容とCIで確認する設計
+
+- `_wait-for-storekit-screen.yaml` はファイル名を維持し、表示名を消去専用と明示。JSフラグ・期限・env参照・内側の準備判定・末尾assertTrueを削除した。静的なApple Accountタイトルの `while.visible` と `times: 5` で、既存 `_dismiss-apple-account.yaml` → `waitForAnimationToEnd(timeout: 1000)` を最大5回実行する。ダイアログが無ければループ本体を実行しない。これは回数上限であり、selector/tapの内部待機を含めた厳密な実時間上限ではない。アニメーション待機も固定1秒sleepではなく、静止すれば早く戻る。[公式repeat](https://docs.maestro.dev/reference/commands-available/repeat) と [公式waitForAnimationToEnd](https://docs.maestro.dev/reference/commands-available/waitforanimationtoend) に照合。
+- 5呼び出し箇所すべてを「消去サブフロー → 呼び出し側の素のextendedWaitUntil」に統一。IDはYAMLに直接 `onboarding-welcome-cta`、`paywall-plan-cta`、`feed-today` と記述。welcome/paywallの60,000ms、再起動後の既存15,000msは不変。再起動時の既存inline条件付きCancelとアニメーション待機も残し、その後に共有消去と表示待機を隣接させた。
+- CIでは消去専用runFlowと、その次の `id: onboarding-welcome-cta is visible` 等の実値IDによる待機を別ステップとして読める設計。ダイアログ不在なら消去側SKIPPEDは正常で、画面未到達なら素の表示待機が失敗する。既存retry・表示/非表示アサーション・文言同一性チェックは維持。遅延ダイアログが消去後に出る競合の成否も、実走で確認する。
+- 全37枚のフレーム名・番号・順序、相対名撮影と回収スクリプトは変更しない。run `43600894800` は撮影前に失敗したため、第8ラウンドの撮影パス修正と回収は依然として実機未検証。
+
+### 検証・作業境界
+
+- root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git`、開始HEAD `50597d6a1` を実読。開始時差分なし。境界スクリプトは旧固定パス不一致で失敗し、明示された先行承認を適用した。境界スクリプトは不変。
+- 実読手順: `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` の `using-superpowers/SKILL.md`、`systematic-debugging/SKILL.md`、`test-driven-development/SKILL.md`、`verification-before-completion/SKILL.md`。既存条件付き消去と既存表示待機を再利用し、依存追加なし。今回の変更はフロー設定のみで、Maestro実走によるRED/GREENは実施していない。
+- 最初のPython検査は44件中1失敗・2skip。`test_relaunch_handles_store_account_prompt_before_verifying_free_use` が再起動部分のinline `text: Cancel` を要求したため、既存の条件付きCancelを保持して修正した。テストファイルは変更していない。
+- 旧canonical path/originの文書と現在の作業環境の不一致は承認済み。第8ラウンド節のJS待機設計は当時の記録として保持し、この第9ラウンドが現行実装を記述する。BOARD追記・別worktree・統合の一般手順より、今回の変更対象限定とcommit/push等禁止の明示指示を優先する。
+
+**Maestro/iOS実走・再撮影・目視監査は未実施。D-01〜D-16は全件「未完了」のまま。** JavaとXcodeはこの環境で未検出。実走の判定は統合側のpush後のActionsで行う。Swift、実行スクリプト、監査ファイル、BOARDは変更せず、commit / push / merge / PR作成 / ASC提出 / 有料支払いは行わない。
+
+最終ローカル検証結果:
+
+- `apps/mobile/anicca-ios` で `python3 -m unittest discover -s scripts/tests`: **Ran 44 tests in 30.873s / OK (skipped=2)、exit 0**。42成功、既存Swift依存2件skip。
+- PyYAML 6.0.1 `yaml.safe_load_all`: **v1.9.14の5ファイル構文PASS**（header/commandsの2文書）。開始HEADとの構造比較で、全37撮影指定の順序、既存assertVisible/assertNotVisible/assertTrue（廃止対象helperのJSゲートを除く）、extendedWaitUntilの条件・timeoutが一致。5箇所すべてで消去の次に実値IDの待機があること、READY_ID/WAIT_TIMEOUT_MS/storeKitScreenReady参照が残っていないことを確認。これは静的検査でありMaestro実行検証ではない。
+- `bash -n apps/mobile/anicca-ios/scripts/run-soft-paywall-maestro.sh`: **exit 0**（スクリプト自体は未変更）。`git diff --check`: **exit 0**。
+- 既存FIX-NOTES全文の保持と末尾追記のみを照合。最終変更はフロー3ファイルと本記録の計4ファイル。未コミット差分を指定worktreeに保持し、統合・worktree削除は行わない。
