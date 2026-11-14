@@ -25,7 +25,11 @@ struct NotificationPermissionStepView: View {
     /// The schedule line shows the slots the user actually chose in the
     /// previous step; the fixed free schedule is only a fallback.
     private var scheduleText: String {
-        let chosen = appState.personalizationProfile.nudgeSlots.sorted().map { $0.label }
+        let profile = appState.personalizationProfile
+        let chosen = PersonalizationRules.effectiveSlots(profile: profile).map { $0.label }
+        if chosen.isEmpty, profile.adaptiveAnswers != nil {
+            return String(localized: "adaptive_no_available_times")
+        }
         if !chosen.isEmpty {
             return String(format: NSLocalizedString("growth_chosen_schedule", comment: ""), chosen.joined(separator: " · "))
         }
@@ -84,6 +88,7 @@ struct NotificationPermissionStepView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
                     AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["result": "skipped"])
+                    savePermission("skipped")
                     next()
                 } label: {
                     Text(String(localized: "growth_maybe_later"))
@@ -111,6 +116,14 @@ struct NotificationPermissionStepView: View {
         }
     }
 
+    private func savePermission(_ result: String) {
+        var profile = appState.personalizationProfile
+        var answers = profile.answers
+        answers.values["notification_permission"] = [result]
+        profile.adaptiveAnswers = answers
+        appState.updatePersonalizationProfile(profile)
+    }
+
     private func requestNotifications() {
         guard !isRequesting else { return }
         isRequesting = true
@@ -123,6 +136,7 @@ struct NotificationPermissionStepView: View {
                     "source": "onboarding",
                     "result": granted ? "allowed" : "denied",
                 ])
+                savePermission(granted ? "allowed" : "denied")
                 if granted {
                     // v1.8.7: notifications are remote-only (APNs). Register now that
                     // the user granted permission so the device token reaches the backend.

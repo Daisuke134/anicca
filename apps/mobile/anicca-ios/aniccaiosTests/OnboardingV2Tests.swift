@@ -22,12 +22,13 @@ final class OnboardingV2Tests: XCTestCase {
 
     func test_initialJourney_startsWithIntroductionAndSeparatesName() {
         XCTAssertEqual(OnboardingStep.initialJourney, [
-            .welcome, .goal, .name, .painPoints, .struggleFreq,
+            .welcome, .goal, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq,
+            .beliefThemes, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours,
             .planReveal, .nudgeTimes, .notifications
         ])
         XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
         XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
-        XCTAssertEqual(OnboardingStep.name.nextInitialStep, .painPoints)
+        XCTAssertEqual(OnboardingStep.name.nextInitialStep, .birthContext)
         XCTAssertNil(OnboardingStep.notifications.nextInitialStep)
     }
 
@@ -42,7 +43,7 @@ final class OnboardingV2Tests: XCTestCase {
 
     func test_progressBar_followsJourneyOrderNotRawValues() {
         for (index, step) in OnboardingStep.initialJourney.enumerated() {
-            XCTAssertEqual(OnboardingProgressBar.progress(for: step), Double(index + 1) / 8, accuracy: 0.001)
+            XCTAssertEqual(OnboardingProgressBar.progress(for: step), Double(index + 1) / 17, accuracy: 0.001)
         }
     }
 

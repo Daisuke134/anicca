@@ -250,7 +250,9 @@ struct ReminderScheduleStepView: View {
 
     private var sortedSlots: [NudgeSlot] { selectedSlots.sorted() }
     private var isValid: Bool {
-        PersonalizationRules.isValidSchedule(slots: sortedSlots, frequency: frequency)
+        if PersonalizationRules.availableSlots(profile: appState.personalizationProfile).isEmpty { return true }
+        return PersonalizationRules.isValidSchedule(slots: sortedSlots, frequency: frequency)
+            && !sortedSlots.contains { PersonalizationRules.isQuiet($0, quietHours: appState.personalizationProfile.answers.ids(for: .quietHours)) }
     }
 
     var body: some View {
@@ -280,9 +282,16 @@ struct ReminderScheduleStepView: View {
                         .selectionCard(isSelected: selectedSlots.contains(slot))
                     }
                     .buttonStyle(.plain)
+                    .disabled(PersonalizationRules.isQuiet(slot, quietHours: appState.personalizationProfile.answers.ids(for: .quietHours)))
                     .accessibilityIdentifier("onboarding-slot-\(slot.hour)")
                     .accessibilityAddTraits(selectedSlots.contains(slot) ? .isSelected : [])
                 }
+            }
+            if !appState.personalizationProfile.answers.ids(for: .quietHours).filter({ $0 != "none" }).isEmpty {
+                Text(String(localized: PersonalizationRules.availableSlots(profile: appState.personalizationProfile).isEmpty
+                            ? "adaptive_no_available_times" : "adaptive_quiet_conflict"))
+                    .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             VStack(alignment: .leading, spacing: 10) {
                 Text(String(localized: "growth_frequency_title"))
@@ -332,13 +341,11 @@ struct ReminderScheduleStepView: View {
         guard !didInitialize else { return }
         didInitialize = true
         let profile = appState.personalizationProfile
-        if !profile.nudgeSlots.isEmpty {
-            selectedSlots = Set(profile.nudgeSlots)
-            frequency = profile.dailyFrequency
-        } else {
-            frequency = PersonalizationRules.proposedFrequency(struggleFrequency: profile.struggleFrequency)
-            selectedSlots = Set(PersonalizationRules.proposedSlots(painPointIds: profile.painPointIds, frequency: frequency))
-        }
+        frequency = profile.nudgeSlots.isEmpty
+            ? PersonalizationRules.proposedFrequency(struggleFrequency: profile.struggleFrequency) : profile.dailyFrequency
+        let proposed = PersonalizationRules.initialSlots(profile: profile, frequency: frequency)
+        selectedSlots = Set(proposed.filter { !PersonalizationRules.isQuiet($0, quietHours: profile.answers.ids(for: .quietHours)) })
+        if profile.nudgeSlots.isEmpty { frequency = max(1, min(frequency, selectedSlots.count)) }
     }
 
     private func save() {
@@ -356,7 +363,7 @@ struct FirstInterventionStepView: View {
     @State private var didRecordDecision = false
 
     private var nextSlotLabel: String? {
-        appState.personalizationProfile.nudgeSlots.sorted().first?.label
+        PersonalizationRules.effectiveSlots(profile: appState.personalizationProfile).first?.label
     }
 
     var body: some View {

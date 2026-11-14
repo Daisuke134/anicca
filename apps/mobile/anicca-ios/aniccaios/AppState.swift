@@ -84,7 +84,9 @@ final class AppState: ObservableObject {
 
     // Phase 1: onboarding answers as one profile (answer→change mapping).
     private let personalizationProfileKey = "com.anicca.personalizationProfile"
-    @Published private(set) var personalizationProfile: PersonalizationProfile = PersonalizationProfile()
+    var personalizationProfile: PersonalizationProfile {
+        userProfile.personalization ?? PersonalizationProfile()
+    }
 
     private init() {
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
@@ -122,7 +124,7 @@ final class AppState: ObservableObject {
         self.monthlyNudgeCount = defaults.integer(forKey: monthlyNudgeCountKey)
         self.hasRequestedReview = defaults.bool(forKey: hasRequestedReviewKey)
         self.onboardingQuestionsCompleted = defaults.bool(forKey: onboardingQuestionsCompletedKey)
-        self.personalizationProfile = loadPersonalizationProfile()
+        migratePersonalizationProfile()
 
         // 月初リセットチェック
         checkAndResetMonthlyNudgeCountIfNeeded()
@@ -417,6 +419,9 @@ final class AppState: ObservableObject {
     private func saveUserProfile() {
         if let data = try? JSONEncoder().encode(userProfile) {
             defaults.set(data, forKey: userProfileKey)
+            if userProfile.personalization != nil {
+                defaults.removeObject(forKey: personalizationProfileKey)
+            }
         }
     }
 
@@ -429,21 +434,20 @@ final class AppState: ObservableObject {
         var updated = profile
         updated.updatedAt = Date()
         updated.timezoneIdentifier = TimeZone.current.identifier
-        personalizationProfile = updated
-        if let data = try? JSONEncoder().encode(updated) {
-            defaults.set(data, forKey: personalizationProfileKey)
-        }
+        updated.schemaVersion = 2
+        userProfile.personalization = updated
+        saveUserProfile()
         Task {
             await ProfileSyncService.shared.enqueue(profile: userProfile)
         }
     }
 
-    private func loadPersonalizationProfile() -> PersonalizationProfile {
-        guard let data = defaults.data(forKey: personalizationProfileKey),
-              let profile = try? JSONDecoder().decode(PersonalizationProfile.self, from: data) else {
-            return PersonalizationProfile()
-        }
-        return profile
+    private func migratePersonalizationProfile() {
+        guard userProfile.personalization == nil,
+              let data = defaults.data(forKey: personalizationProfileKey),
+              let profile = try? JSONDecoder().decode(PersonalizationProfile.self, from: data) else { return }
+        userProfile.personalization = profile
+        saveUserProfile()
     }
     
     func profileSyncPayload(for profile: UserProfile) -> [String: Any] {
@@ -490,16 +494,8 @@ final class AppState: ObservableObject {
 
         // Phase 1 personalization: answer IDs and the user-chosen schedule.
         // The preferred name is on-device only and is never synced.
-        let personalization = personalizationProfile
-        payload["personalization"] = [
-            "desiredState": personalization.desiredState ?? "",
-            "painPointIds": personalization.painPointIds,
-            "struggleFrequency": personalization.struggleFrequency ?? "",
-            "nudgeSlots": personalization.nudgeSlots.map { $0.label },
-            "dailyFrequency": personalization.dailyFrequency,
-            "timezone": personalization.timezoneIdentifier,
-            "schemaVersion": personalization.schemaVersion
-        ] as [String: Any]
+        let personalization = profile.personalization ?? personalizationProfile
+        payload["personalization"] = personalization.deliveryPayload()
         return payload
     }
     

@@ -30,6 +30,8 @@ struct PersonalizationProfile: Codable, Equatable {
     /// Timezone the slots were chosen in; slots stay wall-clock across DST.
     var timezoneIdentifier: String
 
+    var adaptiveAnswers: AdaptiveAnswers?
+
     var schemaVersion: Int
     var updatedAt: Date
 
@@ -41,9 +43,10 @@ struct PersonalizationProfile: Codable, Equatable {
         nudgeSlots: [NudgeSlot] = [],
         dailyFrequency: Int = 1,
         timezoneIdentifier: String = TimeZone.current.identifier,
-        schemaVersion: Int = 1,
+        schemaVersion: Int = 2,
         updatedAt: Date = Date()
     ) {
+        self.adaptiveAnswers = nil
         self.preferredName = preferredName
         self.desiredState = desiredState
         self.painPointIds = painPointIds

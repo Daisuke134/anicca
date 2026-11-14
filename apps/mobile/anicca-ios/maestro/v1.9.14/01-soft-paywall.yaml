@@ -1,5 +1,5 @@
 appId: ai.anicca.app.ios
-name: Personalized daily affirmation, optional Premium, and audit frames 01–13
+name: Adaptive personalized onboarding, optional Premium, and audit frames 00–16
 ---
 - clearState
 - clearKeychain
@@ -27,16 +27,133 @@ name: Personalized daily affirmation, optional Premium, and audit frames 01–13
 - takeScreenshot: ${EVIDENCE_DIR}/frames/01b-name
 - tapOn:
     id: onboarding-name-continue
+- assertVisible:
+    id: onboarding-birth_context-title
+- takeScreenshot: ${EVIDENCE_DIR}/frames/01c-birth-context
+- tapOn:
+    id: onboarding-birth_context-skip
+- assertVisible:
+    id: onboarding-mood_baseline-title
+- tapOn:
+    id: onboarding-mood_baseline-heavy
+- takeScreenshot: ${EVIDENCE_DIR}/frames/01d-mood-baseline
+- tapOn:
+    id: onboarding-mood_baseline-continue
+# Select sleep before anxiety; the displayed module order is still fixed.
+- scrollUntilVisible:
+    element:
+      id: onboarding-struggle-sleep
+    direction: DOWN
+- tapOn:
+    id: onboarding-struggle-sleep
+- scrollUntilVisible:
+    element:
+      id: onboarding-struggle-anxiety
+    direction: UP
 - tapOn:
     id: onboarding-struggle-anxiety
 - takeScreenshot: ${EVIDENCE_DIR}/frames/02-q2-pain-points
 - tapOn:
     id: onboarding-struggles-next
+- assertNotVisible:
+    id: onboarding-stress_trigger-title
+- assertNotVisible:
+    id: onboarding-self_criticism-title
+- assertNotVisible:
+    id: onboarding-avoidance_task-title
+- assertVisible:
+    id: onboarding-anxiety_target-title
+- tapOn:
+    id: onboarding-anxiety_target-health
+- takeScreenshot: ${EVIDENCE_DIR}/frames/02b-anxiety-target
+- tapOn:
+    id: onboarding-anxiety_target-continue
+- assertVisible:
+    id: onboarding-sleep_reason-title
+- tapOn:
+    id: onboarding-sleep_reason-screens
+- takeScreenshot: ${EVIDENCE_DIR}/frames/02c-sleep-reason
+- tapOn:
+    id: onboarding-sleep_reason-continue
+- assertVisible:
+    id: onboarding-bedtime-title
+- tapOn:
+    id: onboarding-bedtime-22_to_24
+- takeScreenshot: ${EVIDENCE_DIR}/frames/02d-bedtime
+- tapOn:
+    id: onboarding-bedtime-continue
+- assertVisible:
+    id: onboarding-wake_time-title
+- tapOn:
+    id: onboarding-wake_time-6_to_8
+- takeScreenshot: ${EVIDENCE_DIR}/frames/02e-wake-time
+- tapOn:
+    id: onboarding-wake_time-continue
+- assertVisible:
+    id: onboarding-depth-daily
 - tapOn:
     id: onboarding-depth-daily
 - takeScreenshot: ${EVIDENCE_DIR}/frames/03-q3-frequency
 - tapOn:
     id: onboarding-depth-continue
+- assertVisible:
+    id: onboarding-belief_themes-title
+- tapOn:
+    id: onboarding-belief_themes-self_trust
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03b-belief-themes
+- tapOn:
+    id: onboarding-belief_themes-continue
+- assertVisible:
+    id: onboarding-tone-title
+- tapOn:
+    id: onboarding-tone-gentle
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03c-tone
+- tapOn:
+    id: onboarding-tone-continue
+- assertVisible:
+    id: onboarding-life_context-title
+- tapOn:
+    id: onboarding-life_context-study
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03d-life-context
+- tapOn:
+    id: onboarding-life_context-continue
+- assertVisible:
+    id: onboarding-routine_anchors-title
+- tapOn:
+    id: onboarding-routine_anchors-lunch
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03e-routine-anchors
+- tapOn:
+    id: onboarding-routine_anchors-continue
+- assertVisible:
+    id: onboarding-prior_attempts-title
+- tapOn:
+    id: onboarding-prior_attempts-meditation
+- tapOn:
+    id: onboarding-prior_attempts-journaling
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03f-prior-attempts
+- tapOn:
+    id: onboarding-prior_attempts-continue
+- assertVisible:
+    id: onboarding-prior_helpfulness-title
+- tapOn:
+    id: onboarding-prior_helpfulness-meditation
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03g-prior-helpfulness
+- tapOn:
+    id: onboarding-prior_helpfulness-continue
+- assertVisible:
+    id: onboarding-start_reason-title
+- tapOn:
+    id: onboarding-start_reason-overwhelmed
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03h-start-reason
+- tapOn:
+    id: onboarding-start_reason-continue
+- assertVisible:
+    id: onboarding-quiet_hours-title
+- tapOn:
+    id: onboarding-quiet_hours-overnight
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03i-quiet-hours
+- tapOn:
+    id: onboarding-quiet_hours-continue
 - assertVisible:
     id: onboarding-first-affirmation
 - takeScreenshot: ${EVIDENCE_DIR}/frames/04-preview-first-affirmation

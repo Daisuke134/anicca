@@ -276,7 +276,7 @@ struct LikedQuotesView: View {
     }
 }
 
-/// Shows the actual server schedule and OS permission separately.
+/// Shows the saved delivery configuration and OS permission separately.
 struct NotificationsSettingsView: View {
     @ObservedObject private var appState = AppState.shared
     @Environment(\.openURL) private var openURL
@@ -285,7 +285,13 @@ struct NotificationsSettingsView: View {
     @State private var isUpdatingPermission = false
     private let permissionLogger = Logger(subsystem: "com.anicca.ios", category: "NotificationSettings")
 
-    private var slots: [String] { ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled) }
+    private var slots: [String] {
+        let profile = appState.personalizationProfile
+        if profile.adaptiveAnswers != nil || !profile.nudgeSlots.isEmpty {
+            return PersonalizationRules.effectiveSlots(profile: profile).map { $0.label }
+        }
+        return ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled)
+    }
 
     var body: some View {
         Form {

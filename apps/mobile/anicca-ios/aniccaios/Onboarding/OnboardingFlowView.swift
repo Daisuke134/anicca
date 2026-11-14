@@ -19,7 +19,7 @@ struct OnboardingFlowView: View {
             AppBackground()
 
             VStack(spacing: 0) {
-                OnboardingProgressBar(step: step)
+                OnboardingProgressBar(step: step, journey: journey)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
@@ -36,7 +36,9 @@ struct OnboardingFlowView: View {
                 return
             }
 
-            step = appState.onboardingStep.resumableInitialStep
+            step = appState.onboardingStep.resumableStep(
+                painPointIds: appState.personalizationProfile.painPointIds,
+                priorAttempts: appState.personalizationProfile.answers.ids(for: .priorAttempts))
             if !didTrackOnboardingStart {
                 didTrackOnboardingStart = true
                 AnalyticsManager.shared.track(.onboardingStarted, properties: [
@@ -77,6 +79,11 @@ struct OnboardingFlowView: View {
         }
     }
 
+    private var journey: [OnboardingStep] {
+        OnboardingStep.journey(painPointIds: appState.personalizationProfile.painPointIds,
+                               priorAttempts: appState.personalizationProfile.answers.ids(for: .priorAttempts))
+    }
+
     // MARK: - Onboarding Steps
 
     @ViewBuilder
@@ -85,6 +92,23 @@ struct OnboardingFlowView: View {
         case .welcome:          WelcomeStepView(next: advance)
         case .goal:             AffirmationGoalStepView(next: advance)
         case .name:             PreferredNameStepView(next: advance)
+        case .birthContext: AdaptiveQuestionStepView(question: .birthContext, next: advance).id(step)
+        case .moodBaseline: AdaptiveQuestionStepView(question: .moodBaseline, next: advance).id(step)
+        case .beliefThemes: AdaptiveQuestionStepView(question: .beliefThemes, next: advance).id(step)
+        case .tone: AdaptiveQuestionStepView(question: .tone, next: advance).id(step)
+        case .lifeContext: AdaptiveQuestionStepView(question: .lifeContext, next: advance).id(step)
+        case .routineAnchors: AdaptiveQuestionStepView(question: .routineAnchors, next: advance).id(step)
+        case .priorAttempts: AdaptiveQuestionStepView(question: .priorAttempts, next: advance).id(step)
+        case .startReason: AdaptiveQuestionStepView(question: .startReason, next: advance).id(step)
+        case .quietHours: AdaptiveQuestionStepView(question: .quietHours, next: advance).id(step)
+        case .stressTrigger: AdaptiveQuestionStepView(question: .stressTrigger, next: advance).id(step)
+        case .anxietyTarget: AdaptiveQuestionStepView(question: .anxietyTarget, next: advance).id(step)
+        case .selfCriticism: AdaptiveQuestionStepView(question: .selfCriticism, next: advance).id(step)
+        case .avoidanceTask: AdaptiveQuestionStepView(question: .avoidanceTask, next: advance).id(step)
+        case .sleepReason: AdaptiveQuestionStepView(question: .sleepReason, next: advance).id(step)
+        case .bedtime: AdaptiveQuestionStepView(question: .bedtime, next: advance).id(step)
+        case .wakeTime: AdaptiveQuestionStepView(question: .wakeTime, next: advance).id(step)
+        case .priorHelpfulness: AdaptiveQuestionStepView(question: .priorHelpfulness, next: advance).id(step)
         case .painPoints:       StrugglesStepView(next: advance)
         case .struggleFreq:     StruggleDepthStepView(next: advance)
         case .nudgeTimes:       ReminderScheduleStepView(next: advance)
@@ -124,7 +148,9 @@ struct OnboardingFlowView: View {
             return
         }
 
-        if let next = step.nextInitialStep {
+        if let next = step.nextStep(
+            painPointIds: appState.personalizationProfile.painPointIds,
+            priorAttempts: appState.personalizationProfile.answers.ids(for: .priorAttempts)) {
             AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.onboarding(next).rawValue)
             step = next
             appState.setOnboardingStep(step)

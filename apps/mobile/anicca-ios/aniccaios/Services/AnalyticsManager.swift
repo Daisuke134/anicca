@@ -26,7 +26,7 @@ final class AnalyticsManager {
             "app_version": AppConfig.appVersion,
             "app_build": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
             "app_environment": environment,
-            "flow_version": "affirmation-first-v1",
+            "flow_version": "adaptive-onboarding-v2",
             "session_id": sessionID,
             "language": AppState.shared.effectiveLanguage.rawValue,
             "locale": Locale.current.identifier,
@@ -109,7 +109,7 @@ final class AnalyticsManager {
             "screen_id": screenID,
             "screen_instance_id": screenInstanceID,
             "flow_id": flowID,
-            "flow_version": "affirmation-first-v1",
+            "flow_version": "adaptive-onboarding-v2",
         ]
         track(.screenViewed, properties: properties)
         if screenID == AnalyticsScreenID.paywall.rawValue {
@@ -376,6 +376,23 @@ enum AnalyticsScreenID: String, CaseIterable {
     case onboardingWelcome = "onboarding.welcome"
     case onboardingGoal = "onboarding.goal"
     case onboardingName = "onboarding.name"
+    case onboardingBirthContext = "onboarding.birth_context"
+    case onboardingMoodBaseline = "onboarding.mood_baseline"
+    case onboardingBeliefThemes = "onboarding.belief_themes"
+    case onboardingTone = "onboarding.tone"
+    case onboardingLifeContext = "onboarding.life_context"
+    case onboardingRoutineAnchors = "onboarding.routine_anchors"
+    case onboardingPriorAttempts = "onboarding.prior_attempts"
+    case onboardingStartReason = "onboarding.start_reason"
+    case onboardingQuietHours = "onboarding.quiet_hours"
+    case onboardingStressTrigger = "onboarding.stress_trigger"
+    case onboardingAnxietyTarget = "onboarding.anxiety_target"
+    case onboardingSelfCriticism = "onboarding.self_criticism"
+    case onboardingAvoidanceTask = "onboarding.avoidance_task"
+    case onboardingSleepReason = "onboarding.sleep_reason"
+    case onboardingBedtime = "onboarding.bedtime"
+    case onboardingWakeTime = "onboarding.wake_time"
+    case onboardingPriorHelpfulness = "onboarding.prior_helpfulness"
     case onboardingPainPoints = "onboarding.pain_points"
     case onboardingStruggleFrequency = "onboarding.struggle_frequency"
     case onboardingReminderSchedule = "onboarding.reminder_schedule"
@@ -398,6 +415,23 @@ enum AnalyticsScreenID: String, CaseIterable {
         case .welcome: return .onboardingWelcome
         case .goal: return .onboardingGoal
         case .name: return .onboardingName
+        case .birthContext: return .onboardingBirthContext
+        case .moodBaseline: return .onboardingMoodBaseline
+        case .beliefThemes: return .onboardingBeliefThemes
+        case .tone: return .onboardingTone
+        case .lifeContext: return .onboardingLifeContext
+        case .routineAnchors: return .onboardingRoutineAnchors
+        case .priorAttempts: return .onboardingPriorAttempts
+        case .startReason: return .onboardingStartReason
+        case .quietHours: return .onboardingQuietHours
+        case .stressTrigger: return .onboardingStressTrigger
+        case .anxietyTarget: return .onboardingAnxietyTarget
+        case .selfCriticism: return .onboardingSelfCriticism
+        case .avoidanceTask: return .onboardingAvoidanceTask
+        case .sleepReason: return .onboardingSleepReason
+        case .bedtime: return .onboardingBedtime
+        case .wakeTime: return .onboardingWakeTime
+        case .priorHelpfulness: return .onboardingPriorHelpfulness
         case .painPoints: return .onboardingPainPoints
         case .struggleFreq: return .onboardingStruggleFrequency
         case .nudgeTimes: return .onboardingReminderSchedule

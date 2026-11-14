@@ -18,9 +18,23 @@ external checkout is required for source editing.
 
 ## Initial affirmation experience
 
-The active first-run journey is welcome → goal → optional name → pain points →
-frequency → a saveable personalized preview → reminder schedule → optional
-notification permission → soft paywall → first intervention → today's affirmation.
+The active first-run journey is welcome → goal → optional name → optional birth
+context → mood baseline → pain points → up to two selected deep-dive modules →
+frequency → belief themes → tone → life context → routine anchors → prior attempts
+→ an optional follow-up on unhelpful methods → starting reason → quiet hours → a
+saveable personalized preview → reminder schedule → optional notification
+permission → soft paywall → first intervention → today's affirmation.
+Modules follow stress, anxiety, self-doubt, procrastination, sleep priority,
+independent of selection order. Sleep asks reason, bedtime and wake time separately.
+The journey has 20–24 screens through the first intervention, depending on answers;
+actual completion time must be measured on the simulator/device.
+
+Answers persist in `UserProfile.personalization`, migrating the old separate
+profile on first load. Decision records snapshot stable answer IDs with version 2.
+Name and birth date stay on device; only the age-band ID leaves the device for
+birth-date answers. Quiet hours suppress conflicting delivery slots, including an
+empty schedule when all preset times are blocked. The remote APNs sender must
+honor the synchronized schedule; server receipt/delivery is a separate readback.
 The home keeps one affirmation for the local day and language, starting with the
 exact first intervention. A tapped notification takes priority. Legacy persisted
 step values remain stable and map into this journey.
@@ -97,6 +111,9 @@ journey. The delegated fixes are documented in `PHASE1-UIUX-FIX-NOTES.md`.
 The canonical runner `scripts/run-soft-paywall-maestro.sh` writes screenshots
 01–13 to the evidence artifact's `frames/` directory. Additional frames cover
 welcome, name, alternative plans, selected theme after relaunch, settings, and
-notification settings. These captures require the real CI run; local source
+notification settings. Round two adds branches 01c–01d, 02b–02h and 03b–03i.
+The runner first captures `02-adaptive-modules.yaml` (stress/self-doubt and
+procrastination), then the canonical anxiety/sleep journey. Either flow failing
+fails the job. These captures require the real CI run; local source
 checks are not screenshots or E2E evidence. This workflow does not submit to the
 App Store.

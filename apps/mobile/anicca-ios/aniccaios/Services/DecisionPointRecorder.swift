@@ -34,6 +34,7 @@ struct DecisionPointRecord: Codable, Equatable {
     var selectionReason: String?
     var proximalOutcome: String?        // nil = unobserved; delivered/opened/responded/skipped
     var outcomeWindowSec: Int
+    var answerSnapshot: OnboardingAnswerSnapshot? = nil
 }
 
 final class DecisionPointStore {
@@ -157,6 +158,7 @@ final class DecisionPointRecorder {
         source: String
     ) -> String {
         let deliveryId = UUID().uuidString
+        let snapshot = profile.answerSnapshot()
         let record = DecisionPointRecord(
             recordKind: "decision",
             personId: personId,
@@ -174,7 +176,8 @@ final class DecisionPointRecorder {
             candidateCount: selection.candidateCount,
             selectionReason: selection.reason,
             proximalOutcome: nil,
-            outcomeWindowSec: outcomeWindowSec
+            outcomeWindowSec: outcomeWindowSec,
+            answerSnapshot: snapshot
         )
         DecisionPointStore.shared.append(record)
         AnalyticsManager.shared.track(.nudgeDecisionMade, properties: [
@@ -184,6 +187,8 @@ final class DecisionPointRecorder {
             "assigned_probability": selection.assignedProbability,
             "policy_version": selection.policyVersion,
             "selection_reason": selection.reason,
+            "answer_ids": snapshot.analyticsIDs,
+            "answer_version": snapshot.version,
             "source": source,
         ])
         return deliveryId
@@ -214,7 +219,8 @@ final class DecisionPointRecorder {
             candidateCount: nil,
             selectionReason: nil,
             proximalOutcome: outcome,
-            outcomeWindowSec: outcomeWindowSec
+            outcomeWindowSec: outcomeWindowSec,
+            answerSnapshot: profile.answerSnapshot()
         )
         DecisionPointStore.shared.append(record)
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Rule v1 for choosing the next personalized intervention (first
+/// Rule v2 for choosing the next personalized intervention (first
 /// intervention in onboarding, later the per-slot notification content).
 ///
 /// Implements the synthesis rules of
@@ -17,7 +17,7 @@ import Foundation
 ///    returned and must be stored with the decision record — never
 ///    reconstructed afterwards.
 enum PersonalizedNudgeSelector {
-    static let policyVersion = "rule_v1"
+    static let policyVersion = "rule_v2_adaptive"
     static let explorationProbability = 0.1
     static let cooldownDays = 14
 
@@ -69,7 +69,40 @@ enum PersonalizedNudgeSelector {
         if boosts.contains(quote.categoryID) {
             value += 1
         }
+        guard profile.adaptiveAnswers != nil else { return value }
+        value *= 100 // desired state remains primary; other axes refine it.
+        guard let traits = AdaptiveAffirmationCatalog.traits(for: quote) else { return value }
+        let snapshot = profile.answerSnapshot().values
+        let themes = Set(profile.answers.ids(for: .beliefThemes))
+        value += Set(traits.beliefThemes).intersection(themes).count * 5
+        for (axis, options) in traits.answerMatches {
+            if !Set(options).isDisjoint(with: snapshot[axis] ?? []) { value += 15 }
+        }
+        if traits.intensity == PersonalizationRules.intensity(profile: profile) { value += 2 }
+        if traits.milestone != nil { value += 5 }
         return value
+    }
+
+    /// Eligibility runs before cooldown and exploration. Unknown editorial tags
+    /// cannot establish that a message respects the new answers.
+    static func isEligible(quote: Quote, profile: PersonalizationProfile, band: TimeBand, now: Date) -> Bool {
+        guard let traits = AdaptiveAffirmationCatalog.traits(for: quote) else {
+            return profile.adaptiveAnswers == nil
+        }
+        // Legacy users keep the legacy pool until they answer the new questions.
+        guard profile.adaptiveAnswers != nil else { return false }
+        if PersonalizationRules.intensity(profile: profile) == "gentle", traits.intensity != "gentle" { return false }
+        if let tone = profile.answers.ids(for: .tone).first, traits.tone != tone { return false }
+        let contexts = Set(profile.answers.ids(for: .lifeContext))
+        if !Set(traits.contexts).isSubset(of: contexts) { return false }
+        let snapshot = profile.answerSnapshot(now: now).values
+        for (axis, options) in traits.answerMatches {
+            if Set(options).isDisjoint(with: snapshot[axis] ?? []) { return false }
+        }
+        if !Set(traits.methods).isDisjoint(with: snapshot["prior_helpfulness"] ?? []) { return false }
+        if !traits.timeBands.isEmpty, !traits.timeBands.contains(band.rawValue) { return false }
+        if traits.milestone == "birthday_season", !profile.answers.isBirthdaySeason(now: now) { return false }
+        return true
     }
 
     /// - Parameters:
@@ -87,7 +120,7 @@ enum PersonalizedNudgeSelector {
 
         // Time-band fit: rest/sleep content is not sent in the morning
         // unless sleep is one of the user's own pain points.
-        var candidates = pool
+        var candidates = pool.filter { isEligible(quote: $0, profile: profile, band: band, now: now) }
         if band == .morning, !profile.painPointIds.contains("sleep") {
             let nonRest = candidates.filter { $0.categoryID != "rest" }
             if !nonRest.isEmpty { candidates = nonRest }
@@ -128,7 +161,9 @@ enum PersonalizedNudgeSelector {
 
         let chosenScore = score(quote: chosen, profile: profile)
         let reason: String
-        if chosenScore >= 3 {
+        if profile.adaptiveAnswers != nil {
+            reason = "adaptive_answer_match"
+        } else if chosenScore >= 3 {
             reason = "desired_state_and_pain_point_match"
         } else if chosenScore == 2 {
             reason = "desired_state_match"
