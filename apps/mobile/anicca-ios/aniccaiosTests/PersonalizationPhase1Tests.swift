@@ -454,3 +454,30 @@ extension PersonalizationPhase1Tests {
         XCTAssertEqual(buffer.take()?.personalization?.desiredState, "calm")
     }
 }
+
+extension PersonalizationPhase1Tests {
+    /// Round 11 regression (D-14): the first intervention must show the
+    /// exact quote revealed at the preview step, not a second selection.
+    func test_previewCarryoverSelectionReturnsThePreviewQuote() throws {
+        let language = LanguagePreference.detectDefault()
+        let quote = try XCTUnwrap(QuoteProvider.shared.all(preferredLanguage: language).first)
+        let previewCase = ManagerBenchCase(
+            personId: "person-carry", deliveryId: "delivery-preview", decisionPointAt: Date(),
+            source: "onboarding_preview", outcomeWindowSec: 1800,
+            situation: .init(answerSnapshot: [:], answerVersion: 2,
+                             scheduledTimeBand: "morning", weekday: "saturday", notificationPermission: "allowed"),
+            stimulus: .init(messageId: quote.id, category: quote.categoryID, tags: [],
+                            scheduledAt: nil, treatmentAssigned: quote.id,
+                            assignedProbability: 0.5, policyVersion: PersonalizedNudgeSelector.policyVersion)
+        )
+        let carryover = PersonalizedNudgeSelector.previewCarryoverSelection(
+            cases: [previewCase], personId: "person-carry", preferredLanguage: language)
+        XCTAssertEqual(carryover?.selection.quote.id, quote.id)
+        XCTAssertEqual(carryover?.deliveryId, "delivery-preview")
+        // Another person's preview, or none at all, must not carry over.
+        XCTAssertNil(PersonalizedNudgeSelector.previewCarryoverSelection(
+            cases: [previewCase], personId: "someone-else", preferredLanguage: language))
+        XCTAssertNil(PersonalizedNudgeSelector.previewCarryoverSelection(
+            cases: [], personId: "person-carry", preferredLanguage: language))
+    }
+}

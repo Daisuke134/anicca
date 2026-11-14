@@ -112,6 +112,31 @@ enum PersonalizedNudgeSelector {
         return true
     }
 
+    /// Rebuilds the selection revealed at the onboarding preview step from
+    /// its recorded decision, so the first intervention (and the home card
+    /// seeded from it) shows the exact words the person already saw and
+    /// kept — never a second, different quote. Returns nil when no preview
+    /// decision exists for the person.
+    static func previewCarryoverSelection(
+        cases: [ManagerBenchCase],
+        personId: String,
+        preferredLanguage: LanguagePreference
+    ) -> (selection: Selection, deliveryId: String)? {
+        guard let previewCase = cases.last(where: {
+            $0.personId == personId && $0.source == "onboarding_preview"
+        }), let quote = QuoteProvider.shared.byId(previewCase.stimulus.messageId, preferredLanguage: preferredLanguage) else {
+            return nil
+        }
+        let selection = Selection(
+            quote: quote,
+            reason: "onboarding_preview_carryover",
+            candidateCount: 1,
+            assignedProbability: 1.0,
+            policyVersion: policyVersion
+        )
+        return (selection, previewCase.deliveryId)
+    }
+
     /// - Parameters:
     ///   - shownAt: message id → last time it was shown (decision history).
     ///   - random: uniform [0, 1) source, injected for testability.

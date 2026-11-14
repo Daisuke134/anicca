@@ -476,6 +476,20 @@ struct FirstInterventionStepView: View {
     private func computeSelectionIfNeeded() {
         guard selection == nil else { return }
         let user = appState.syntheticUser
+        // The words revealed in the preview step are this person's first
+        // affirmation. Carry that exact quote into the first intervention —
+        // and from there into the home card — instead of selecting a second,
+        // different quote here. Falls back to a fresh selection when no
+        // preview decision exists for this person.
+        if let carryover = PersonalizedNudgeSelector.previewCarryoverSelection(
+            cases: DecisionPointStore.shared.allCases(),
+            personId: DecisionPointRecorder.shared.personId,
+            preferredLanguage: appState.effectiveLanguage
+        ) {
+            selection = carryover.selection
+            deliveryId = carryover.deliveryId
+            return
+        }
         let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
         selection = PersonalizedNudgeSelector.select(
             user: user,
