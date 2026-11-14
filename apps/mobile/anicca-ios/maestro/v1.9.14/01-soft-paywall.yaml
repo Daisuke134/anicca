@@ -7,36 +7,44 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
-- tapOn:
-    text: "Cancel|Not Now"
-    optional: true
-- extendedWaitUntil:
-    visible:
-      id: onboarding-welcome-cta
-    timeout: 60000
-- takeScreenshot: ${EVIDENCE_DIR}/frames/00-welcome
-- tapOn:
-    id: onboarding-welcome-cta
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          file: _wait-for-storekit-screen.yaml
+          env:
+            READY_ID: onboarding-welcome-cta
+            WAIT_TIMEOUT_MS: 60000
+      - extendedWaitUntil:
+          visible:
+            id: onboarding-welcome-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - takeScreenshot: 00-welcome
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - tapOn:
+          id: onboarding-welcome-cta
 - tapOn:
     id: onboarding-goal-self_love
-- takeScreenshot: ${EVIDENCE_DIR}/frames/01-q1-goal
+- takeScreenshot: 01-q1-goal
 - tapOn:
     id: onboarding-goal-continue
 - assertVisible:
     id: onboarding-name-field
-- takeScreenshot: ${EVIDENCE_DIR}/frames/01b-name
+- takeScreenshot: 01b-name
 - tapOn:
     id: onboarding-name-continue
 - assertVisible:
     id: onboarding-birth_context-title
-- takeScreenshot: ${EVIDENCE_DIR}/frames/01c-birth-context
+- takeScreenshot: 01c-birth-context
 - tapOn:
     id: onboarding-birth_context-skip
 - assertVisible:
     id: onboarding-mood_baseline-title
 - tapOn:
     id: onboarding-mood_baseline-heavy
-- takeScreenshot: ${EVIDENCE_DIR}/frames/01d-mood-baseline
+- takeScreenshot: 01d-mood-baseline
 - tapOn:
     id: onboarding-mood_baseline-continue
 # Select sleep before anxiety; the displayed module order is still fixed.
@@ -52,7 +60,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     direction: UP
 - tapOn:
     id: onboarding-struggle-anxiety
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02-q2-pain-points
+- takeScreenshot: 02-q2-pain-points
 - tapOn:
     id: onboarding-struggles-next
 - assertNotVisible:
@@ -65,63 +73,63 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     id: onboarding-anxiety_target-title
 - tapOn:
     id: onboarding-anxiety_target-health
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02b-anxiety-target
+- takeScreenshot: 02b-anxiety-target
 - tapOn:
     id: onboarding-anxiety_target-continue
 - assertVisible:
     id: onboarding-sleep_reason-title
 - tapOn:
     id: onboarding-sleep_reason-screens
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02c-sleep-reason
+- takeScreenshot: 02c-sleep-reason
 - tapOn:
     id: onboarding-sleep_reason-continue
 - assertVisible:
     id: onboarding-bedtime-title
 - tapOn:
     id: onboarding-bedtime-22_to_24
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02d-bedtime
+- takeScreenshot: 02d-bedtime
 - tapOn:
     id: onboarding-bedtime-continue
 - assertVisible:
     id: onboarding-wake_time-title
 - tapOn:
     id: onboarding-wake_time-6_to_8
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02e-wake-time
+- takeScreenshot: 02e-wake-time
 - tapOn:
     id: onboarding-wake_time-continue
 - assertVisible:
     id: onboarding-depth-daily
 - tapOn:
     id: onboarding-depth-daily
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03-q3-frequency
+- takeScreenshot: 03-q3-frequency
 - tapOn:
     id: onboarding-depth-continue
 - assertVisible:
     id: onboarding-belief_themes-title
 - tapOn:
     id: onboarding-belief_themes-self_trust
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03b-belief-themes
+- takeScreenshot: 03b-belief-themes
 - tapOn:
     id: onboarding-belief_themes-continue
 - assertVisible:
     id: onboarding-tone-title
 - tapOn:
     id: onboarding-tone-gentle
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03c-tone
+- takeScreenshot: 03c-tone
 - tapOn:
     id: onboarding-tone-continue
 - assertVisible:
     id: onboarding-life_context-title
 - tapOn:
     id: onboarding-life_context-study
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03d-life-context
+- takeScreenshot: 03d-life-context
 - tapOn:
     id: onboarding-life_context-continue
 - assertVisible:
     id: onboarding-routine_anchors-title
 - tapOn:
     id: onboarding-routine_anchors-lunch
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03e-routine-anchors
+- takeScreenshot: 03e-routine-anchors
 - tapOn:
     id: onboarding-routine_anchors-continue
 - assertVisible:
@@ -130,28 +138,28 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     id: onboarding-prior_attempts-meditation
 - tapOn:
     id: onboarding-prior_attempts-journaling
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03f-prior-attempts
+- takeScreenshot: 03f-prior-attempts
 - tapOn:
     id: onboarding-prior_attempts-continue
 - assertVisible:
     id: onboarding-prior_helpfulness-title
 - tapOn:
     id: onboarding-prior_helpfulness-meditation
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03g-prior-helpfulness
+- takeScreenshot: 03g-prior-helpfulness
 - tapOn:
     id: onboarding-prior_helpfulness-continue
 - assertVisible:
     id: onboarding-start_reason-title
 - tapOn:
     id: onboarding-start_reason-overwhelmed
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03h-start-reason
+- takeScreenshot: 03h-start-reason
 - tapOn:
     id: onboarding-start_reason-continue
 - assertVisible:
     id: onboarding-quiet_hours-title
 - tapOn:
     id: onboarding-quiet_hours-overnight
-- takeScreenshot: ${EVIDENCE_DIR}/frames/03i-quiet-hours
+- takeScreenshot: 03i-quiet-hours
 - tapOn:
     id: onboarding-quiet_hours-continue
 - extendedWaitUntil:
@@ -159,7 +167,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       id: onboarding-first-affirmation
     timeout: 5000
 - waitForAnimationToEnd
-- takeScreenshot: ${EVIDENCE_DIR}/frames/04-preview-first-affirmation
+- takeScreenshot: 04-preview-first-affirmation
 # The selector can explore; compare the actual text rather than a fixed quote.
 - copyTextFrom:
     id: onboarding-first-affirmation
@@ -168,22 +176,31 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     id: onboarding-first-save
 - tapOn:
     id: onboarding-first-continue
-- takeScreenshot: ${EVIDENCE_DIR}/frames/05-notification-setup
+- takeScreenshot: 05-notification-setup
 - tapOn:
     id: onboarding-reminder-continue
-- takeScreenshot: ${EVIDENCE_DIR}/frames/06-reminder-permission
+- takeScreenshot: 06-reminder-permission
 - tapOn:
     id: onboarding-notifications-skip
-- extendedWaitUntil:
-    visible:
-      id: paywall-plan-cta
-    timeout: 60000
-- takeScreenshot: ${EVIDENCE_DIR}/frames/07-paywall
-- tapOn:
-    id: paywall-close-button
-- tapOn:
-    text: Cancel
-    optional: true
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          file: _wait-for-storekit-screen.yaml
+          env:
+            READY_ID: paywall-plan-cta
+            WAIT_TIMEOUT_MS: 60000
+      - extendedWaitUntil:
+          visible:
+            id: paywall-plan-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - takeScreenshot: 07-paywall
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - tapOn:
+          id: paywall-close-button
+- runFlow: _dismiss-apple-account.yaml
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
@@ -193,7 +210,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: onboarding-first-intervention
 - evalScript: ${output.intervention = maestro.copiedText}
-- takeScreenshot: ${EVIDENCE_DIR}/frames/08-first-intervention
+- takeScreenshot: 08-first-intervention
 - tapOn:
     id: onboarding-intervention-continue
 - extendedWaitUntil:
@@ -203,7 +220,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
-- takeScreenshot: ${EVIDENCE_DIR}/frames/09-feed-home
+- takeScreenshot: 09-feed-home
 # Default home stays on this person's daily word when swiped.
 - swipe:
     start: 50%, 75%
@@ -218,85 +235,115 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - tapOn:
     id: feed-saved
 - assertVisible: ${output.savedAffirmation}
-- takeScreenshot: ${EVIDENCE_DIR}/frames/10-liked-sheet
+- takeScreenshot: 10-liked-sheet
 - tapOn: Close
 - tapOn:
     id: feed-themes
 - assertVisible:
     id: theme-selected-sageMist
-- takeScreenshot: ${EVIDENCE_DIR}/frames/11-theme-picker
+- takeScreenshot: 11-theme-picker
 - tapOn:
     id: theme-silkDusk
-- extendedWaitUntil:
-    visible:
-      id: paywall-plan-cta
-    timeout: 60000
-- takeScreenshot: ${EVIDENCE_DIR}/frames/14-premium-from-themes
-- runFlow:
-    when:
-      visible:
-        id: paywall-other-plans
+- retry:
+    maxRetries: 2
     commands:
+      - runFlow: _dismiss-apple-account.yaml
+      # A failed attempt may have left the alternative-plans sheet open.
+      - runFlow:
+          when:
+            visible:
+              id: paywall-other-plans-close
+          commands:
+            - tapOn:
+                id: paywall-other-plans-close
+      - runFlow:
+          file: _wait-for-storekit-screen.yaml
+          env:
+            READY_ID: paywall-plan-cta
+            WAIT_TIMEOUT_MS: 60000
+      - extendedWaitUntil:
+          visible:
+            id: paywall-plan-cta
+          timeout: 60000
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - takeScreenshot: 14-premium-from-themes
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - runFlow:
+          when:
+            visible:
+              id: paywall-other-plans
+          commands:
+            - tapOn:
+                id: paywall-other-plans
+            - runFlow: _dismiss-apple-account.yaml
+            - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+            - takeScreenshot: 14b-alternative-plans
+            - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+            - tapOn:
+                id: paywall-other-plans-close
       - tapOn:
-          id: paywall-other-plans
-      - takeScreenshot: ${EVIDENCE_DIR}/frames/14b-alternative-plans
-      - tapOn:
-          id: paywall-other-plans-close
-- tapOn:
-    id: paywall-close-button
+          id: paywall-close-button
 # Unsigned StoreKit can show a sandbox sign-in prompt. Do not sign in.
-- tapOn:
-    text: Cancel
-    optional: true
+- runFlow: _dismiss-apple-account.yaml
 - waitForAnimationToEnd
 - assertVisible:
     id: theme-sandWave
 - tapOn:
     id: theme-sandWave
-- tapOn:
-    text: Cancel
-    optional: true
+- runFlow: _dismiss-apple-account.yaml
 - waitForAnimationToEnd
 - assertVisible:
     id: feed-today
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
-- takeScreenshot: ${EVIDENCE_DIR}/frames/12-feed-sand-theme
+- takeScreenshot: 12-feed-sand-theme
 - stopApp
 - launchApp
-- tapOn:
-    text: Cancel
-    optional: true
-- waitForAnimationToEnd
-- tapOn:
-    text: Cancel
-    optional: true
-- waitForAnimationToEnd
-- extendedWaitUntil:
-    visible:
-      id: feed-today
-    timeout: 15000
-- assertNotVisible:
-    id: onboarding-goal-continue
-- assertNotVisible:
-    id: paywall-plan-cta
-- copyTextFrom:
-    id: quote-text
-- assertTrue: ${maestro.copiedText === output.intervention}
-- takeScreenshot: ${EVIDENCE_DIR}/frames/13-feed-after-relaunch
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          file: _wait-for-storekit-screen.yaml
+          env:
+            READY_ID: feed-today
+            WAIT_TIMEOUT_MS: 15000
+      - runFlow:
+          when:
+            visible: "(?i)sign in to (your )?apple (account|id)"
+          commands:
+            - tapOn:
+                text: Cancel
+                optional: true
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: feed-today
+          timeout: 15000
+      - assertNotVisible:
+          id: onboarding-goal-continue
+      - assertNotVisible:
+          id: paywall-plan-cta
+      - copyTextFrom:
+          id: quote-text
+      - assertTrue: ${maestro.copiedText === output.intervention}
+      - runFlow: _dismiss-apple-account.yaml
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - takeScreenshot: 13-feed-after-relaunch
+      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
 - tapOn:
     id: feed-themes
 - assertVisible:
     id: theme-selected-sandWave
-- takeScreenshot: ${EVIDENCE_DIR}/frames/13b-selected-theme-after-relaunch
+- takeScreenshot: 13b-selected-theme-after-relaunch
 - tapOn: Close
 - tapOn:
     id: feed-settings
-- takeScreenshot: ${EVIDENCE_DIR}/frames/15-feed-settings
+- takeScreenshot: 15-feed-settings
 - tapOn:
     id: settings-done
 - tapOn:
     id: feed-reminders
-- takeScreenshot: ${EVIDENCE_DIR}/frames/16-notifications-sheet
+- takeScreenshot: 16-notifications-sheet
 - tapOn: Close

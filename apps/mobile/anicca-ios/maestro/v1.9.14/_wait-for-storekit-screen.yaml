@@ -1,0 +1,20 @@
+appId: ai.anicca.app.ios
+name: Wait for an app screen while dismissing delayed StoreKit sign-in
+---
+# Poll both states so a dialog appearing after launch cannot block a long wait.
+- evalScript: ${output.storeKitScreenReady = false; output.storeKitWaitDeadline = Date.now() + Number(WAIT_TIMEOUT_MS)}
+- repeat:
+    while:
+      true: ${!output.storeKitScreenReady && Date.now() < output.storeKitWaitDeadline}
+    commands:
+      - runFlow: _dismiss-apple-account.yaml
+      - runFlow:
+          when:
+            visible:
+              id: ${READY_ID}
+            notVisible: "(?i)sign in to (your )?apple (account|id)"
+          commands:
+            - evalScript: ${output.storeKitScreenReady = true}
+# A missing app screen must still fail after the caller's original wait budget.
+- assertTrue: ${output.storeKitScreenReady}
+- runFlow: _dismiss-apple-account.yaml

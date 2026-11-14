@@ -1,0 +1,9 @@
+appId: ai.anicca.app.ios
+name: Dismiss only the StoreKit Apple Account sign-in dialog
+---
+- runFlow:
+    when:
+      visible: "(?i)sign in to (your )?apple (account|id)"
+    commands:
+      - tapOn:
+          text: Cancel

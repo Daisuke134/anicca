@@ -17,14 +17,14 @@ name: Remaining adaptive modules and absent unselected modules
     id: onboarding-stress_trigger-title
 - tapOn:
     id: onboarding-stress_trigger-work
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02f-stress-trigger
+- takeScreenshot: 02f-stress-trigger
 - tapOn:
     id: onboarding-stress_trigger-continue
 - assertVisible:
     id: onboarding-self_criticism-title
 - tapOn:
     id: onboarding-self_criticism-work
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02g-self-criticism
+- takeScreenshot: 02g-self-criticism
 - tapOn:
     id: onboarding-self_criticism-continue
 - assertVisible:
@@ -53,7 +53,7 @@ name: Remaining adaptive modules and absent unselected modules
     id: onboarding-avoidance_task-title
 - tapOn:
     id: onboarding-avoidance_task-messages
-- takeScreenshot: ${EVIDENCE_DIR}/frames/02h-avoidance-task
+- takeScreenshot: 02h-avoidance-task
 - tapOn:
     id: onboarding-avoidance_task-continue
 - assertVisible:

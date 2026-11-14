@@ -5,8 +5,14 @@ set -euo pipefail
 app_dir=$(cd "$(dirname "$0")/.." && pwd)
 cd "$app_dir"
 evidence_dir=${1:?Usage: run-soft-paywall-maestro.sh EVIDENCE_DIRECTORY}
-mkdir -p "$evidence_dir/frames"
+mkdir -p "$evidence_dir"
 evidence_dir=$(cd "$evidence_dir" && pwd)
+# Preserve old evidence separately; frames/ must describe only this invocation.
+maestro_output_dir=$(mktemp -d "$evidence_dir/maestro-run.XXXXXX")
+if [[ -e "$evidence_dir/frames" || -L "$evidence_dir/frames" ]]; then
+    mv "$evidence_dir/frames" "$maestro_output_dir/previous-frames"
+fi
+mkdir -p "$evidence_dir/frames"
 derived_dir=${RUNNER_TEMP:-/tmp}/anicca-soft-paywall-derived
 simulator_id=$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
@@ -93,12 +99,12 @@ set +e
 # Capture the other adaptive branches first. The canonical flow clears state
 # again, so its original frames and final free-feed assertions stay independent.
 maestro --device "$simulator_id" test --format JUNIT \
-    -e "EVIDENCE_DIR=$evidence_dir" \
+    --test-output-dir "$maestro_output_dir/adaptive" \
     --output "$evidence_dir/adaptive-result.xml" --debug-output "$evidence_dir/adaptive-maestro" \
     maestro/v1.9.14/02-adaptive-modules.yaml > "$evidence_dir/adaptive-maestro.log" 2>&1
 adaptive_result=$?
 maestro --device "$simulator_id" test --format JUNIT \
-    -e "EVIDENCE_DIR=$evidence_dir" \
+    --test-output-dir "$maestro_output_dir/main" \
     --output "$evidence_dir/result.xml" --debug-output "$evidence_dir/maestro" \
     maestro/v1.9.14/01-soft-paywall.yaml > "$evidence_dir/maestro.log" 2>&1
 main_result=$?
@@ -112,6 +118,19 @@ printf '%s\n' "$main_result" > "$evidence_dir/main-exit-code.txt"
 recording_elapsed=$((SECONDS - recording_started_at))
 stop_recording
 trap - EXIT
+# Maestro 2.12.1 resolves relative names inside each Flow's takeScreenshot
+# folder. Export captured frames even if a later step in either Flow failed.
+frame_collection_result=0
+python3 - "$maestro_output_dir" "$evidence_dir/frames" <<'PY' || frame_collection_result=$?
+import pathlib, shutil, sys
+output, frames = map(pathlib.Path, sys.argv[1:])
+for flow in ('adaptive', 'main'):
+    for screenshot in sorted((output / flow).glob('**/takeScreenshot/*.png')):
+        shutil.copy2(screenshot, frames / screenshot.name)
+PY
+if [[ "$maestro_result" == 0 && "$frame_collection_result" != 0 ]]; then
+    maestro_result=$frame_collection_result
+fi
 printf '%s\n' "$maestro_result" > "$evidence_dir/exit-code.txt"
 if [[ "$recording_result" != 0 || ! -s "$evidence_dir/experience.mp4" ]]; then
     printf '%s\n' 'Simulator recording failed or ended before the journey completed.' >&2

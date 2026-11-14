@@ -677,3 +677,46 @@ rg -n '\bactor\s+\w+|mutating func|nonisolated' apps/mobile/anicca-ios --glob '*
 変更ファイルは **`aniccaios/Services/ProfileSyncService.swift` と本記録の2ファイルだけ**。今回の限定範囲を優先してBOARD追記は行わず、anicca-ops側監査ファイルにも触れない。指定worktreeの未コミット差分として引き渡す。commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。
 
 **「直った」の確定は、統合側がpush後の同一SHAで実施する次回Maestro runのReleaseビルド結果・artifactで行う。D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
+
+## 第8ラウンド — Maestroの遅延Apple Accountダイアログと撮影パス（2026-11-14）
+
+### 一次証拠と原因
+
+統合側が実読した [Maestro run 43595457904](https://github.com/Daisuke134/anicca/actions/runs/43595457904)（HEAD `a5e1c19bf`）の artifact `soft-paywall-evidence-a5e1c19bf...` に、両フローのログと **578秒の `experience.mp4`** がある。Releaseビルドは成功し、アプリは起動・画面遷移した。第7ラウンドのビルド修正はこの実測で確認された。以下は委任元から提供された失敗文の原文抜粋（`...` を含む）であり、本担当がartifact全文や動画を再取得した結果ではない。
+
+```text
+[Failed] ... (2m 13s) (Assertion is false: id: onboarding-welcome-cta is visible)
+[Failed] ... (4m 46s) (Invalid path "/Users/runner/work/_temp/soft-paywall-evidence/frames/02f-stress-trigger.png" for takeScreenshot: it resolves outside this run's takeScreenshot output folder. ...)
+```
+
+- メインフロー: `clearState` / `clearKeychain` / `launchApp` 後の60秒の表示待機が失敗。動画ではウェルカム画面の見出し「…when you need them most」、Aniccaのワードマーク、進捗バーが **OSの「Sign in to Apple Account」ダイアログの下に存在** していた。StoreKitの商品取得によるサンドボックスのサインイン要求が記録の最後まで残り、起動直後1回だけのoptional Cancelでは遅延表示を処理できなかった。
+- 適応フロー: 同じダイアログがウェルカム時点から出ていたが、その後の対話は `02f` 撮影直前まで成功。途中でダイアログが消えたとみられるが、消えた正確なステップは未確定。統合側は動画で **困りごと選択画面とstress深掘り画面「When does stress feel heaviest?」が新デザインで描画** されたことを確認した。失敗箇所は最初の撮影であり、Maestro 2.12.1がrunの撮影出力フォルダ外の絶対パスを拒否した。
+
+**今回の2件はアプリ本体の欠陥ではなく、フローのダイアログ処理と撮影先指定の問題である。Swiftコードは変更していない。** 動画で一部画面を確認できたことを、D-01〜D-16の全画面監査完了とは扱わない。
+
+### 修正内容と公式仕様
+
+1. **出現時のダイアログ消去を共有化。** `v1.8.0/12-storekit-cancel-restore.yaml` の「Apple Accountの見出しが見える時だけCancel」を先例として `_dismiss-apple-account.yaml` へ移し、今回の英語OSタイトルに絞った正規表現を使う。ダイアログがない時はtapしない。`_wait-for-storekit-screen.yaml` は期限付き `repeat` 内でこの消去と対象IDの表示確認を交互に実施し、対象IDが可視かつダイアログが不可視になった時だけ準備完了とする。対象画面が出ない場合は `assertTrue` で失敗する。こうした待機中の消去を行う既存helperは **no precedent** であり、既存の条件付き消去と公式のrepeat構文を組み合わせた。根拠: [公式 Conditions の dynamic state / multiple conditions](https://docs.maestro.dev/maestro-flows/flow-control-and-logic/conditions)、[公式 repeat のJavaScript条件](https://docs.maestro.dev/reference/commands-available/repeat)。
+2. **両フローに同じ待機を適用。** メイン冒頭と共有 `_start-to-pain.yaml` の起動直後から使い、適応フローの2回の初期化にも同じ処理が入る。メインのオンボーディング／テーマ経由のペイウォール待機前、および再起動後にも適用した。その他の既存Cancelもタイトルで条件付けした。元の `extendedWaitUntil`（welcome/paywallは60,000ms、再起動は15,000ms）および既存の全 `assertVisible` / `assertNotVisible` / `assertTrue` は保持。helperの期限も同じ値で、無制限のretryやアサーションのoptional化はない。条件判定のselector lookup自体に待機があるため、期限は厳密な実時間上限ではない（[2.12.1の条件評価実装](https://github.com/mobile-dev-inc/Maestro/blob/0ccf5a9c5b1c48d4cb6211d9060d537e04745107/maestro-orchestra/src/main/java/maestro/orchestra/Orchestra.kt#L1077-L1149)）。さらに、準備完了の直後にダイアログが出て元の表示待機・tapを阻害する競合に備え、welcomeの待機〜次画面へのtap、07/14の待機〜paywall close、再起動後の表示・同一性確認〜撮影を局所的な `retry.maxRetries: 2` にまとめた。失敗時だけ条件付きCancelから必須チェックをやり直す。撮影前後のダイアログ不在も必須assertとし、覆われたフレームだけで成功しない。14の別プランsheetが失敗時に開いたままなら、次attempt冒頭でそのclose IDが見える場合だけ閉じて同じ画面から再評価する。次画面へ進んだ後の質問等は再試行しない。[公式 retry](https://docs.maestro.dev/reference/commands-available/retry) と [2.12.1実装](https://github.com/mobile-dev-inc/Maestro/blob/0ccf5a9c5b1c48d4cb6211d9060d537e04745107/maestro-orchestra/src/main/java/maestro/orchestra/Orchestra.kt#L995-L1020) に従う最大3試行で、各assertの元timeoutは不変だが総経過時間は60秒を超える場合がある。条件付き消去を伴わない単純なretry増加ではない。
+3. **撮影は相対名、回収はrunの出力から。** 両フローの全37箇所を `takeScreenshot: 00-welcome` のような拡張子なし相対名へ変更した。`00-welcome`、`01-q1-goal`、`01b-name`、`02f-stress-trigger` などの既存番号・名前・撮影順序は不変。[公式 takeScreenshot の Parameters / Artifact paths](https://docs.maestro.dev/reference/commands-available/takescreenshot) は、pathをFlowのartifact bundle内の `takeScreenshot/` 基準で解決し、その外へ出るパスを拒否すると説明している。既存の `v1.8.0` フロー群も相対名を使用しており、その形を再利用した。
+4. **実行スクリプトで出力先と後処理を接続。** [公式 Test reports and artifacts の Output directory / artifact layout](https://docs.maestro.dev/maestro-flows/workspace-management/test-reports-and-artifacts) に従い `--test-output-dir` を両runへ指定する。`mktemp` で実行冒頭に証拠フォルダ内へ今回専用の `maestro-run.XXXXXX` を作る。既存 `frames/` はその中の `previous-frames/` へ移して保全し、今回の `frames/` を新規作成する。今回の `adaptive/` と `main/` 配下の `<日時>/<Flow名>/takeScreenshot/*.png` を、録画停止後に従来の `frames/` へ同じファイル名でコピーする。探索は今回runの `adaptive/` と `main/` に限定し、退避した旧frames、古いrunのartifact、自動失敗スクリーンショットは収集対象外。元のrun別artifactも残す。途中失敗でも撮影済みの画像を回収し、既存の両フローの終了コードとmain失敗優先を保持する。コピー失敗時は両フローが成功でも非0終了にする。`--output` のJUnitと `--debug-output` の診断ログは従来の指定を保持。出力の日時・Flow名の階層は [2.12.1 TestDebugReporter](https://github.com/mobile-dev-inc/Maestro/blob/0ccf5a9c5b1c48d4cb6211d9060d537e04745107/maestro-cli/src/main/java/maestro/cli/report/TestDebugReporter.kt) でも照合した。
+
+### ローカル検証・作業境界・引き継ぎ
+
+- Git実読: root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git`、開始HEAD `a5e1c19bfc0aa0b9c610e76ea02a99be1b520675`。開始時の未追跡 `error.log` は変更しない。
+- `bash scripts/verify-source-boundary.sh`: 旧固定パス `/home/hatch/Projects/life-manager-main` を要求して **exit 2**。指定worktree・改名後originへの先行承認を適用し、境界スクリプトは変更しない。共通手順の旧canonical path/originと実環境の不一致は既知のまま保持。
+- 手順の実読: `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` 配下の `using-superpowers/SKILL.md`（Codex reference含む）、`systematic-debugging/SKILL.md`、`dispatching-parallel-agents/SKILL.md`、`test-driven-development/SKILL.md`（writing-good-tests含む）、`verification-before-completion/SKILL.md`、`requesting-code-review/SKILL.md`（reviewer template含む）、`finishing-a-development-branch/SKILL.md`、`REVIEW.md` とチーム手順。Astra Advisorは利用可能なツールに見つからず、Superpowers手順を使用。Ponytailの最小解確認として既存の条件付きrunFlow、相対撮影名、Python標準ライブラリを再利用し、依存追加はない。
+- 一時ハーネス `/tmp/anicca-round8-frame-check.py` で実スクリプトを模擬xcrun/xcodebuild/Maestroと実行。修正前 **4件FAIL**（`frames/` に撮影済みフレームが回収されない）、修正後 **4件PASS / 15.481s、exit 0**。両run成功、adaptive途中失敗、main途中失敗、両方失敗の各ケースで、フレーム名・コピー内容・exit-codeファイル・プロセス終了値を確認した。空白付き証拠パスも使用し、過去runの画像と自動診断画像が回収対象に混ざらないことを確認。これはシェルの制御とコピーの検証であり、PNG実画像・Appleビルド・Maestro実走の証拠ではない。一時ファイルは小容量でGit対象外。
+- コピー先の不備による失敗も同ハーネスで追加検証。両Maestro runが成功していてもコピー失敗なら非0終了し、既存のflow失敗がある場合はその終了値を保持する2ケースを加え、**計6件PASS / 23.323s、exit 0**。
+- レビューで指摘された既存証拠dir再利用もハーネスへ追加し、旧 `frames/99-stale.png` が残る **1件FAIL** を確認。退避対応後は既存6ケースすべてで「今回framesに旧PNGなし、退避先の旧PNG内容は保全」も照合し、**6件PASS / 31.226s、exit 0**。
+- `python3` / PyYAML 6.0.1 の `yaml.safe_load_all` で対象YAML **5ファイルの構文PASS**（各2文書: headerとcommands）。開始HEADとの比較で、全37撮影名の順序・一意性、両フローと共有開始フローの既存アサーション・timeout値の一致を確認。
+- `apps/mobile/anicca-ios` 配下で `python3 -m unittest discover -s scripts/tests`: 最終差分で **Ran 44 tests in 31.187s / OK (skipped=2)、exit 0**。42成功・Swiftコンパイラ/ランタイム不在による既存2件skip。変更前の同検査も44件中42成功・2skipだった。
+- `bash -n apps/mobile/anicca-ios/scripts/run-soft-paywall-maestro.sh`: **exit 0**。
+- `git diff --check`: **exit 0**。開始HEADとの比較で既存FIX-NOTES全文（D-01〜D-16含む）が不変で第8ラウンドだけを末尾へ追記したこと、Swift差分0件も確認。
+- 公式仕様の独立読み取り専用調査はSol（spawn指定 `gpt-6-sol` / effort `high`、別途runtime model readbackなし）。Maestro 2.12.1の相対パス解決、`--test-output-dir` とartifact配置、条件付きrepeat構文を照合した。
+- 別のSolによる独立読み取り専用レビュー（spawn指定 `gpt-6-sol` / effort `high`、別途runtime model readbackなし）で、初回は準備完了直後の遅延popup競合1件blockingと、証拠dir再利用時の旧frames残存1件pre-existingを指摘。局所retry・撮影前後の必須assert・旧frames退避で対応した。第2回の指摘は14番の撮影後の操作がretry外に残った1件で、同blockへcloseまで含め、別プランsheetを開いたまま失敗した時の復帰も追加。第3回の最終レビューは **指摘0件 / blocking 0件**。レビューは実走・再撮影・目視監査を完了扱いにしていない。
+- VMにはMaestro 2.12.1のlauncher/jarはあるが `java` / `xcodebuild` / `swift` は未検出。**MaestroのiOS実走、Release再ビルド、XCTest、動画・フレーム再撮影は未実行**。YAMLパースはMaestroエンジンでの実行検証ではない。
+
+変更対象は `maestro/v1.9.14/` のフロー5ファイル（helper新規2件含む）、`scripts/run-soft-paywall-maestro.sh`、本記録の **計7ファイルのみ**。Swift、境界スクリプト、anicca-ops側監査、BOARDは変更しない。指定worktree・branchに未コミット差分として保持し、commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。
+
+**判定は統合側がpush後に実行するActionsの両Maestroフロー、`frames/` の実画像、動画で行う。D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
