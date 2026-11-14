@@ -222,8 +222,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
-- tapOn:
-    id: quote-like
+# Since the Round 11 carryover, the home word is the preview word, already
+# kept by the preview save above — tapping quote-like here would unlike it.
+# The Liked sheet must therefore already contain the saved affirmation.
 - tapOn:
     id: feed-saved
 - assertVisible: ${output.savedAffirmation}
