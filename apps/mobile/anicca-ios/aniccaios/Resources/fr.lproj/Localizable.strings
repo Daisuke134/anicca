@@ -1383,3 +1383,16 @@
 /* Optional Premium after the free experience. */
 "soft_paywall_free_benefit" = "Gratuit : lire, enregistrer et partager";
 "soft_paywall_premium_benefit" = "Premium : 8 thèmes et 4 rappels par jour";
+
+// Phase 1 personalization (2026-11-14)
+"growth_goal_focus" = "Concentration";
+"growth_name_title" = "Comment pouvons-nous t'appeler ?";
+"growth_name_placeholder" = "Ton prénom (facultatif)";
+"growth_first_for_name" = "%@, ce premier pas est pour toi.";
+"growth_first_next_time" = "Prochain moment : %@";
+"growth_slots_title" = "Quand devons-nous te contacter ?";
+"growth_frequency_title" = "Combien de moments par jour ?";
+"growth_slots_need_more" = "Choisis au moins autant d'horaires que de moments par jour.";
+"growth_chosen_schedule" = "Tes moments : %@";
+"onboarding_depth_rarely" = "Rarement";
+"onboarding_depth_many_times_daily" = "Plusieurs fois par jour";

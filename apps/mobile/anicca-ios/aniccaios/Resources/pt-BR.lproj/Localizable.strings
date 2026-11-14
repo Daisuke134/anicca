@@ -1383,3 +1383,16 @@
 /* Optional Premium after the free experience. */
 "soft_paywall_free_benefit" = "Grátis: ler, salvar e compartilhar afirmações";
 "soft_paywall_premium_benefit" = "Premium: 8 temas e 4 lembretes diários";
+
+// Phase 1 personalization (2026-11-14)
+"growth_goal_focus" = "Foco";
+"growth_name_title" = "Como devemos te chamar?";
+"growth_name_placeholder" = "Seu nome (opcional)";
+"growth_first_for_name" = "%@, este primeiro passo é para você.";
+"growth_first_next_time" = "Próximo momento: %@";
+"growth_slots_title" = "Quando devemos te contatar?";
+"growth_frequency_title" = "Quantos momentos por dia?";
+"growth_slots_need_more" = "Escolha pelo menos tantos horários quanto momentos por dia.";
+"growth_chosen_schedule" = "Seus momentos: %@";
+"onboarding_depth_rarely" = "Raramente";
+"onboarding_depth_many_times_daily" = "Várias vezes ao dia";

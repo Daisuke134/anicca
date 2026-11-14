@@ -2749,3 +2749,16 @@
 /* Optional Premium after the free experience. */
 "soft_paywall_free_benefit" = "Free: read, save and share affirmations";
 "soft_paywall_premium_benefit" = "Premium: all 8 themes and 4 daily reminders";
+
+// Phase 1 personalization (2026-11-14)
+"growth_goal_focus" = "Focus";
+"growth_name_title" = "What should we call you?";
+"growth_name_placeholder" = "Your name (optional)";
+"growth_first_for_name" = "%@, this first step is for you.";
+"growth_first_next_time" = "Next moment: %@";
+"growth_slots_title" = "When should we reach you?";
+"growth_frequency_title" = "How many moments a day?";
+"growth_slots_need_more" = "Choose at least as many times as your daily moments.";
+"growth_chosen_schedule" = "Your moments: %@";
+"onboarding_depth_rarely" = "Rarely";
+"onboarding_depth_many_times_daily" = "Many times a day";

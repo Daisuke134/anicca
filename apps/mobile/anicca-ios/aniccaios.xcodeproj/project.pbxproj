@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5539993CAC07B523C82A078D /* DayCyclingTests.swift */; };
+		D14CE0022F14A00100000002 /* PersonalizationPhase1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */; };
 		45F4B36D3BD1661C39BFB1A8 /* PushTokenServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */; };
 		9E3903CDA48725E35FA30C8B /* TestURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */; };
 		A3A3C3D8F19A4F2DA12F1202 /* QuoteNavigationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A3C3D8F19A4F2DA12F1201 /* QuoteNavigationCoordinatorTests.swift */; };
@@ -83,6 +84,7 @@
 /* Begin PBXFileReference section */
 		134D591FFF1E0B40CA405490 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5539993CAC07B523C82A078D /* DayCyclingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayCyclingTests.swift; sourceTree = "<group>"; };
+		D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalizationPhase1Tests.swift; sourceTree = "<group>"; };
 		76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationHotfixTests.swift; sourceTree = "<group>"; };
 		8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8400344F2EE52C5100A2F44C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -283,6 +285,7 @@
 				76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */,
 				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
 				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
+				D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */,
 				A3A3C3D8F19A4F2DA12F1201 /* QuoteNavigationCoordinatorTests.swift */,
 				B4B4C4E9F20B503EB23C2302 /* ReviewPromptPolicyTests.swift */,
 				F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */,
@@ -561,6 +564,7 @@
 				F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */,
 				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
 				09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */,
+				D14CE0022F14A00100000002 /* PersonalizationPhase1Tests.swift in Sources */,
 				A3A3C3D8F19A4F2DA12F1202 /* QuoteNavigationCoordinatorTests.swift in Sources */,
 				B4B4C4E9F20B503EB23C2303 /* ReviewPromptPolicyTests.swift in Sources */,
 			);

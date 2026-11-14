@@ -54,27 +54,50 @@ struct PaywallVariantBView: View {
         return formatter.string(from: NSNumber(value: price))
     }
 
-    // 2026-06-23 に無料トライアルを全廃したが、2026-11-07 のハードペイウォール化で
-    // 年額トライアルを復活 (ASC 側で introductory offer を再設定)。
-    // 選択中パッケージに introductory offer が付いている場合のみトライアル文面を出す
-    // (PlanSelectionStepView と同じ判定方式)。
+    // SB-3 (answer→change mapping, trial-display acceptance): the product's
+    // introductory offer as returned from App Store Connect is the source
+    // of truth for trial display. The previous flag read only the selected
+    // package's `introductoryDiscount != nil`, so a live annual free trial
+    // disappeared from the paywall whenever the selection state said
+    // otherwise. Now: CTA/trust copy follows the selected package's own
+    // free-trial offer (it must describe the product being bought), while
+    // the timeline falls back to the offering's free-trial offer (annual
+    // first) so a live trial is never hidden. Final eligibility is
+    // StoreKit's decision at purchase time; nothing here gates a purchase
+    // on it. When no product carries an offer, no trial copy is shown.
     private var hasTrialEligibility: Bool {
-        selectedPackage?.storeProduct.introductoryDiscount != nil
+        freeTrialDiscount != nil
+    }
+
+    private func freeTrialDiscount(for package: Package?) -> StoreProductDiscount? {
+        guard let discount = package?.storeProduct.introductoryDiscount,
+              discount.paymentMode == .freeTrial else { return nil }
+        return discount
     }
 
     /// 選択中パッケージの無料トライアルオファー (introductory offer のうち
     /// paymentMode が free trial のものだけを対象にする)。
     private var freeTrialDiscount: StoreProductDiscount? {
-        guard let discount = selectedPackage?.storeProduct.introductoryDiscount,
-              discount.paymentMode == .freeTrial else { return nil }
-        return discount
+        freeTrialDiscount(for: selectedPackage)
+    }
+
+    /// Offering 内のどこかにある無料トライアル (年額を優先)。
+    private var offerFreeTrialDiscount: StoreProductDiscount? {
+        freeTrialDiscount(for: yearlyPackage) ?? freeTrialDiscount(for: monthlyPackage)
+    }
+
+    /// タイムライン表示に使うトライアル。選択中パッケージに無ければ
+    /// offering のオファーへフォールバックし、ASC で live なトライアルを
+    /// 選択状態の都合で隠さない。
+    private var displayedTrialDiscount: StoreProductDiscount? {
+        freeTrialDiscount ?? offerFreeTrialDiscount
     }
 
     /// トライアル終了日。Blinkist 型の「正直ペイウォール」のタイムライン表示用。
     /// 期間は ASC の実オファー (subscriptionPeriod) から算出するので、トライアル
     /// 日数が変わっても表示は実オファーに追随する (現在は年額3日)。
     private var trialEndDate: Date? {
-        guard let period = freeTrialDiscount?.subscriptionPeriod else { return nil }
+        guard let period = displayedTrialDiscount?.subscriptionPeriod else { return nil }
         var components = DateComponents()
         switch period.unit {
         case .day: components.day = period.value

@@ -86,6 +86,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             "quote_id": content.userInfo["quoteId"] as? String ?? "unavailable",
             "app_state": "foreground",
         ])
+        // Phase 1 decision-point record: foreground receipt = delivered.
+        let deliveryId = content.userInfo["messageId"] as? String ?? notification.request.identifier
+        let messageId = content.userInfo["quoteId"] as? String
+        Task { @MainActor in
+            DecisionPointRecorder.shared.recordNotificationOutcome(
+                deliveryId: deliveryId,
+                messageId: messageId,
+                outcome: "delivered"
+            )
+        }
         if #available(iOS 14.0, *) {
             completionHandler([.banner, .list, .sound])
         } else {
@@ -97,13 +107,23 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let content = response.notification.request.content
         let quoteID = content.userInfo["quoteId"] as? String
         let alertBody = content.body
+        let isDismiss = response.actionIdentifier == UNNotificationDismissActionIdentifier
+        let deliveryId = content.userInfo["messageId"] as? String ?? response.notification.request.identifier
 
         Task { @MainActor in
+            // Phase 1 decision-point record: tap = opened, dismiss = skipped.
+            DecisionPointRecorder.shared.recordNotificationOutcome(
+                deliveryId: deliveryId,
+                messageId: quoteID,
+                outcome: isDismiss ? "skipped" : "opened"
+            )
             AnalyticsManager.shared.track(.notificationOpened, properties: [
                 "quote_id": quoteID ?? "unavailable",
                 "notification_id": content.userInfo["messageId"] as? String ?? response.notification.request.identifier
             ])
-            QuoteNavigationCoordinator.shared.request(quoteID: quoteID, alertBody: alertBody)
+            if !isDismiss {
+                QuoteNavigationCoordinator.shared.request(quoteID: quoteID, alertBody: alertBody)
+            }
             completionHandler()
         }
     }

@@ -18,6 +18,12 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: onboarding-goal-self_love
 - tapOn:
     id: onboarding-goal-continue
+- tapOn:
+    id: onboarding-struggle-anxiety
+- tapOn:
+    id: onboarding-struggles-next
+- tapOn:
+    id: onboarding-depth-daily
 - assertVisible:
     id: onboarding-first-affirmation
 - tapOn:
@@ -28,12 +34,29 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: onboarding-reminder-continue
 - tapOn:
     id: onboarding-notifications-skip
+# Phase 1 ending: the questions now close with the soft paywall, then the
+# first personalized intervention, then the free feed.
+- extendedWaitUntil:
+    visible:
+      id: paywall-plan-cta
+    timeout: 60000
+- takeScreenshot: soft-paywall-onboarding-end
+- tapOn:
+    id: paywall-close-button
+- tapOn:
+    text: Cancel
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: onboarding-first-intervention
+    timeout: 15000
+- tapOn:
+    id: onboarding-intervention-continue
 - extendedWaitUntil:
     visible:
       id: feed-scroll
     timeout: 15000
-- assertNotVisible:
-    id: paywall-plan-cta
 - copyTextFrom:
     id: quote-text
 - evalScript: ${output.firstQuote = maestro.copiedText}

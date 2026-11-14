@@ -5,11 +5,13 @@ struct StruggleDepthStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
+    /// Phase 1 answer set from the answer→change mapping:
+    /// rarely / weekly / daily / many_times_daily.
     private let options: [(key: String, labelKey: String)] = [
-        ("daily", "onboarding_depth_daily"),
-        ("several_times_week", "onboarding_depth_several"),
+        ("rarely", "onboarding_depth_rarely"),
         ("weekly", "onboarding_depth_weekly"),
-        ("occasionally", "onboarding_depth_occasionally")
+        ("daily", "onboarding_depth_daily"),
+        ("many_times_daily", "onboarding_depth_many_times_daily")
     ]
 
     var body: some View {
@@ -51,6 +53,11 @@ struct StruggleDepthStepView: View {
         var profile = appState.userProfile
         profile.struggleFrequency = frequency
         appState.updateUserProfile(profile, sync: true)
+        // Phase 1: the same answer drives the schedule proposal and the
+        // message intensity through the personalization profile.
+        var personalization = appState.personalizationProfile
+        personalization.struggleFrequency = frequency
+        appState.updatePersonalizationProfile(personalization)
         AnalyticsManager.shared.track(.onboardingStruggleDepthCompleted, properties: [
             "frequency": frequency
         ])

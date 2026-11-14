@@ -1383,3 +1383,16 @@
 /* Optional Premium after the free experience. */
 "soft_paywall_free_benefit" = "Kostenlos: Affirmationen lesen, speichern und teilen";
 "soft_paywall_premium_benefit" = "Premium: alle 8 Designs und 4 Erinnerungen täglich";
+
+// Phase 1 personalization (2026-11-14)
+"growth_goal_focus" = "Fokus";
+"growth_name_title" = "Wie sollen wir dich nennen?";
+"growth_name_placeholder" = "Dein Name (optional)";
+"growth_first_for_name" = "%@, dieser erste Schritt ist für dich.";
+"growth_first_next_time" = "Nächster Moment: %@";
+"growth_slots_title" = "Wann sollen wir uns melden?";
+"growth_frequency_title" = "Wie viele Momente pro Tag?";
+"growth_slots_need_more" = "Wähle mindestens so viele Zeiten wie Momente pro Tag.";
+"growth_chosen_schedule" = "Deine Momente: %@";
+"onboarding_depth_rarely" = "Selten";
+"onboarding_depth_many_times_daily" = "Mehrmals täglich";

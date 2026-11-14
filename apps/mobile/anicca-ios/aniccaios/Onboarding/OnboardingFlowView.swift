@@ -3,12 +3,16 @@ import RevenueCat
 import RevenueCatUI
 import UserNotifications
 
-/// Value-first onboarding completes into the free feed, independently of purchases or network.
+/// Onboarding: questions → personalized preview → soft paywall → first
+/// personalized intervention → free feed. Completing never depends on a
+/// purchase; the paywall is closable and the intervention is shown either way.
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
     @State private var step: OnboardingStep = .welcome
     @State private var lastTrackedStep: OnboardingStep?
     @State private var didTrackOnboardingStart = false
+    @State private var showPaywall = false
+    @State private var showFirstIntervention = false
 
     var body: some View {
         ZStack {
@@ -48,6 +52,29 @@ struct OnboardingFlowView: View {
             }
         }
         .onChange(of: step) { _ in recordStepView() }
+        // Phase 1 ending: after the questions, show the soft paywall, then
+        // the first personalized intervention — whether the user purchases
+        // or closes the paywall — and only then complete into the feed.
+        .fullScreenCover(isPresented: $showPaywall) {
+            PaywallFlowContainer(
+                onPurchaseSuccess: { _ in
+                    showPaywall = false
+                    showFirstIntervention = true
+                },
+                onDismiss: {
+                    showPaywall = false
+                    showFirstIntervention = true
+                }
+            )
+            .environmentObject(appState)
+        }
+        .fullScreenCover(isPresented: $showFirstIntervention) {
+            FirstInterventionStepView(next: {
+                showFirstIntervention = false
+                completeFreeOnboarding()
+            })
+            .environmentObject(appState)
+        }
     }
 
     // MARK: - Onboarding Steps
@@ -93,7 +120,7 @@ struct OnboardingFlowView: View {
             appState.markOnboardingQuestionsCompleted()
             AnalyticsManager.shared.track(.onboardingCompleted)
             AnalyticsManager.shared.updateSKANConversionValue(1)
-            completeFreeOnboarding()
+            showPaywall = true
             return
         }
 

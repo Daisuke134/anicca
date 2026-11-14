@@ -14,14 +14,27 @@ struct NotificationPermissionStepView: View {
     @State private var hasTrackedPriming = false
 
     /// Priming: システムダイアログの前に「実際に届く通知そのもの」を見せる。
-    /// 直前のステップでユーザーが見た、自分の目標に紐づく言葉 (名言カノン) を
-    /// そのまま通知プレビューとして表示する (FirstAffirmationStepView と同じ
-    /// 目標→quote の対応表)。
+    /// Phase 1 では planReveal で selector が選び、判断点として記録した
+    /// その人の言葉をそのまま通知プレビューとして表示する。
+    /// Phase 1 の回答が無い場合は従来の目標→quote 対応表へフォールバック。
+    @State private var previewQuoteOverride: Quote?
+
     private var previewQuote: Quote {
+        if let previewQuoteOverride { return previewQuoteOverride }
         let quoteIDs = ["self_love": "q013", "calm": "q021", "confidence": "q041", "letting_go": "q071"]
         let id = quoteIDs[appState.userProfile.goals.first ?? "self_love"] ?? "q013"
         return QuoteProvider.shared.byId(id, preferredLanguage: appState.effectiveLanguage)
             ?? QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)[0]
+    }
+
+    /// The schedule line shows the slots the user actually chose in the
+    /// previous step; the fixed free schedule is only a fallback.
+    private var scheduleText: String {
+        let chosen = appState.personalizationProfile.nudgeSlots.sorted().map { $0.label }
+        if !chosen.isEmpty {
+            return String(format: NSLocalizedString("growth_chosen_schedule", comment: ""), chosen.joined(separator: " · "))
+        }
+        return String(format: NSLocalizedString("growth_reminder_free_schedule", comment: ""), ReminderSchedule.slots(isPro: false).joined(separator: " · "))
     }
 
     var body: some View {
@@ -71,7 +84,7 @@ struct NotificationPermissionStepView: View {
             .padding(.horizontal, 24)
             .accessibilityIdentifier("onboarding-notifications-preview")
 
-            Text(String(format: NSLocalizedString("growth_reminder_free_schedule", comment: ""), ReminderSchedule.slots(isPro: false).joined(separator: " · ")))
+            Text(scheduleText)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.Colors.label)
                 .multilineTextAlignment(.center)
@@ -127,6 +140,11 @@ struct NotificationPermissionStepView: View {
         }
         .background(AppBackground())
         .onAppear {
+            if previewQuoteOverride == nil,
+               let lastDecision = DecisionPointStore.shared.allRecords().last(where: { $0.recordKind == "decision" && $0.source == "onboarding_preview" }),
+               let messageId = lastDecision.messageId {
+                previewQuoteOverride = QuoteProvider.shared.byId(messageId, preferredLanguage: appState.effectiveLanguage)
+            }
             if !hasTrackedPriming {
                 hasTrackedPriming = true
                 AnalyticsManager.shared.track(.notificationPrimingViewed, properties: [

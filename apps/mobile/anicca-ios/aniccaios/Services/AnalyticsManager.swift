@@ -301,6 +301,7 @@ enum AnalyticsEvent: String {
     case notificationPermissionRequested = "notification_permission_requested"
     case notificationPermissionResult = "notification_permission_result"
     case notificationPrimingViewed = "notification_priming_viewed"
+    case nudgeDecisionMade = "nudge_decision_made"
     case purchaseStarted = "purchase_started"
     case purchaseResult = "purchase_result"
     case restoreStarted = "restore_started"

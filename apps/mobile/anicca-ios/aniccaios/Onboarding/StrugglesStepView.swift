@@ -4,7 +4,8 @@ struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    /// オンボ抽象カテゴリ → ProblemType 1:1 マッピング
+    /// Legacy bridge kept for the problem-nudge system: the previous
+    /// onboarding option ids and the ProblemType values they saved.
     static let problemMapping: [String: String] = [
         "negative_thoughts": "self_loathing",
         "putting_off": "procrastination",
@@ -17,13 +18,15 @@ struct StrugglesStepView: View {
         struggles.compactMap { problemMapping[$0] }
     }
 
-    // Bible Screen 3 (5-7 pain points) + Hick's Law: 5 options
-    private let options: [String] = [
-        "negative_thoughts",
-        "putting_off",
-        "anxiety_overwhelm",
-        "stuck_habit",
-        "emotions_take_over"
+    /// Phase 1 pain points, exactly the answer set of the answer→change
+    /// mapping (stress / anxiety / self_doubt / procrastination / sleep).
+    /// Labels reuse the existing problem_* localization keys.
+    private let options: [(id: String, labelKey: String)] = [
+        ("stress", "problem_stress"),
+        ("anxiety", "problem_anxiety"),
+        ("self_doubt", "problem_self_doubt"),
+        ("procrastination", "problem_procrastination"),
+        ("sleep", "problem_poor_sleep")
     ]
 
     @State private var selected: Set<String> = []
@@ -48,8 +51,8 @@ struct StrugglesStepView: View {
 
             ScrollView {
                 VStack(spacing: 12) {
-                    ForEach(options, id: \.self) { key in
-                        listRow(kind: "problem", key: key)
+                    ForEach(options, id: \.id) { option in
+                        listRow(option: option)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -58,8 +61,16 @@ struct StrugglesStepView: View {
             }
 
             Button {
+                let chosen = options.map(\.id).filter { selected.contains($0) }
+                // Phase 1: the answers land in the personalization profile
+                // (the mapping's stable ids), and the subset with a true
+                // ProblemType counterpart is bridged into the legacy
+                // profile so the feed and problem nudges keep working.
+                var personalization = appState.personalizationProfile
+                personalization.painPointIds = chosen
+                appState.updatePersonalizationProfile(personalization)
                 var profile = appState.userProfile
-                profile.problems = Self.mappedProblems(from: Array(selected))
+                profile.problems = chosen.compactMap(PersonalizationRules.problemTypeBridge)
                 appState.updateUserProfile(profile, sync: true)
                 next()
             } label: {
@@ -83,20 +94,20 @@ struct StrugglesStepView: View {
     }
 
     @ViewBuilder
-    private func listRow(kind: String, key: String) -> some View {
-        let isSelected = selected.contains(key)
+    private func listRow(option: (id: String, labelKey: String)) -> some View {
+        let isSelected = selected.contains(option.id)
         Button {
             if isSelected {
-                selected.remove(key)
+                selected.remove(option.id)
             } else {
-                selected.insert(key)
+                selected.insert(option.id)
             }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
                     .foregroundColor(isSelected ? AppTheme.Colors.accent : .secondary)
-                Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
+                Text(NSLocalizedString(option.labelKey, comment: ""))
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(AppTheme.Colors.label)
                 Spacer()
@@ -107,7 +118,7 @@ struct StrugglesStepView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("onboarding-struggle-\(key)")
+        .accessibilityIdentifier("onboarding-struggle-\(option.id)")
     }
 }
 

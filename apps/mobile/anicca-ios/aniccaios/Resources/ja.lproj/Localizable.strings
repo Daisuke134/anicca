@@ -2765,3 +2765,16 @@
 /* Optional Premium after the free experience. */
 "soft_paywall_free_benefit" = "無料：言葉の閲覧・保存・共有";
 "soft_paywall_premium_benefit" = "Premium：全8背景と1日4回のリマインダー";
+
+// Phase 1 personalization (2026-11-14)
+"growth_goal_focus" = "集中";
+"growth_name_title" = "なんと呼べばいいですか？";
+"growth_name_placeholder" = "名前（任意）";
+"growth_first_for_name" = "%@さん、最初の一歩です。";
+"growth_first_next_time" = "次のひととき: %@";
+"growth_slots_title" = "いつ届けますか？";
+"growth_frequency_title" = "1日に何回届けますか？";
+"growth_slots_need_more" = "1日の回数以上の時刻を選んでください。";
+"growth_chosen_schedule" = "あなたのひととき: %@";
+"onboarding_depth_rarely" = "まれに";
+"onboarding_depth_many_times_daily" = "1日に何度も";
