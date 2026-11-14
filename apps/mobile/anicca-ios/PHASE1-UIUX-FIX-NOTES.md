@@ -609,3 +609,71 @@ R3-3は `DailyAffirmationStore.Presentation(quote, deliveryId)` を保存/復元
 - HEADとの文字列比較でビルド前のsimulator処理、ビルド後のinstall以降、既存FIX-NOTES全文（D-01〜D-16含む）の一致を確認。最終差分も指定2ファイルのみ、HEADは開始時と同じ。
 
 変更ファイルは `scripts/run-soft-paywall-maestro.sh` と本記録の**2ファイルだけ**。今回の限定範囲を優先してBOARD追記は行わず、anicca-ops側監査ファイルにも触れない。指定worktreeに未コミット差分を保持する。commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。**D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
+
+## 第7ラウンド — Releaseビルドの同期バッファactor隔離診断への修正（2026-11-14）
+
+### 一次証拠と原因の読み筋
+
+委任元が実読した Maestro run `43591626995`（HEAD `2745f3ad3`、failure）の artifact `soft-paywall-evidence-2745f3ad3...` 内 `anicca-soft-paywall-build.log` から、報告された診断3件を引用する。ファイルは `aniccaios/Services/ProfileSyncService.swift`、行・列は修正前HEADのもの。本ラウンド担当がartifactを再取得した結果ではなく、委任元提供の一次証拠である。
+
+```text
+Services/ProfileSyncService.swift:34:9:  error: actor-isolated property 'buffer' cannot be passed 'inout' to implicitly 'async' function call
+Services/ProfileSyncService.swift:49:29: error: actor-isolated property 'buffer' cannot be passed 'inout' to implicitly 'async' function call
+Services/ProfileSyncService.swift:62:17: error: actor-isolated property 'buffer' cannot be passed 'inout' to implicitly 'async' function call
+```
+
+開始HEADを `nl -ba` で確認すると、34行は `buffer.enqueue(profile)`、49行は `buffer.take()`、62行は `buffer.restoreUnlessNewer(profile)` と一致する。第6ラウンドで未確定としていた失敗について、今回の証拠でこの3呼出しのコンパイル診断を特定できた。PRのDebug・generic iOS側では成功し、MaestroのRelease・x86_64 simulator・whole-module最適化側で表面化したという実測範囲を保持する。最適化やarchitectureのどれが診断の差を生んだかまでは確定していない。
+
+読み筋は、`ProfileSyncService` が独立したactorで、その保存プロパティ `buffer` の型が注釈のない `ProfileSyncBuffer` だったため、プロジェクトの `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`（app Debug/Releaseのproject設定にも存在）により値型の操作がMainActor隔離と推論された、というもの。mutatingメソッドへの `self` のinoutアクセスが別actorへの暗黙のasync呼出しにまたがることになり、上記診断に対応する。**この読み筋と修正の有効性の最終確定は、修正後の同一SHAのMaestro Release再ビルドで行う。**
+
+### 修正と意味論の維持
+
+`ProfileSyncService.swift` 内の型宣言を **`nonisolated struct ProfileSyncBuffer`** とし、既定MainActor隔離から外す意図のコメントを1行追加した。型に対する `nonisolated` がメンバーへ伝播することは [Swift SE-0449](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0449-nonisolated-for-global-actor-cutoff.md)、既定MainActor隔離より明示的な隔離指定が優先されることは [Swift SE-0466](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0466-control-default-actor-isolation.md) の公式仕様で確認した。この指定により、初期化・`hasPending`・3つのmutating操作を、呼出し元actor内で同期的に扱う設計にする。
+
+型全体を非隔離にする同ターゲット内の先例は **no precedent**。近い既存例は `NetworkSessionManager.swift:137` の同期 `nonisolated` 関数だが、型全体への指定とは区別する。Ponytailの最小解確認として、既存バッファ・API・テストをそのまま再利用し、依存追加や非mutating APIへの作り替えは行わなかった。
+
+`ProfileSyncService.buffer` 自体は引き続き **privateなactor隔離プロパティ**。値型にMainActor隔離を付けないことと、所有actorによる状態の直列化を外すことは別である。`@unchecked Sendable`、`nonisolated(unsafe)`、診断抑制、build設定変更は追加していない。バッファ操作の本体と `actor ProfileSyncService` 以下の全文は開始HEADと文字列一致を確認した。
+
+| 維持条件 | 変更後も保持するコード上の根拠 |
+|---|---|
+| (a) await前にpendingを消費 | `take()` は返す前の `defer` でpendingをnilへ戻す。`while let profile = buffer.take()` は `MainActor.run` とネットワークawaitの前に同期的に完結する。 |
+| (b) 新しいpendingが無い時だけ失敗分を復元 | `restoreUnlessNewer` の `if pending == nil { pending = profile }` をそのまま保持する。新しい回答がある時は古い失敗分で上書きしない。 |
+| (c) 同期中のenqueueを次回分として保持 | `enqueue` は `isSyncing` のguardより先にpendingを更新する。古い送信の成功後にpendingを消す処理はなく、次のwhile反復で新しい値を取得する。失敗時にも新しいpendingは残り、後続のenqueue/retryで処理する既存仕様を保つ。 |
+
+既存の `PersonalizationPhase1Tests.swift:440` の `test_profileSyncBufferKeepsAnswersArrivingDuringAnOlderSend` は、旧値のtake→新値enqueue→旧失敗分の復元を拒否→新値取得→空の確認→旧値の復元、を検証する内容で、変更していない。今回はコンパイル隔離指定だけの修正であり、テストを模倣するPython検査の追加はしていない。失敗の証拠は上記CI診断で、Swift不在のVMでRED→GREENやこのXCTestを実行したとは扱わない。第4ラウンドm-6の送信payload内の世代混在という既存制約も変更していない。
+
+### 第1〜第6ラウンドの同型パターン棚卸し
+
+範囲は **`git diff 2bac2ac6c..2745f3ad3` 全体**。変更されたSwift 61ファイルについて、差分の `actor` / `mutating` / `nonisolated` / `inout` と、現行・基準HEADの宣言および呼出し先をgrep（`rg`）で追跡した。独立actorの保存プロパティへの同型呼出しは既知の3箇所のみで、**追加の同型箇所は無かった**。これは静的棚卸しの結果で、コンパイラによる全診断の不在を保証するものではない。
+
+再確認用の検索:
+
+```bash
+git diff --name-only 2bac2ac6c..2745f3ad3 -- '*.swift'
+git diff --unified=0 2bac2ac6c..2745f3ad3 -- '*.swift' | rg -n '^diff --git|^[+ -].*\b(actor|mutating|nonisolated|inout)\b'
+rg -n '\bactor\s+\w+|mutating func|nonisolated' apps/mobile/anicca-ios --glob '*.swift'
+```
+
+| 候補 | 確認結果 |
+|---|---|
+| `ProfileSyncService` / `ProfileSyncBuffer` | 上記34/49/62行の3件。本ラウンドの修正対象。 |
+| `AdaptiveAnswers`（`AdaptiveOnboarding.swift:98,104,154`） | `AdaptiveQuestionStepView:121,125` / `NotificationPermissionStepView:122` でローカル変数を更新。別actorの保存プロパティのinout渡しではない。 |
+| `ManagerBenchCase`（101/129行） | `DecisionPointRecorder.swift:109,126,145` のローカル配列 `records` 内の値を更新。所有Storeも既定MainActor文脈で、独立actorとの隔離不一致ではない。 |
+| `SyntheticUser.recordIntervention`（134行） | `AppState.swift:483` は明示MainActor内の保存値更新。`SyntheticUserStore.swift:193` はローカル値の更新。 |
+| `ScreenVisitLedger` の既存mutating操作 | 呼出し元 `AnalyticsManager` は明示MainActor。同型の独立actor境界越えではない。 |
+| `LLMNudgeService` | 別の既存actorだが、このラウンド範囲の差分なし。新しい同型呼出しは導入されていない。 |
+
+### 検証・作業境界・引き継ぎ
+
+- Git実読: root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git`、開始HEAD `2745f3ad39918aa1bed132144848668abf861343`。開始時の未コミット差分は0件。
+- `bash scripts/verify-source-boundary.sh`: 旧固定パスを要求して **exit 2**。指定作業ツリーと改名後originの先行承認を適用し、境界スクリプトは変更していない。共通手順の旧canonical path/originと実作業環境が一致しない点は既知のまま保持する。
+- 手順の実読: `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` 配下の `using-superpowers/SKILL.md`（Codex reference含む）、`systematic-debugging/SKILL.md`、`dispatching-parallel-agents/SKILL.md`、`test-driven-development/SKILL.md`、`verification-before-completion/SKILL.md`、`requesting-code-review/SKILL.md`（reviewer template含む）、`finishing-a-development-branch/SKILL.md`、リポジトリの `REVIEW.md` とチーム手順。Astra Advisorは公開ツールに見つからず、上記Superpowers手順で進めた。
+- `apps/mobile/anicca-ios` 配下で `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests`: **Ran 44 tests in 29.126s / OK (skipped=2)、exit 0**。42成功・Swiftコンパイラ/ランタイム不在による既存2件skip。環境変数はbytecode生成の抑制のみ。
+- `git diff --check`: **exit 0**。開始HEADとの文字列比較でも、Swift変更が型への `nonisolated` とコメント追加だけで、操作本体・actor全体が不変であることを確認した。
+- 棚卸しはSolによる独立読み取り専用調査でも追加確定箇所0件（spawn実指定 `gpt-6-sol` / effort `high`、別途runtime model readbackなし）。
+- 別のSolによる独立読み取り専用レビューは **指摘0件・blocking 0件**（spawn実指定 `gpt-6-sol` / effort `medium`、別途runtime model readbackなし）。対象差分全文・既存XCTest・隔離設定・公式仕様を照合し、`git diff --check` を再確認。Python検査はレビュー側では再実行していない。artifact原本の独立再取得、修正後Release/XCTest/Maestro実行、D-01〜D-16の画面確認は判断保留として維持する。
+- VMの `swift` / `swiftc` / `xcodebuild` は未検出。**XCTest・Maestro・Releaseビルド・実動画再撮影は未実行**。Python検査成功をそれらの成功に読み替えない。
+
+変更ファイルは **`aniccaios/Services/ProfileSyncService.swift` と本記録の2ファイルだけ**。今回の限定範囲を優先してBOARD追記は行わず、anicca-ops側監査ファイルにも触れない。指定worktreeの未コミット差分として引き渡す。commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いは行わない。
+
+**「直った」の確定は、統合側がpush後の同一SHAで実施する次回Maestro runのReleaseビルド結果・artifactで行う。D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**

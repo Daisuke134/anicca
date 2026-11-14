@@ -3,7 +3,8 @@ import OSLog
 
 /// Consume pending state before the network await so later answers cannot be
 /// erased by completion of an older request.
-struct ProfileSyncBuffer {
+/// Keep operations synchronous on the owning actor despite default MainActor isolation.
+nonisolated struct ProfileSyncBuffer {
     private var pending: UserProfile?
     var hasPending: Bool { pending != nil }
 
