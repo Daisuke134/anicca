@@ -155,9 +155,11 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_initialJourney_includesPainPointsAndFrequencyBeforePreview() {
         XCTAssertEqual(
             OnboardingStep.initialJourney,
-            [.goal, .painPoints, .struggleFreq, .planReveal, .nudgeTimes, .notifications]
+            [.welcome, .goal, .name, .painPoints, .struggleFreq, .planReveal, .nudgeTimes, .notifications]
         )
-        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .painPoints)
+        XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
+        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
+        XCTAssertEqual(OnboardingStep.name.nextInitialStep, .painPoints)
         XCTAssertEqual(OnboardingStep.painPoints.nextInitialStep, .struggleFreq)
         XCTAssertEqual(OnboardingStep.struggleFreq.nextInitialStep, .planReveal)
         XCTAssertEqual(OnboardingStep.planReveal.nextInitialStep, .nudgeTimes)

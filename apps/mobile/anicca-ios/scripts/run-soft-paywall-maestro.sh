@@ -5,7 +5,7 @@ set -euo pipefail
 app_dir=$(cd "$(dirname "$0")/.." && pwd)
 cd "$app_dir"
 evidence_dir=${1:?Usage: run-soft-paywall-maestro.sh EVIDENCE_DIRECTORY}
-mkdir -p "$evidence_dir"
+mkdir -p "$evidence_dir/frames"
 evidence_dir=$(cd "$evidence_dir" && pwd)
 derived_dir=${RUNNER_TEMP:-/tmp}/anicca-soft-paywall-derived
 simulator_id=$(xcrun simctl list devices available -j | python3 -c '
@@ -47,6 +47,7 @@ metadata = {
     'simulator_id': os.environ['SOFT_PAYWALL_SIMULATOR_ID'],
     'flow': 'maestro/v1.9.14/01-soft-paywall.yaml',
     'configuration': 'real RevenueCat SDK configuration, no purchase mocks',
+    'frames': 'frames/01-*.png through frames/13-*.png, plus supplementary screens',
 }
 (evidence / 'metadata.json').write_text(json.dumps(metadata, indent=2) + '\n')
 PY
@@ -73,6 +74,7 @@ sleep 1
 kill -0 "$recording_pid"
 set +e
 maestro --device "$simulator_id" test --format JUNIT \
+    -e "EVIDENCE_DIR=$evidence_dir" \
     --output "$evidence_dir/result.xml" --debug-output "$evidence_dir/maestro" \
     maestro/v1.9.14/01-soft-paywall.yaml > "$evidence_dir/maestro.log" 2>&1
 maestro_result=$?

@@ -44,12 +44,12 @@
 "onboarding_permission_status_not_allowed" = "Not allowed";
 "onboarding_microphone_optional_hint" = "Need the voice experience later? Just return to Settings → Anicca and flip the microphone back on when you're ready.";
 
-"onboarding_notifications_title" = "Don't miss your reminders";
+"onboarding_notifications_title" = "Let kindness find you";
 "onboarding_notifications_card_title" = "Notification Access";
-"onboarding_notifications_description" = "Anicca sends gentle reminders exactly when you need them. Without notifications, Anicca can't reach you.";
+"onboarding_notifications_description" = "Receive your words at the times you chose. You can change your reminders anytime.";
 "onboarding_notifications_allow" = "Allow notifications";
 "onboarding_notifications_preview_now" = "now";
-"onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
+"onboarding_notifications_optional_hint" = "Optional. You can enable notifications later in Settings.";
 
 
 "onboarding_alarmkit_title" = "Alarms";
@@ -2738,8 +2738,8 @@
 "growth_collections" = "Collections";
 
 // Actual remote reminder schedule
-"growth_reminder_title" = "A little kindness. Right on time.";
-"growth_reminder_explanation" = "Scheduled in your time zone. Device settings and connectivity can affect delivery.";
+"growth_reminder_title" = "A moment for you";
+"growth_reminder_explanation" = "Choose times in your local time zone. Delivery depends on your notification settings and connection.";
 "growth_reminder_free_schedule" = "Free: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Notifications allowed";
@@ -2762,3 +2762,25 @@
 "growth_chosen_schedule" = "Your moments: %@";
 "onboarding_depth_rarely" = "Rarely";
 "onboarding_depth_many_times_daily" = "Many times a day";
+
+/* Phase 1 UI/UX audit */
+"growth_name_optional_hint" = "Optional. Leave this blank if you prefer. Your name stays on this device.";
+"growth_set_reminders" = "Choose my reminder times";
+"growth_open_today" = "Open my daily moment";
+"growth_today_for_you" = "Today, for you";
+"growth_theme_premium" = "Premium";
+"growth_theme_selected" = "Selected theme";
+
+/* Selected-product billing disclosures */
+"paywall_other_plans" = "Other plans";
+"paywall_billing_period" = "%@ / %@";
+"paywall_billing_once" = "%@ once";
+"paywall_trial_duration" = "%@ free";
+"paywall_trial_starts_short" = "Free trial begins";
+"paywall_monthly_equivalent" = "Equivalent to %@/month; billed annually";
+"paywall_trial_disclosure" = "%@ free, then %@. Renews automatically. Cancel anytime.";
+"paywall_conditional_trial_disclosure" = "If eligible, %@ free; then %@. Auto-renews. Cancel anytime.";
+"paywall_subscription_disclosure" = "%@. Renews automatically. Cancel anytime.";
+"paywall_lifetime_disclosure" = "%@ once. No subscription or renewal.";
+"retention_renewal_disclosure" = "%@ per year. Renews automatically. Cancel anytime.";
+"paywall_cta_lifetime" = "Unlock lifetime";

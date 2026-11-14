@@ -44,12 +44,12 @@
 "onboarding_permission_status_not_allowed" = "No permitido";
 "onboarding_microphone_optional_hint" = "¿Necesitas la experiencia de voz después? Solo ve a Ajustes → Anicca y activa el micrófono cuando estés listo.";
 
-"onboarding_notifications_title" = "Notificaciones";
+"onboarding_notifications_title" = "Recibe palabras amables";
 "onboarding_notifications_card_title" = "Acceso a notificaciones";
-"onboarding_notifications_description" = "Anicca usa notificaciones para recordarte suavemente en los momentos adecuados — para despertar, dejar el teléfono o tomar un descanso.";
+"onboarding_notifications_description" = "Recibe tus palabras a las horas que elegiste. Puedes cambiar los recordatorios cuando quieras.";
 "onboarding_notifications_allow" = "Permitir notificaciones";
 "onboarding_notifications_preview_now" = "ahora";
-"onboarding_notifications_optional_hint" = "Omítelo por ahora si prefieres. Puedes activar las notificaciones en cualquier momento desde Ajustes → Anicca.";
+"onboarding_notifications_optional_hint" = "Es opcional. Puedes activar las notificaciones más tarde en Ajustes.";
 
 "onboarding_alarmkit_title" = "Alarmas";
 "onboarding_alarmkit_description" = "Para que los recordatorios de despertar sean fiables, Anicca necesita permiso para programar alarmas.";
@@ -2656,8 +2656,8 @@
 "growth_collections" = "Colecciones";
 
 // Actual remote reminder schedule
-"growth_reminder_title" = "Un poco de amabilidad, a tiempo.";
-"growth_reminder_explanation" = "Horario de tu zona. Los ajustes del dispositivo y la conexión pueden afectar la entrega.";
+"growth_reminder_title" = "Un momento para ti";
+"growth_reminder_explanation" = "Elige horas de tu zona horaria. La entrega depende de tus ajustes de notificaciones y conexión.";
 "growth_reminder_free_schedule" = "Gratis: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Notificaciones permitidas";
@@ -2680,3 +2680,25 @@
 "growth_chosen_schedule" = "Tus momentos: %@";
 "onboarding_depth_rarely" = "Rara vez";
 "onboarding_depth_many_times_daily" = "Varias veces al día";
+
+/* Phase 1 UI/UX audit */
+"growth_name_optional_hint" = "Es opcional. Puedes dejarlo en blanco. Tu nombre solo se guarda en este dispositivo.";
+"growth_set_reminders" = "Elegir mis recordatorios";
+"growth_open_today" = "Abrir mi momento de hoy";
+"growth_today_for_you" = "Hoy, para ti";
+"growth_theme_premium" = "Premium";
+"growth_theme_selected" = "Tema seleccionado";
+
+/* Selected-product billing disclosures */
+"paywall_other_plans" = "Otros planes";
+"paywall_billing_period" = "%@ / %@";
+"paywall_billing_once" = "%@, pago único";
+"paywall_trial_duration" = "%@ gratis";
+"paywall_trial_starts_short" = "Empieza la prueba gratuita";
+"paywall_monthly_equivalent" = "Equivale a %@/mes; pago anual";
+"paywall_trial_disclosure" = "%@ gratis; después, %@. Renovación automática. Cancela cuando quieras.";
+"paywall_conditional_trial_disclosure" = "Si cumples los requisitos, %@ gratis; después, %@. Renovación automática. Cancela cuando quieras.";
+"paywall_subscription_disclosure" = "%@. Renovación automática. Cancela cuando quieras.";
+"paywall_lifetime_disclosure" = "%@ en un pago. Sin suscripción ni renovación.";
+"retention_renewal_disclosure" = "%@ al año. Renovación automática. Cancela cuando quieras.";
+"paywall_cta_lifetime" = "Desbloquear de por vida";

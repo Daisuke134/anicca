@@ -84,12 +84,12 @@ struct OnboardingFlowView: View {
         switch step {
         case .welcome:          WelcomeStepView(next: advance)
         case .goal:             AffirmationGoalStepView(next: advance)
+        case .name:             PreferredNameStepView(next: advance)
         case .painPoints:       StrugglesStepView(next: advance)
         case .struggleFreq:     StruggleDepthStepView(next: advance)
         case .nudgeTimes:       ReminderScheduleStepView(next: advance)
-        case .processing:       ProcessingStepView(next: advance)
         case .planReveal:       FirstAffirmationStepView(next: advance)
-        case .comparison:       ComparisonTableStepView(next: advance)
+        case .processing, .comparison: FirstAffirmationStepView(next: advance)
         case .notifications:    NotificationPermissionStepView(next: advance)
         }
     }

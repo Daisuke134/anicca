@@ -44,12 +44,12 @@
 "onboarding_permission_status_not_allowed" = "Non autorisé";
 "onboarding_microphone_optional_hint" = "Besoin de l'expérience vocale plus tard ? Allez dans Réglages → Anicca et réactivez le microphone quand vous êtes prêt.";
 
-"onboarding_notifications_title" = "Notifications";
+"onboarding_notifications_title" = "Recevez des mots bienveillants";
 "onboarding_notifications_card_title" = "Accès aux notifications";
-"onboarding_notifications_description" = "Anicca utilise les notifications pour vous rappeler doucement aux bons moments — pour vous réveiller, poser votre téléphone ou faire une pause.";
+"onboarding_notifications_description" = "Recevez vos mots aux heures choisies. Vous pouvez modifier vos rappels à tout moment.";
 "onboarding_notifications_allow" = "Autoriser les notifications";
 "onboarding_notifications_preview_now" = "maintenant";
-"onboarding_notifications_optional_hint" = "Passez pour l'instant si vous préférez. Vous pouvez activer les notifications à tout moment depuis Réglages → Anicca.";
+"onboarding_notifications_optional_hint" = "Facultatif. Vous pourrez activer les notifications dans les réglages.";
 
 "onboarding_alarmkit_title" = "Alarmes";
 "onboarding_alarmkit_description" = "Pour des rappels de réveil fiables, Anicca a besoin de l'autorisation de programmer des alarmes.";
@@ -1372,8 +1372,8 @@
 "growth_collections" = "Collections";
 
 // Actual remote reminder schedule
-"growth_reminder_title" = "Un peu de douceur, au bon moment.";
-"growth_reminder_explanation" = "Horaires de votre fuseau. Les réglages et la connexion peuvent affecter la réception.";
+"growth_reminder_title" = "Un moment pour vous";
+"growth_reminder_explanation" = "Choisissez les heures de votre fuseau horaire. La réception dépend de vos réglages de notifications et de votre connexion.";
 "growth_reminder_free_schedule" = "Gratuit : %@";
 "growth_reminder_pro_schedule" = "Pro : %@";
 "growth_notifications_on" = "Notifications autorisées";
@@ -1396,3 +1396,25 @@
 "growth_chosen_schedule" = "Tes moments : %@";
 "onboarding_depth_rarely" = "Rarement";
 "onboarding_depth_many_times_daily" = "Plusieurs fois par jour";
+
+/* Phase 1 UI/UX audit */
+"growth_name_optional_hint" = "Facultatif. Vous pouvez laisser ce champ vide. Votre nom reste sur cet appareil.";
+"growth_set_reminders" = "Choisir mes horaires";
+"growth_open_today" = "Ouvrir mon moment du jour";
+"growth_today_for_you" = "Aujourd’hui, pour vous";
+"growth_theme_premium" = "Premium";
+"growth_theme_selected" = "Thème sélectionné";
+
+/* Selected-product billing disclosures */
+"paywall_other_plans" = "Autres offres";
+"paywall_billing_period" = "%@ / %@";
+"paywall_billing_once" = "%@ en un paiement";
+"paywall_trial_duration" = "%@ gratuits";
+"paywall_trial_starts_short" = "Début de l’essai gratuit";
+"paywall_monthly_equivalent" = "Soit %@/mois ; facturation annuelle";
+"paywall_trial_disclosure" = "%@ gratuits, puis %@. Renouvellement automatique. Résiliation à tout moment.";
+"paywall_conditional_trial_disclosure" = "Si vous êtes éligible, %@ gratuits, puis %@. Renouvellement automatique. Résiliation à tout moment.";
+"paywall_subscription_disclosure" = "%@. Renouvellement automatique. Résiliation à tout moment.";
+"paywall_lifetime_disclosure" = "%@ en un paiement. Sans abonnement ni renouvellement.";
+"retention_renewal_disclosure" = "%@ par an. Renouvellement automatique. Résiliation à tout moment.";
+"paywall_cta_lifetime" = "Débloquer à vie";

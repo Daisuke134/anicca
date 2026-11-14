@@ -1,5 +1,5 @@
 appId: ai.anicca.app.ios
-name: First launch to free affirmations, optional Premium, and free continuation
+name: Personalized daily affirmation, optional Premium, and audit frames 01–13
 ---
 - clearState
 - clearKeychain
@@ -12,24 +12,35 @@ name: First launch to free affirmations, optional Premium, and free continuation
     optional: true
 - extendedWaitUntil:
     visible:
-      id: onboarding-goal-continue
+      id: onboarding-welcome-cta
     timeout: 60000
+- takeScreenshot: ${EVIDENCE_DIR}/frames/00-welcome
+- tapOn:
+    id: onboarding-welcome-cta
 - tapOn:
     id: onboarding-goal-self_love
+- takeScreenshot: ${EVIDENCE_DIR}/frames/01-q1-goal
 - tapOn:
     id: onboarding-goal-continue
+- assertVisible:
+    id: onboarding-name-field
+- takeScreenshot: ${EVIDENCE_DIR}/frames/01b-name
+- tapOn:
+    id: onboarding-name-continue
 - tapOn:
     id: onboarding-struggle-anxiety
+- takeScreenshot: ${EVIDENCE_DIR}/frames/02-q2-pain-points
 - tapOn:
     id: onboarding-struggles-next
 - tapOn:
     id: onboarding-depth-daily
+- takeScreenshot: ${EVIDENCE_DIR}/frames/03-q3-frequency
+- tapOn:
+    id: onboarding-depth-continue
 - assertVisible:
     id: onboarding-first-affirmation
-# Phase 1: the preview affirmation is picked by the personalization
-# selector (epsilon-greedy), so its wording is not fixed. Capture the
-# text actually shown here and require that same text in the Liked
-# sheet below, instead of asserting the pre-Phase-1 fixed quote.
+- takeScreenshot: ${EVIDENCE_DIR}/frames/04-preview-first-affirmation
+# The selector can explore; compare the actual text rather than a fixed quote.
 - copyTextFrom:
     id: onboarding-first-affirmation
 - evalScript: ${output.savedAffirmation = maestro.copiedText}
@@ -37,17 +48,17 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: onboarding-first-save
 - tapOn:
     id: onboarding-first-continue
+- takeScreenshot: ${EVIDENCE_DIR}/frames/05-notification-setup
 - tapOn:
     id: onboarding-reminder-continue
+- takeScreenshot: ${EVIDENCE_DIR}/frames/06-reminder-permission
 - tapOn:
     id: onboarding-notifications-skip
-# Phase 1 ending: the questions now close with the soft paywall, then the
-# first personalized intervention, then the free feed.
 - extendedWaitUntil:
     visible:
       id: paywall-plan-cta
     timeout: 60000
-- takeScreenshot: soft-paywall-onboarding-end
+- takeScreenshot: ${EVIDENCE_DIR}/frames/07-paywall
 - tapOn:
     id: paywall-close-button
 - tapOn:
@@ -58,15 +69,21 @@ name: First launch to free affirmations, optional Premium, and free continuation
     visible:
       id: onboarding-first-intervention
     timeout: 15000
+- copyTextFrom:
+    id: onboarding-first-intervention
+- evalScript: ${output.intervention = maestro.copiedText}
+- takeScreenshot: ${EVIDENCE_DIR}/frames/08-first-intervention
 - tapOn:
     id: onboarding-intervention-continue
 - extendedWaitUntil:
     visible:
-      id: feed-scroll
+      id: feed-today
     timeout: 15000
 - copyTextFrom:
     id: quote-text
-- evalScript: ${output.firstQuote = maestro.copiedText}
+- assertTrue: ${maestro.copiedText === output.intervention}
+- takeScreenshot: ${EVIDENCE_DIR}/frames/09-feed-home
+# Default home stays on this person's daily word when swiped.
 - swipe:
     start: 50%, 75%
     end: 50%, 25%
@@ -74,31 +91,39 @@ name: First launch to free affirmations, optional Premium, and free continuation
 - waitForAnimationToEnd
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText !== output.firstQuote}
-- takeScreenshot: soft-paywall-free-feed
+- assertTrue: ${maestro.copiedText === output.intervention}
 - tapOn:
     id: quote-like
 - tapOn:
     id: feed-saved
 - assertVisible: ${output.savedAffirmation}
+- takeScreenshot: ${EVIDENCE_DIR}/frames/10-liked-sheet
 - tapOn: Close
 - tapOn:
     id: feed-themes
+- assertVisible:
+    id: theme-selected-sageMist
+- takeScreenshot: ${EVIDENCE_DIR}/frames/11-theme-picker
 - tapOn:
     id: theme-silkDusk
 - extendedWaitUntil:
     visible:
       id: paywall-plan-cta
     timeout: 60000
-- assertVisible: "Free: read, save and share affirmations"
-- assertVisible: "Premium: all 8 themes and 4 daily reminders"
-- takeScreenshot: soft-paywall-real-plans
+- takeScreenshot: ${EVIDENCE_DIR}/frames/14-premium-from-themes
+- runFlow:
+    when:
+      visible:
+        id: paywall-other-plans
+    commands:
+      - tapOn:
+          id: paywall-other-plans
+      - takeScreenshot: ${EVIDENCE_DIR}/frames/14b-alternative-plans
+      - tapOn:
+          id: paywall-other-plans-close
 - tapOn:
     id: paywall-close-button
-# StoreKit can raise the sandbox Apple Account sign-in prompt as the
-# paywall dismisses (diagnosed from run 43280022590 video frames: the free
-# feed was already back, covered by the prompt). Dismiss it without
-# signing in before asserting the theme picker, as elsewhere in this flow.
+# Unsigned StoreKit can show a sandbox sign-in prompt. Do not sign in.
 - tapOn:
     text: Cancel
     optional: true
@@ -112,18 +137,13 @@ name: First launch to free affirmations, optional Premium, and free continuation
     optional: true
 - waitForAnimationToEnd
 - assertVisible:
-    id: feed-scroll
-- swipe:
-    start: 50%, 75%
-    end: 50%, 25%
-    duration: 450
-- assertVisible:
+    id: feed-today
+- copyTextFrom:
     id: quote-text
-- takeScreenshot: soft-paywall-free-continuation
+- assertTrue: ${maestro.copiedText === output.intervention}
+- takeScreenshot: ${EVIDENCE_DIR}/frames/12-feed-sand-theme
 - stopApp
 - launchApp
-# StoreKit's unsigned simulator account prompt can also appear on relaunch.
-# Dismiss it without signing in, as on the existing first-launch journey.
 - tapOn:
     text: Cancel
     optional: true
@@ -134,7 +154,7 @@ name: First launch to free affirmations, optional Premium, and free continuation
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: feed-scroll
+      id: feed-today
     timeout: 15000
 - assertNotVisible:
     id: onboarding-goal-continue
@@ -142,13 +162,20 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: paywall-plan-cta
 - copyTextFrom:
     id: quote-text
-- evalScript: ${output.relaunchedQuote = maestro.copiedText}
-- swipe:
-    start: 50%, 75%
-    end: 50%, 25%
-    duration: 450
-- waitForAnimationToEnd
-- copyTextFrom:
-    id: quote-text
-- assertTrue: ${maestro.copiedText !== output.relaunchedQuote}
-- takeScreenshot: soft-paywall-free-after-relaunch
+- assertTrue: ${maestro.copiedText === output.intervention}
+- takeScreenshot: ${EVIDENCE_DIR}/frames/13-feed-after-relaunch
+- tapOn:
+    id: feed-themes
+- assertVisible:
+    id: theme-selected-sandWave
+- takeScreenshot: ${EVIDENCE_DIR}/frames/13b-selected-theme-after-relaunch
+- tapOn: Close
+- tapOn:
+    id: feed-settings
+- takeScreenshot: ${EVIDENCE_DIR}/frames/15-feed-settings
+- tapOn:
+    id: settings-done
+- tapOn:
+    id: feed-reminders
+- takeScreenshot: ${EVIDENCE_DIR}/frames/16-notifications-sheet
+- tapOn: Close

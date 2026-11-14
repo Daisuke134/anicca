@@ -44,12 +44,12 @@
 "onboarding_permission_status_not_allowed" = "未許可";
 "onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→アニッチャでマイクをオンにし直してください。";
 
-"onboarding_notifications_title" = "毎日の声かけを受け取る";
+"onboarding_notifications_title" = "やさしい言葉を受け取る";
 "onboarding_notifications_card_title" = "通知アクセス";
-"onboarding_notifications_description" = "必要な瞬間に、やさしいリマインダーを届けます。通知がないと、あなたにメッセージを届けられません。";
+"onboarding_notifications_description" = "選んだ時間に、あなたへの言葉を届けます。通知はいつでも変更できます。";
 "onboarding_notifications_allow" = "通知を許可";
 "onboarding_notifications_preview_now" = "今";
-"onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→アニッチャからいつでも通知をオンにできます。";
+"onboarding_notifications_optional_hint" = "通知は任意です。あとから設定で有効にできます。";
 
 
 "onboarding_alarmkit_title" = "アラーム";
@@ -2754,8 +2754,8 @@
 "growth_collections" = "コレクション";
 
 // Actual remote reminder schedule
-"growth_reminder_title" = "毎日に、やさしい言葉を。";
-"growth_reminder_explanation" = "登録されたタイムゾーンの配信予定です。端末の設定や通信状況により届かない場合があります。";
+"growth_reminder_title" = "あなたのための時間";
+"growth_reminder_explanation" = "この端末の時間で選べます。通知の設定や通信状況によって届く時刻が変わることがあります。";
 "growth_reminder_free_schedule" = "無料: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "通知は許可されています";
@@ -2778,3 +2778,25 @@
 "growth_chosen_schedule" = "あなたのひととき: %@";
 "onboarding_depth_rarely" = "まれに";
 "onboarding_depth_many_times_daily" = "1日に何度も";
+
+/* Phase 1 UI/UX audit */
+"growth_name_optional_hint" = "任意です。空欄のままでも進めます。名前はこの端末にだけ保存されます。";
+"growth_set_reminders" = "言葉を受け取る時間を選ぶ";
+"growth_open_today" = "今日の言葉を開く";
+"growth_today_for_you" = "今日のあなたへ";
+"growth_theme_premium" = "プレミアム";
+"growth_theme_selected" = "選択中のテーマ";
+
+/* Selected-product billing disclosures */
+"paywall_other_plans" = "ほかのプラン";
+"paywall_billing_period" = "%@ / %@";
+"paywall_billing_once" = "%@（買い切り）";
+"paywall_trial_duration" = "%@ 無料";
+"paywall_trial_starts_short" = "無料トライアル開始";
+"paywall_monthly_equivalent" = "月額換算 %@（年払い）";
+"paywall_trial_disclosure" = "%@ 無料。その後は%@で自動更新。いつでも解約できます。";
+"paywall_conditional_trial_disclosure" = "対象の方は%@ 無料。その後は%@で自動更新。いつでも解約できます。";
+"paywall_subscription_disclosure" = "%@で自動更新。いつでも解約できます。";
+"paywall_lifetime_disclosure" = "%@の買い切り。定期課金や更新はありません。";
+"retention_renewal_disclosure" = "年額%@で自動更新。いつでも解約できます。";
+"paywall_cta_lifetime" = "買い切りで購入";

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E34CE0022F14A00100000002 /* OnboardingV2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */; };
+		E24CE0022F14A00100000002 /* PaywallDisclosureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24CE0012F14A00100000001 /* PaywallDisclosureTests.swift */; };
+		E14CE0022F14A00100000002 /* DailyAffirmationStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14CE0012F14A00100000001 /* DailyAffirmationStoreTests.swift */; };
 		09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5539993CAC07B523C82A078D /* DayCyclingTests.swift */; };
 		D14CE0022F14A00100000002 /* PersonalizationPhase1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */; };
 		45F4B36D3BD1661C39BFB1A8 /* PushTokenServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */; };
@@ -82,6 +85,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Tests.swift; sourceTree = "<group>"; };
+		E24CE0012F14A00100000001 /* PaywallDisclosureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaywallDisclosureTests.swift; sourceTree = "<group>"; };
+		E14CE0012F14A00100000001 /* DailyAffirmationStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DailyAffirmationStoreTests.swift; sourceTree = "<group>"; };
 		134D591FFF1E0B40CA405490 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5539993CAC07B523C82A078D /* DayCyclingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayCyclingTests.swift; sourceTree = "<group>"; };
 		D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalizationPhase1Tests.swift; sourceTree = "<group>"; };
@@ -286,6 +292,9 @@
 				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
 				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
 				D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */,
+				E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */,
+				E24CE0012F14A00100000001 /* PaywallDisclosureTests.swift */,
+				E14CE0012F14A00100000001 /* DailyAffirmationStoreTests.swift */,
 				A3A3C3D8F19A4F2DA12F1201 /* QuoteNavigationCoordinatorTests.swift */,
 				B4B4C4E9F20B503EB23C2302 /* ReviewPromptPolicyTests.swift */,
 				F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */,
@@ -565,6 +574,9 @@
 				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
 				09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */,
 				D14CE0022F14A00100000002 /* PersonalizationPhase1Tests.swift in Sources */,
+				E34CE0022F14A00100000002 /* OnboardingV2Tests.swift in Sources */,
+				E24CE0022F14A00100000002 /* PaywallDisclosureTests.swift in Sources */,
+				E14CE0022F14A00100000002 /* DailyAffirmationStoreTests.swift in Sources */,
 				A3A3C3D8F19A4F2DA12F1202 /* QuoteNavigationCoordinatorTests.swift in Sources */,
 				B4B4C4E9F20B503EB23C2303 /* ReviewPromptPolicyTests.swift in Sources */,
 			);

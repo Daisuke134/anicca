@@ -375,6 +375,7 @@ enum AnalyticsEvent: String {
 enum AnalyticsScreenID: String, CaseIterable {
     case onboardingWelcome = "onboarding.welcome"
     case onboardingGoal = "onboarding.goal"
+    case onboardingName = "onboarding.name"
     case onboardingPainPoints = "onboarding.pain_points"
     case onboardingStruggleFrequency = "onboarding.struggle_frequency"
     case onboardingReminderSchedule = "onboarding.reminder_schedule"
@@ -396,6 +397,7 @@ enum AnalyticsScreenID: String, CaseIterable {
         switch step {
         case .welcome: return .onboardingWelcome
         case .goal: return .onboardingGoal
+        case .name: return .onboardingName
         case .painPoints: return .onboardingPainPoints
         case .struggleFreq: return .onboardingStruggleFrequency
         case .nudgeTimes: return .onboardingReminderSchedule

@@ -18,14 +18,14 @@ external checkout is required for source editing.
 
 ## Initial affirmation experience
 
-The active first-run journey is goal selection → a real, saveable affirmation →
-actual reminder schedule → optional notification permission → the existing soft
-paywall. Legacy persisted step raw values remain stable and resume in this journey.
-Closing the paywall continues to the feed; existing subscribers keep the current
-fresh-entitlement check. Notification permission has an explicit skip action.
+The active first-run journey is welcome → goal → optional name → pain points →
+frequency → a saveable personalized preview → reminder schedule → optional
+notification permission → soft paywall → first intervention → today's affirmation.
+The home keeps one affirmation for the local day and language, starting with the
+exact first intervention. A tapped notification takes priority. Legacy persisted
+step values remain stable and map into this journey.
 
-The native journey regression is independent of the legacy, unregistered
-`OnboardingV2Tests.swift` file:
+The native journey regression can run without Xcode:
 
 ```sh
 swiftc -swift-version 5 aniccaios/Onboarding/OnboardingStep.swift \
@@ -88,3 +88,15 @@ Then run `12-storekit-cancel-restore.yaml` on the same simulator to check
 Apple purchase authentication, cancellation and return from Restore Purchases.
 The latter does not authenticate a Sandbox Apple Account or prove a completed
 purchase/paid-entitlement restoration. Maestro requires Java 17 or newer.
+
+## Phase 1 UI/UX audit capture
+
+Run `.github/workflows/anicca-ios-build.yml` with `run_maestro=false` for the build
+and unit tests, then separately with `run_maestro=true` for the real simulator
+journey. The delegated fixes are documented in `PHASE1-UIUX-FIX-NOTES.md`.
+The canonical runner `scripts/run-soft-paywall-maestro.sh` writes screenshots
+01–13 to the evidence artifact's `frames/` directory. Additional frames cover
+welcome, name, alternative plans, selected theme after relaunch, settings, and
+notification settings. These captures require the real CI run; local source
+checks are not screenshots or E2E evidence. This workflow does not submit to the
+App Store.

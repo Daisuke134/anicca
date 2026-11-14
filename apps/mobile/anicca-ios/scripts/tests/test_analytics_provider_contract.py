@@ -103,7 +103,7 @@ def main() -> int:
             raise AssertionError(f"Client-only price/transaction values must not be sent: {unsafe}")
 
     required_screens = {
-        "onboarding.welcome", "onboarding.goal", "onboarding.pain_points",
+        "onboarding.welcome", "onboarding.goal", "onboarding.name", "onboarding.pain_points",
         "onboarding.struggle_frequency", "onboarding.reminder_schedule",
         "onboarding.processing", "onboarding.first_affirmation",
         "onboarding.comparison", "onboarding.notifications", "paywall",
@@ -118,11 +118,11 @@ def main() -> int:
     required_callers = {
         "onboarding": ("onboardingStepCompleted", "trackScreenViewed", "onboardingStepViewed"),
         "paywall": ("analyticsScreen(.paywall",),
-        "feed": ("analyticsScreen(.feed", "feedCollections", "trackScreenViewed"),
+        "feed": ("analyticsScreen(.feed", "affirmationViewed", "trackScreenViewed"),
         "permission": ("notificationPermissionRequested",),
         "push_registration": ("notificationRegistrationResult",),
         "active_paywall": ("trackPurchaseStarted", "trackRestoreStarted", "trackRestoreResult"),
-        "legacy_paywall": ("trackPurchaseStarted", "trackRestoreStarted", "trackRestoreResult"),
+        "legacy_paywall": ("PaywallVariantBView(", 'flowID: "legacy_paywall"', "onPurchaseSuccess: onPurchaseSuccess"),
         "retention_offer": ("trackPurchaseStarted", "trackPurchaseResult"),
     }
     missing_callers = {

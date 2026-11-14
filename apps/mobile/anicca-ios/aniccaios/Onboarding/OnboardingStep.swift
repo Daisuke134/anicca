@@ -11,6 +11,7 @@ enum OnboardingStep: Int, CaseIterable, Codable {
     case planReveal = 6
     case comparison = 7
     case notifications = 8
+    case name = 9
 }
 
 enum PaywallStep: Int, CaseIterable, Codable {
@@ -19,15 +20,12 @@ enum PaywallStep: Int, CaseIterable, Codable {
 }
 
 extension OnboardingStep {
-    /// Phase 1 journey: goal (desired state + optional name) → pain points →
-    /// struggle frequency → personalized preview → user-chosen reminder
-    /// schedule → notification permission. The soft paywall and the first
-    /// personalized intervention follow in OnboardingFlowView.
-    static let initialJourney: [OnboardingStep] = [.goal, .painPoints, .struggleFreq, .planReveal, .nudgeTimes, .notifications]
+    /// Introduce the product, then ask one question per screen before the
+    /// personalized preview, reminder schedule and optional permission.
+    static let initialJourney: [OnboardingStep] = [.welcome, .goal, .name, .painPoints, .struggleFreq, .planReveal, .nudgeTimes, .notifications]
 
     var resumableInitialStep: OnboardingStep {
         switch self {
-        case .welcome: return .goal
         case .processing, .comparison: return .planReveal
         default: return self
         }
@@ -84,6 +82,7 @@ extension OnboardingStep {
         switch self {
         case .welcome: return "welcome"
         case .goal: return "goal"
+        case .name: return "name"
         case .painPoints: return "pain_points"
         case .struggleFreq: return "struggle_freq"
         case .nudgeTimes: return "nudge_times"
