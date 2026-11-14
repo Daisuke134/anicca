@@ -318,6 +318,7 @@ enum AnalyticsEvent: String {
     case onboardingWelcomeCompleted = "onboarding_welcome_completed"
     case onboardingStrugglesCompleted = "onboarding_struggles_completed"
     case onboardingStruggleDepthCompleted = "onboarding_struggle_depth_completed"
+    case onboardingSourceAnswered = "onboarding_source_answered"
     case onboardingGoalsCompleted = "onboarding_goals_completed"
     case onboardingInsightCompleted = "onboarding_insight_completed"
     case onboardingValuePropCompleted = "onboarding_valueprop_completed"
@@ -377,6 +378,7 @@ enum AnalyticsScreenID: String, CaseIterable {
     case onboardingGoal = "onboarding.goal"
     case onboardingPainPoints = "onboarding.pain_points"
     case onboardingStruggleFrequency = "onboarding.struggle_frequency"
+    case onboardingSource = "onboarding.source"
     case onboardingReminderSchedule = "onboarding.reminder_schedule"
     case onboardingProcessing = "onboarding.processing"
     case onboardingFirstAffirmation = "onboarding.first_affirmation"
@@ -398,6 +400,7 @@ enum AnalyticsScreenID: String, CaseIterable {
         case .goal: return .onboardingGoal
         case .painPoints: return .onboardingPainPoints
         case .struggleFreq: return .onboardingStruggleFrequency
+        case .source: return .onboardingSource
         case .nudgeTimes: return .onboardingReminderSchedule
         case .processing: return .onboardingProcessing
         case .planReveal: return .onboardingFirstAffirmation

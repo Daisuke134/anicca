@@ -122,6 +122,11 @@ final class SubscriptionManager: NSObject {
         }
     }
     
+    func setAcquisitionSourceAttribute(_ source: String) {
+        guard isConfigured else { return }
+        Purchases.shared.attribution.setAttributes(["hdyhau": source])
+    }
+
     func handleLogin(appUserId: String) async {
         guard isConfigured else { return }
         if Purchases.shared.appUserID != appUserId {

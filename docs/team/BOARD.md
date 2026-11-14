@@ -10,6 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [Codex / anicca-ops #82] 実装済み・未コミット引渡し: `claude/issue82-onboarding-source` の流入元質問・保存/計測・3言語・経路テスト。独立レビュー指摘0。LinuxにSwift/Xcodeがなくnative検証は未実施。
 - [Codex / soft-paywall 1.9.14] claim: codex/anicca-soft-paywall-1914。所有: Anicca onboarding/paywall/theme/test/maestro、限定CI、実動画と提出証拠。1.9.13通知lane・価格・RC実験設定は保持。ops progress参照。
 - [ChatGPT / Manager P09+BFM+INT02 evidence] claim: research/manager-p09-bfm01-bfm02-int02-20261107 (isolated .worktrees/manager-model-eval-20261107). Own only new pinned empirical HeartSteps assignment evaluator, open-license Qwen heldout evaluation, scoped tests/workflow, source-backed verification docs/slides. No production, credentials, marketing, current SSOT cursor or other agents' owned scripts. Existing P09 PR #9292 preserved.
 - [ChatGPT / Manager culture-humor research] claim: docs/manager-cultural-humor-p09-20261106。所有は新しい民俗学・笑いの文献調査/設計/記事/研究補足スライド原稿と既存研究仕様への参照のみ。実装・人間実験・公開Web・34枚本番スライド・会社SSOT cursor・他ownerを変更しない。P08 docs PR #9291とは別のmain由来docs-only差分。
@@ -370,3 +371,5 @@
 
 - 2026-11-13 01:11 JST / Codex / soft-paywall PR9346実装・Maestro実走CI経路をpush。独立review2指摘を修正、Python30 PASS/1 skip・native Swift21/21。iOS CI/実録画実行中、1.9.14提出未達。
 - 2026-11-14 12:57 JST / Muse / Anicca iOS Phase 1 個別化オンボーディング実装（Codex Cloud の clone 403 で未実装だった分の Muse 引き取り）。専用 worktree・branch claude/phase1-personalized-onboarding（base origin/main f9e471d0d）。対応表（anicca-ops files/onboarding-answer-change-mapping-2026-11-14.md）どおり: painPoints/struggleFreq を経路へ復帰（回答セットは対応表の5件/4件）、目標は desired_state 4択＋任意の名前（端末内のみ）、PersonalizationProfile を AppState に永続化し回答IDと選択スケジュールのみ同期、nudgeTimes を本人選択式（枠1-3＋回数、提案は頻度由来・明示選択が常に優先）に変更、selector rule_v1（ε-greedy 0.1、14日 cooldown、時間帯適合、割付確率を判断点に必須記録）、判断点 JSONL＋通知 delivered/opened/skipped の delivery_id 結合、終了順序を 質問→個別化 preview→ソフトペイウォール→最初の個別化介入→feed に変更、SB-3 は product の introductory offer を正本に修正。JT/OP checker は実装 fixture で 10 PASS / 0 WARN / 0 FAIL。検証は PR #9352 の macOS CI（build+unit tests）と Maestro E2E run 43553938000 で実施中。ASC 提出はしていない。
+
+- 2026-11-14 18:52 JST / Codex / anicca-ops #82: source=9を頻度回答→プレビュー間へ追加、8択・任意Other・Skip、既存profile保存→analytics→RevenueCat hdyhau→次画面、en/ja/es文言と経路テストを実装。既存raw値/v6-v7移行保持。RevenueCat5.78.0固定source API確認、静的30文言/差分check PASS、Python32成功/既存paywallテスト1失敗/Swift不在1skip、独立gpt-6-sol/highレビュー指摘0。Superpowers7.0.1 using-superpowers/計画/TDD/検証/reviewを読了（/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/）、Astra/Ponytail未提供のため既存SwiftUIを再利用。Swift/Xcode不在でnative実行不可。origin=github.com/Daisuke134/anicca、HEAD=106c65cb0533b93d0968fcc29eb8838ed5991f48、ユーザー指定で境界script/commit/push/統合/本番操作なし・worktree保持。次はMacで追加XCTestと画面操作の確認。

@@ -65,7 +65,7 @@
 "onboarding_profile_continue" = "Continuar";
 "onboarding_profile_placeholder" = "Juan";
 
-"onboarding_source_title" = "¿Dónde escuchaste de nosotros?";
+"onboarding_source_title" = "¿Cómo nos conociste?";
 "source_instagram" = "Instagram";
 "source_tiktok" = "TikTok";
 "source_youtube" = "YouTube";
@@ -2680,3 +2680,14 @@
 "growth_chosen_schedule" = "Tus momentos: %@";
 "onboarding_depth_rarely" = "Rara vez";
 "onboarding_depth_many_times_daily" = "Varias veces al día";
+
+// Onboarding acquisition source
+"onboarding_source_tiktok" = "TikTok";
+"onboarding_source_instagram" = "Instagram";
+"onboarding_source_youtube" = "YouTube";
+"onboarding_source_x" = "X";
+"onboarding_source_app_store_search" = "Búsqueda en App Store";
+"onboarding_source_friend" = "Me lo contó un amigo";
+"onboarding_source_reddit" = "Reddit";
+"onboarding_source_other" = "Otro";
+"onboarding_source_other_placeholder" = "Cuéntanos más (opcional)";

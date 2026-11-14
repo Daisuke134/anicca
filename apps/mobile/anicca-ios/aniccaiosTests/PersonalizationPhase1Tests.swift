@@ -155,13 +155,27 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_initialJourney_includesPainPointsAndFrequencyBeforePreview() {
         XCTAssertEqual(
             OnboardingStep.initialJourney,
-            [.goal, .painPoints, .struggleFreq, .planReveal, .nudgeTimes, .notifications]
+            [.goal, .painPoints, .struggleFreq, .source, .planReveal, .nudgeTimes, .notifications]
         )
         XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .painPoints)
         XCTAssertEqual(OnboardingStep.painPoints.nextInitialStep, .struggleFreq)
-        XCTAssertEqual(OnboardingStep.struggleFreq.nextInitialStep, .planReveal)
+        XCTAssertEqual(OnboardingStep.struggleFreq.nextInitialStep, .source)
+        XCTAssertEqual(OnboardingStep.source.nextInitialStep, .planReveal)
         XCTAssertEqual(OnboardingStep.planReveal.nextInitialStep, .nudgeTimes)
         XCTAssertEqual(OnboardingStep.nudgeTimes.nextInitialStep, .notifications)
         XCTAssertNil(OnboardingStep.notifications.nextInitialStep)
+    }
+
+    func test_initialJourney_placesSourceBetweenFrequencyAndPreview() throws {
+        let journey = OnboardingStep.initialJourney
+        let frequencyIndex = try XCTUnwrap(journey.firstIndex(of: .struggleFreq))
+        let sourceIndex = try XCTUnwrap(journey.firstIndex(of: .source))
+        let previewIndex = try XCTUnwrap(journey.firstIndex(of: .planReveal))
+
+        XCTAssertEqual(sourceIndex, frequencyIndex + 1)
+        XCTAssertEqual(previewIndex, sourceIndex + 1)
+        XCTAssertEqual(OnboardingStep.source.resumableInitialStep, .source)
+        XCTAssertEqual(OnboardingStep.source.rawValue, 9)
+        XCTAssertEqual(OnboardingStep.source.analyticsName, "source")
     }
 }

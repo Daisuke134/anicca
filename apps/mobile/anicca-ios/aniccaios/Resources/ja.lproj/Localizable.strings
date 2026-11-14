@@ -66,7 +66,7 @@
 "onboarding_profile_continue" = "続ける";
 "onboarding_profile_placeholder" = "太郎";
 
-"onboarding_source_title" = "どこでアニッチャを知りましたか？";
+"onboarding_source_title" = "Aniccaをどこで知りましたか？";
 "source_instagram" = "Instagram";
 "source_tiktok" = "TikTok";
 "source_youtube" = "YouTube";
@@ -2778,3 +2778,14 @@
 "growth_chosen_schedule" = "あなたのひととき: %@";
 "onboarding_depth_rarely" = "まれに";
 "onboarding_depth_many_times_daily" = "1日に何度も";
+
+// Onboarding acquisition source
+"onboarding_source_tiktok" = "TikTok";
+"onboarding_source_instagram" = "Instagram";
+"onboarding_source_youtube" = "YouTube";
+"onboarding_source_x" = "X";
+"onboarding_source_app_store_search" = "App Storeで検索";
+"onboarding_source_friend" = "友人から聞いた";
+"onboarding_source_reddit" = "Reddit";
+"onboarding_source_other" = "その他";
+"onboarding_source_other_placeholder" = "詳しく教えてください（任意）";
