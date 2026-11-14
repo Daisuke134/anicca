@@ -1,0 +1,23 @@
+{
+ "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+ "train_loss": 0.1887437067334614,
+ "train_runtime_sec": 3163.8790049552917,
+ "global_step": 63,
+ "data": "/home/hatch/workspace/manager-v0-work/data/sft_train_v0.jsonl",
+ "resumed_from": null,
+ "recipe": {
+  "trainer": "TRL SFTTrainer + PEFT LoRA",
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "target_modules": "all-linear",
+  "epochs": 1,
+  "lr": 0.001,
+  "schedule": "cosine",
+  "warmup_steps": 4,
+  "batch_size": 16,
+  "max_length": 256,
+  "dtype": "bfloat16",
+  "completion_only_loss": true,
+  "merged": true
+ }
+}
