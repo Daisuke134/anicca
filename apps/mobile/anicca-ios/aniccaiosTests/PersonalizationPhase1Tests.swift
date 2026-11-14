@@ -6,6 +6,10 @@ import XCTest
 /// `files/onboarding-answer-change-mapping-2026-11-14.md` (anicca-ops).
 final class PersonalizationPhase1Tests: XCTestCase {
 
+    private func syntheticUser(_ profile: PersonalizationProfile) -> SyntheticUser {
+        SyntheticUser(profile: profile, personId: "test-person")
+    }
+
     // MARK: - Schedule proposals
 
     func test_proposedFrequency_followsMapping() {
@@ -84,7 +88,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_selector_desiredStateAndPainPointMatchWins() {
         let profile = PersonalizationProfile(desiredState: "calm", painPointIds: ["anxiety"])
         let selection = PersonalizedNudgeSelector.select(
-            profile: profile, pool: pool, band: .day, random: sequenceRandom([0.99]))
+            user: syntheticUser(profile), pool: pool, band: .day, random: sequenceRandom([0.99]))
         XCTAssertEqual(selection?.quote.id, "growth.calm.0")
         XCTAssertEqual(selection?.reason, "desired_state_and_pain_point_match")
         XCTAssertEqual(selection?.candidateCount, 4)
@@ -94,7 +98,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_selector_cooldownExcludesRecentlyShown() {
         let profile = PersonalizationProfile(desiredState: "calm", painPointIds: ["anxiety"])
         let selection = PersonalizedNudgeSelector.select(
-            profile: profile, pool: pool,
+            user: syntheticUser(profile), pool: pool,
             shownAt: ["growth.calm.0": Date()], band: .day, random: sequenceRandom([0.99]))
         XCTAssertEqual(selection?.quote.id, "growth.presence.0")
     }
@@ -102,19 +106,19 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_selector_morningExcludesRestUnlessSleepPain() {
         let noSleep = PersonalizationProfile(desiredState: "calm")
         let morning = PersonalizedNudgeSelector.select(
-            profile: noSleep, pool: pool, band: .morning, random: sequenceRandom([0.99]))
+            user: syntheticUser(noSleep), pool: pool, band: .morning, random: sequenceRandom([0.99]))
         XCTAssertEqual(morning?.candidateCount, 3)
 
         let withSleep = PersonalizationProfile(desiredState: "calm", painPointIds: ["sleep"])
         let morningSleep = PersonalizedNudgeSelector.select(
-            profile: withSleep, pool: pool, band: .morning, random: sequenceRandom([0.99]))
+            user: syntheticUser(withSleep), pool: pool, band: .morning, random: sequenceRandom([0.99]))
         XCTAssertEqual(morningSleep?.candidateCount, 4)
     }
 
     func test_selector_explorationRecordsExactProbability() {
         let profile = PersonalizationProfile()
         let selection = PersonalizedNudgeSelector.select(
-            profile: profile, pool: pool, band: .day, random: sequenceRandom([0.05, 0.999]))
+            user: syntheticUser(profile), pool: pool, band: .day, random: sequenceRandom([0.05, 0.999]))
         // Ranked order for an empty profile is by id; index 3 is the last.
         XCTAssertEqual(selection?.quote.id, "growth.rest.0")
         XCTAssertEqual(selection?.assignedProbability ?? 0, 0.1 / 4, accuracy: 1e-9)
@@ -160,6 +164,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
         XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
         XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
         XCTAssertEqual(OnboardingStep.name.nextInitialStep, .birthContext)
+        XCTAssertEqual(OnboardingStep.name.resumableInitialStep, .name)
         XCTAssertEqual(OnboardingStep.painPoints.nextInitialStep, .struggleFreq)
         XCTAssertEqual(OnboardingStep.struggleFreq.nextInitialStep, .beliefThemes)
         XCTAssertEqual(OnboardingStep.planReveal.nextInitialStep, .nudgeTimes)
@@ -169,6 +174,45 @@ final class PersonalizationPhase1Tests: XCTestCase {
 }
 
 extension PersonalizationPhase1Tests {
+    func test_permissionResultDoesNotEnableAdaptiveModeForLegacyResume() {
+        for result in ["allowed", "denied", "skipped"] {
+            var profile = PersonalizationProfile(desiredState: "calm")
+            profile.recordNotificationPermission(result)
+            XCTAssertNil(profile.adaptiveAnswers)
+            XCTAssertFalse(syntheticUser(profile).hasAdaptiveAnswers)
+            XCTAssertEqual(syntheticUser(profile).answerSnapshot.values["notification_permission"], ["unknown"])
+        }
+    }
+
+    func test_permissionResultPreservesExistingAdaptiveAnswers() {
+        var profile = PersonalizationProfile(desiredState: "calm")
+        profile.adaptiveAnswers = AdaptiveAnswers(values: ["mood_baseline": ["heavy"]])
+        profile.recordNotificationPermission("denied")
+        XCTAssertEqual(profile.answers.ids(for: .moodBaseline), ["heavy"])
+        XCTAssertEqual(syntheticUser(profile).answerSnapshot.values["notification_permission"], ["denied"])
+        XCTAssertTrue(syntheticUser(profile).hasAdaptiveAnswers)
+    }
+
+    func test_birthDateDoesNotMasqueradeAsZodiacSelectionAfterReload() throws {
+        let date = ISO8601DateFormatter().date(from: "1990-05-15T00:00:00Z")!
+        var answers = AdaptiveAnswers(values: ["birth_context": ["scorpio"]])
+        answers.setBirthContext(birthDate: date, zodiacIDs: ["scorpio"])
+        let restored = try JSONDecoder().decode(AdaptiveAnswers.self, from: JSONEncoder().encode(answers))
+        XCTAssertEqual(restored.birthDate, date)
+        XCTAssertEqual(restored.ids(for: .birthContext), [])
+        XCTAssertEqual(restored.values["birth_context"], ["unknown"])
+        var profile = PersonalizationProfile()
+        profile.adaptiveAnswers = restored
+        XCTAssertEqual(profile.answerSnapshot().values["birth_context"], ["date_provided"])
+
+        answers.setBirthContext(birthDate: nil, zodiacIDs: ["taurus"])
+        XCTAssertNil(answers.birthDate)
+        XCTAssertEqual(answers.ids(for: .birthContext), ["taurus"])
+        answers.setBirthContext(birthDate: nil, zodiacIDs: [])
+        XCTAssertNil(answers.birthDate)
+        XCTAssertEqual(answers.ids(for: .birthContext), [])
+    }
+
     func test_adaptiveModules_followPresentationOrderAndLimitToTwo() {
         XCTAssertEqual(OnboardingStep.deepDiveSteps(painPointIds: ["sleep", "anxiety"]),
                        [.anxietyTarget, .sleepReason, .bedtime, .wakeTime])
@@ -276,7 +320,7 @@ extension PersonalizationPhase1Tests {
         profile.adaptiveAnswers = AdaptiveAnswers(values: ["mood_baseline": ["heavy"], "tone": ["direct"], "life_context": ["none"]])
         let candidates = AdaptiveAffirmationCatalog.quotes(language: .en)
         for sample in [0.0, 0.3, 0.6, 0.999] {
-            let result = try XCTUnwrap(PersonalizedNudgeSelector.select(profile: profile, pool: candidates, band: .day, random: sequenceRandom([0.01, sample])))
+            let result = try XCTUnwrap(PersonalizedNudgeSelector.select(user: syntheticUser(profile), pool: candidates, band: .day, random: sequenceRandom([0.01, sample])))
             let traits = try XCTUnwrap(AdaptiveAffirmationCatalog.traits(for: result.quote))
             XCTAssertEqual(traits.intensity, "gentle")
             XCTAssertEqual(traits.tone, "direct")
@@ -289,7 +333,7 @@ extension PersonalizationPhase1Tests {
         var profile = PersonalizationProfile(painPointIds: ["anxiety"])
         profile.adaptiveAnswers = AdaptiveAnswers(values: ["anxiety_target": ["health"], "prior_attempts": ["meditation"], "prior_helpfulness": ["meditation"]])
         let pool = AdaptiveAffirmationCatalog.quotes(language: .en)
-        let eligible = pool.filter { PersonalizedNudgeSelector.isEligible(quote: $0, profile: profile, band: .day, now: Date()) }
+        let eligible = pool.filter { PersonalizedNudgeSelector.isEligible(quote: $0, user: syntheticUser(profile), band: .day) }
         XCTAssertTrue(eligible.contains { $0.id == "adaptive.calm.anxiety_health" })
         XCTAssertFalse(eligible.contains { $0.id == "adaptive.presence.anxiety_money" })
         XCTAssertFalse(eligible.contains { $0.id == "adaptive.presence.method_meditation" })
@@ -302,10 +346,10 @@ extension PersonalizationPhase1Tests {
         let confidence = try XCTUnwrap(quotes.first { $0.id == "adaptive.confidence.confidence_gentle" })
         var profile = PersonalizationProfile(desiredState: "calm")
         profile.adaptiveAnswers = AdaptiveAnswers(values: ["belief_themes": ["self_trust"]])
-        let boosted = PersonalizedNudgeSelector.score(quote: confidence, profile: profile)
-        XCTAssertGreaterThan(PersonalizedNudgeSelector.score(quote: calm, profile: profile), boosted)
+        let boosted = PersonalizedNudgeSelector.score(quote: confidence, user: syntheticUser(profile))
+        XCTAssertGreaterThan(PersonalizedNudgeSelector.score(quote: calm, user: syntheticUser(profile)), boosted)
         profile.adaptiveAnswers?.values["belief_themes"] = ["inner_peace"]
-        XCTAssertGreaterThan(boosted, PersonalizedNudgeSelector.score(quote: confidence, profile: profile))
+        XCTAssertGreaterThan(boosted, PersonalizedNudgeSelector.score(quote: confidence, user: syntheticUser(profile)))
     }
 
     func test_decisionSnapshotRoundTripsAndOldRecordStillDecodes() throws {
@@ -351,10 +395,10 @@ extension PersonalizationPhase1Tests {
         var profile = PersonalizationProfile(desiredState: "calm", struggleFrequency: "daily")
         profile.adaptiveAnswers = AdaptiveAnswers(values: ["mood_baseline": ["light"], "tone": ["direct"]])
         let pool = AdaptiveAffirmationCatalog.quotes(language: .en)
-        let light = try XCTUnwrap(PersonalizedNudgeSelector.select(profile: profile, pool: pool, band: .day, random: { 0.99 }))
+        let light = try XCTUnwrap(PersonalizedNudgeSelector.select(user: syntheticUser(profile), pool: pool, band: .day, random: { 0.99 }))
         XCTAssertEqual(light.quote.id, "adaptive.calm.calm_supportive")
         profile.adaptiveAnswers?.values["mood_baseline"] = ["heavy"]
-        let heavy = try XCTUnwrap(PersonalizedNudgeSelector.select(profile: profile, pool: pool, band: .day, random: { 0.99 }))
+        let heavy = try XCTUnwrap(PersonalizedNudgeSelector.select(user: syntheticUser(profile), pool: pool, band: .day, random: { 0.99 }))
         XCTAssertEqual(heavy.quote.id, "adaptive.calm.calm_direct")
     }
 
@@ -380,10 +424,10 @@ extension PersonalizationPhase1Tests {
     func test_deliveryPayloadSuppressesQuietSlotsAndNeverExportsNameOrBirthDate() throws {
         var profile = PersonalizationProfile(preferredName: "Private Name", nudgeSlots: [.init(hour: 21, minute: 30)])
         profile.adaptiveAnswers = AdaptiveAnswers(values: ["quiet_hours": ["evening"], "birth_context": ["date_provided"]], birthDate: Date(timeIntervalSince1970: 0))
-        let payload = profile.deliveryPayload()
+        let payload = syntheticUser(profile).deliveryPayload(timezoneIdentifier: "UTC")
         XCTAssertEqual(payload["nudgeSlots"] as? [String], [])
         XCTAssertEqual(payload["dailyFrequency"] as? Int, 0)
-        XCTAssertEqual(payload["answerVersion"] as? Int, 2)
+        XCTAssertEqual(payload["answerVersion"] as? Int, 4)
         let json = String(data: try JSONSerialization.data(withJSONObject: payload), encoding: .utf8)!
         XCTAssertFalse(json.contains("Private Name"))
         XCTAssertFalse(json.contains("birthDate"))

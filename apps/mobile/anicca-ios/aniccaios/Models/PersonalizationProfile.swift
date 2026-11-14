@@ -1,7 +1,7 @@
 import Foundation
 
-/// Phase 1 personalization profile — the single on-device source of truth for
-/// the onboarding answers defined in
+/// Onboarding answer material used to build the on-device SyntheticUser
+/// conditioning record. The questions are defined in
 /// `files/onboarding-answer-change-mapping-2026-11-14.md` (anicca-ops).
 ///
 /// Every answer maps to a concrete change (affirmation selection, notification

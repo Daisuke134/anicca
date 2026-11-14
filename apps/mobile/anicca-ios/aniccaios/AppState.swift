@@ -52,6 +52,7 @@ final class AppState: ObservableObject {
     
     /// アプリがフォアグラウンドに戻った時に呼び出し、Viewの再描画をトリガー
     func triggerDailyRefresh() {
+        refreshSyntheticUserIfNeeded()
         dailyRefreshTrigger = UUID()
     }
     
@@ -87,8 +88,12 @@ final class AppState: ObservableObject {
     var personalizationProfile: PersonalizationProfile {
         userProfile.personalization ?? PersonalizationProfile()
     }
+    private let syntheticUserStore = SyntheticUserStore()
+    @Published private(set) var syntheticUser: SyntheticUser
 
     private init() {
+        let modelStore = SyntheticUserStore()
+        self.syntheticUser = modelStore.load() ?? SyntheticUser(profile: PersonalizationProfile(), personId: modelStore.personId)
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
 
         // オンボーディング未完了時は welcome から開始、途中の場合は保存された step を復元
@@ -125,6 +130,7 @@ final class AppState: ObservableObject {
         self.hasRequestedReview = defaults.bool(forKey: hasRequestedReviewKey)
         self.onboardingQuestionsCompleted = defaults.bool(forKey: onboardingQuestionsCompletedKey)
         migratePersonalizationProfile()
+        refreshSyntheticUser()
 
         // 月初リセットチェック
         checkAndResetMonthlyNudgeCountIfNeeded()
@@ -172,6 +178,7 @@ final class AppState: ObservableObject {
     }
 
     func markOnboardingComplete() {
+        refreshSyntheticUser()
         guard !isOnboardingComplete else { return }
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
@@ -237,6 +244,7 @@ final class AppState: ObservableObject {
         isOnboardingComplete = false
         onboardingStep = .welcome
         userProfile = UserProfile()
+        clearSyntheticUser()
         subscriptionInfo = .free
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
@@ -251,6 +259,7 @@ final class AppState: ObservableObject {
 
     /// 1.8.5 R3: 質問全 20 screen 完了時に呼ぶ。paywall 購入前に kill された場合、再起動で paywall 直接復帰を可能にする。
     func markOnboardingQuestionsCompleted() {
+        refreshSyntheticUser()
         onboardingQuestionsCompleted = true
         defaults.set(true, forKey: onboardingQuestionsCompletedKey)
     }
@@ -323,6 +332,7 @@ final class AppState: ObservableObject {
     func signOutPreservingSensorAccess() {
         authStatus = .signedOut
         userProfile = UserProfile()
+        clearSyntheticUser()
         subscriptionInfo = .free
         cachedOffering = nil
 
@@ -354,6 +364,7 @@ final class AppState: ObservableObject {
     func signOutAndWipe() {
         authStatus = .signedOut
         userProfile = UserProfile()
+        clearSyntheticUser()
         subscriptionInfo = .free
         cachedOffering = nil
 
@@ -401,6 +412,9 @@ final class AppState: ObservableObject {
         let previousProfile = userProfile
         userProfile = profile
         saveUserProfile()
+        if previousProfile.personalization != profile.personalization || previousProfile.goals != profile.goals || previousProfile.struggles != profile.struggles {
+            refreshSyntheticUser()
+        }
 
         // v1.8.7: struggles no longer drive notifications. Widget keeps using them
         // for back-compat; affirmation notifications are delivered remotely via APNs
@@ -437,6 +451,7 @@ final class AppState: ObservableObject {
         updated.schemaVersion = 2
         userProfile.personalization = updated
         saveUserProfile()
+        refreshSyntheticUser()
         Task {
             await ProfileSyncService.shared.enqueue(profile: userProfile)
         }
@@ -448,6 +463,37 @@ final class AppState: ObservableObject {
               let profile = try? JSONDecoder().decode(PersonalizationProfile.self, from: data) else { return }
         userProfile.personalization = profile
         saveUserProfile()
+    }
+
+    private func refreshSyntheticUser(now: Date = Date()) {
+        let history = DecisionPointStore.shared.syntheticInterventionHistory(personId: syntheticUserStore.personId)
+        let legacy = SyntheticUser.LegacySignals(
+            goals: userProfile.goals, problems: userProfile.problems,
+            likedIDs: defaults.stringArray(forKey: "anicca.liked.ids") ?? [],
+            recentIDs: defaults.stringArray(forKey: "anicca.feed.recent-quote-ids") ?? [])
+        syntheticUser = syntheticUserStore.refresh(profile: personalizationProfile, observedHistory: history, legacySignals: legacy, now: now)
+    }
+
+    func refreshSyntheticUserIfNeeded(now: Date = Date()) {
+        guard !Calendar.current.isDate(syntheticUser.updatedAt, inSameDayAs: now) else { return }
+        refreshSyntheticUser(now: now)
+    }
+
+    func recordSyntheticIntervention(messageId: String?, deliveryId: String, event: String, at: Date) {
+        syntheticUser.recordIntervention(messageId: messageId, deliveryId: deliveryId, event: event, at: at)
+        syntheticUserStore.save(syntheticUser)
+    }
+
+    private func clearSyntheticUser() {
+        syntheticUserStore.clear()
+        DailyAffirmationStore.shared.clear()
+        for key in ["anicca.liked.ids", "anicca.liked.quotes", "anicca.liked.themes", "anicca.feed.recent-quote-ids"] {
+            defaults.removeObject(forKey: key)
+        }
+        defaults.removeObject(forKey: personalizationProfileKey)
+        defaults.removeObject(forKey: onboardingQuestionsCompletedKey)
+        onboardingQuestionsCompleted = false
+        syntheticUser = syntheticUserStore.refresh(profile: PersonalizationProfile())
     }
     
     func profileSyncPayload(for profile: UserProfile) -> [String: Any] {
@@ -494,8 +540,7 @@ final class AppState: ObservableObject {
 
         // Phase 1 personalization: answer IDs and the user-chosen schedule.
         // The preferred name is on-device only and is never synced.
-        let personalization = profile.personalization ?? personalizationProfile
-        payload["personalization"] = personalization.deliveryPayload()
+        payload["personalization"] = syntheticUser.deliveryPayload(timezoneIdentifier: TimeZone.current.identifier)
         return payload
     }
     

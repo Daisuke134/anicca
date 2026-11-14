@@ -154,8 +154,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: ${EVIDENCE_DIR}/frames/03i-quiet-hours
 - tapOn:
     id: onboarding-quiet_hours-continue
-- assertVisible:
-    id: onboarding-first-affirmation
+- extendedWaitUntil:
+    visible:
+      id: onboarding-first-affirmation
+    timeout: 5000
+- waitForAnimationToEnd
 - takeScreenshot: ${EVIDENCE_DIR}/frames/04-preview-first-affirmation
 # The selector can explore; compare the actual text rather than a fixed quote.
 - copyTextFrom:
@@ -186,6 +189,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     visible:
       id: onboarding-first-intervention
     timeout: 15000
+- waitForAnimationToEnd
 - copyTextFrom:
     id: onboarding-first-intervention
 - evalScript: ${output.intervention = maestro.copiedText}

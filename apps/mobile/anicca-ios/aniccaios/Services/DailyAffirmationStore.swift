@@ -5,10 +5,16 @@ import Foundation
 final class DailyAffirmationStore {
     static let shared = DailyAffirmationStore()
 
+    struct Presentation: Equatable {
+        let quote: Quote
+        let deliveryId: String?
+    }
+
     private struct Entry: Codable {
         let quote: Quote
         let language: String
         let selectedAt: Date
+        let deliveryId: String?
     }
 
     private let defaults: UserDefaults
@@ -18,27 +24,31 @@ final class DailyAffirmationStore {
         self.defaults = defaults
     }
 
-    func seed(_ quote: Quote, language: String, now: Date = Date()) {
-        let entry = Entry(quote: quote, language: language, selectedAt: now)
+    func clear() {
+        defaults.removeObject(forKey: storageKey)
+    }
+
+    func seed(_ quote: Quote, language: String, deliveryId: String? = nil, now: Date = Date()) {
+        let entry = Entry(quote: quote, language: language, selectedAt: now, deliveryId: deliveryId)
         if let data = try? JSONEncoder().encode(entry) {
             defaults.set(data, forKey: storageKey)
         }
     }
 
-    func todayQuote(
+    func todayAffirmation(
         language: String,
         now: Date = Date(),
         calendar: Calendar = .current,
-        select: () -> Quote?
-    ) -> Quote? {
+        select: () -> Presentation?
+    ) -> Presentation? {
         if let data = defaults.data(forKey: storageKey),
            let entry = try? JSONDecoder().decode(Entry.self, from: data),
            entry.language == language,
            calendar.isDate(entry.selectedAt, inSameDayAs: now) {
-            return entry.quote
+            return Presentation(quote: entry.quote, deliveryId: entry.deliveryId)
         }
-        guard let quote = select() else { return nil }
-        seed(quote, language: language, now: now)
-        return quote
+        guard let presentation = select() else { return nil }
+        seed(presentation.quote, language: language, deliveryId: presentation.deliveryId, now: now)
+        return presentation
     }
 }

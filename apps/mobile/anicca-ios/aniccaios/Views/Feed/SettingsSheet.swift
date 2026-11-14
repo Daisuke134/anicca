@@ -286,9 +286,9 @@ struct NotificationsSettingsView: View {
     private let permissionLogger = Logger(subsystem: "com.anicca.ios", category: "NotificationSettings")
 
     private var slots: [String] {
-        let profile = appState.personalizationProfile
-        if profile.adaptiveAnswers != nil || !profile.nudgeSlots.isEmpty {
-            return PersonalizationRules.effectiveSlots(profile: profile).map { $0.label }
+        let user = appState.syntheticUser
+        if user.hasAdaptiveAnswers || !(user.receptivityWindows["reminder_slots"] ?? []).isEmpty {
+            return PersonalizationRules.effectiveSlots(user: user).map { $0.label }
         }
         return ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled)
     }

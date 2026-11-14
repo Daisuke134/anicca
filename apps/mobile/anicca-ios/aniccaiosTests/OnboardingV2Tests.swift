@@ -20,7 +20,7 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(OnboardingStep.name.rawValue, 9)
     }
 
-    func test_initialJourney_startsWithIntroductionAndSeparatesName() {
+    func test_initialJourney_asksDeviceOnlyNameSeparatelyAfterGoal() {
         XCTAssertEqual(OnboardingStep.initialJourney, [
             .welcome, .goal, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq,
             .beliefThemes, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours,
@@ -29,6 +29,9 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
         XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
         XCTAssertEqual(OnboardingStep.name.nextInitialStep, .birthContext)
+        XCTAssertEqual(OnboardingStep(rawValue: 9)?.resumableStep(painPointIds: []), .name)
+        XCTAssertEqual(AnalyticsScreenID.onboarding(.name).rawValue, "onboarding.name")
+        XCTAssertEqual(AnalyticsScreenID.onboarding(.birthContext).rawValue, "onboarding.birth_context")
         XCTAssertNil(OnboardingStep.notifications.nextInitialStep)
     }
 

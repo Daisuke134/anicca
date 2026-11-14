@@ -157,88 +157,153 @@ struct FirstAffirmationStepView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var likedStore = LikedQuotesStore()
     @State private var selection: PersonalizedNudgeSelector.Selection?
-    @State private var didRecordDecision = false
-
-    private var legacyQuote: Quote {
-        let quoteIDs = ["self_love": "q013", "calm": "q021", "confidence": "q041", "letting_go": "q071"]
-        let id = quoteIDs[appState.userProfile.goals.first ?? "self_love"] ?? "q013"
-        return QuoteProvider.shared.byId(id, preferredLanguage: appState.effectiveLanguage)
-            ?? QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)[0]
-    }
-
-    private var quote: Quote { selection?.quote ?? legacyQuote }
+    @State private var deliveryId: String?
+    @State private var revealComplete = false
 
     var body: some View {
         OnboardingPage {
             Text("Anicca").font(.system(.title, design: .serif))
             Spacer(minLength: 16)
-            affirmationIcon
-            Text(String(localized: "growth_first_affirmation"))
-                .font(.caption).tracking(2)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            if let name = appState.personalizationProfile.preferredName {
-                Text(String(format: NSLocalizedString("growth_first_for_name", comment: ""), name))
-                    .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+            if let quote = selection?.quote {
+                AffirmationRevealCard(
+                    quote: quote,
+                    answerSnapshot: appState.syntheticUser.answerSnapshot,
+                    preferredName: appState.personalizationProfile.preferredName,
+                    identifier: "onboarding-first-affirmation",
+                    isRevealed: $revealComplete
+                )
             }
-            Text(quote.text)
-                .font(AppTheme.Typography.onboardingTitle)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("onboarding-first-affirmation")
             Text(String(localized: "growth_first_subtitle"))
                 .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Button {
-                let liked = likedStore.toggle(quote)
+                guard let quote = selection?.quote else { return }
+                let liked = likedStore.toggle(quote, themeID: ThemeStore().selected.rawValue)
+                if liked, let deliveryId {
+                    DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .saved)
+                }
                 AnalyticsManager.shared.track(liked ? .affirmationLiked : .affirmationUnliked, properties: ["quote_id": quote.id, "category": quote.categoryID, "source": "onboarding"])
             } label: {
-                Label(String(localized: likedStore.isLiked(quote.id) ? "growth_saved" : "growth_keep_close"),
-                      systemImage: likedStore.isLiked(quote.id) ? "heart.fill" : "heart")
+                Label(String(localized: likedStore.isLiked(selection?.quote.id ?? "") ? "growth_saved" : "growth_keep_close"),
+                      systemImage: likedStore.isLiked(selection?.quote.id ?? "") ? "heart.fill" : "heart")
                     .font(.subheadline).padding(14)
                     .background(AppTheme.Colors.cardBackground.opacity(0.8))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
             }
             .buttonStyle(.plain)
+            .disabled(!revealComplete)
             .accessibilityIdentifier("onboarding-first-save")
             Spacer(minLength: 16)
         } footer: {
-            PrimaryButton(title: String(localized: "growth_set_reminders"), action: next)
+            PrimaryButton(title: String(localized: "growth_set_reminders"), isEnabled: revealComplete, action: next)
                 .accessibilityIdentifier("onboarding-first-continue")
         }
         .onAppear {
             computeSelectionIfNeeded()
-            AnalyticsManager.shared.track(.firstAffirmationViewed, properties: ["quote_id": quote.id, "category": quote.categoryID])
+        }
+        .onChange(of: revealComplete) { revealed in
+            if revealed, let quote = selection?.quote {
+                AnalyticsManager.shared.track(.firstAffirmationViewed, properties: ["quote_id": quote.id, "category": quote.categoryID])
+            }
         }
     }
 
     private func computeSelectionIfNeeded() {
         guard selection == nil else { return }
-        let profile = appState.personalizationProfile
-        guard profile.hasAnswers else { return }
+        let user = appState.syntheticUser
         let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
         selection = PersonalizedNudgeSelector.select(
-            profile: profile,
+            user: user,
             pool: QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage),
-            shownAt: DecisionPointStore.shared.shownTimestamps(),
+            shownAt: user.shownTimestamps,
             band: band
         )
-        if let selection, !didRecordDecision {
-            didRecordDecision = true
-            DecisionPointRecorder.shared.recordDecision(selection: selection, profile: profile, source: "onboarding_preview")
+        if let selection, deliveryId == nil {
+            deliveryId = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_preview")
         }
     }
 }
 
-private var affirmationIcon: some View {
-    Image(systemName: "sun.max")
-        .font(.system(size: 46, weight: .ultraLight))
-        .foregroundStyle(InitialExperienceStyle.accent)
+/// The answer dissolves into the selected words on the same theme card.
+private struct AffirmationRevealCard: View {
+    let quote: Quote
+    let answerSnapshot: OnboardingAnswerSnapshot
+    let preferredName: String?
+    let identifier: String
+    @Binding var isRevealed: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var themeStore = ThemeStore()
+    @State private var phase: Phase = .answer
+
+    private enum Phase { case answer, transforming, result }
+
+    private var answerLabel: String {
+        let goal = answerSnapshot.values["desired_state"]?.first ?? "unknown"
+        guard ["calm", "confidence", "focus", "self_love"].contains(goal) else {
+            return String(localized: "growth_first_affirmation")
+        }
+        return NSLocalizedString("growth_goal_\(goal)", comment: "")
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(String(localized: "growth_first_affirmation"))
+                .font(.caption).tracking(2)
+            if let preferredName {
+                Text(String(format: NSLocalizedString("growth_first_for_name", comment: ""), preferredName))
+                    .font(.subheadline)
+            }
+            ZStack {
+                Text(answerLabel)
+                    .font(AppTheme.Typography.onboardingTitle)
+                    .opacity(phase == .answer ? 1 : 0)
+                    .accessibilityHidden(phase != .answer)
+                Text(quote.text)
+                    .font(AppTheme.Typography.onboardingTitle)
+                    .opacity(phase == .result ? 1 : 0)
+                    .accessibilityHidden(phase != .result)
+                    .accessibilityIdentifier(identifier)
+            }
+            .frame(minHeight: 180)
+        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
         .padding(24)
-        .background(Circle().fill(AppTheme.Colors.habitAccent.opacity(0.2)))
-        .accessibilityHidden(true)
+        .foregroundStyle(themeStore.selected.foregroundColor)
+        .background {
+            GeometryReader { geometry in
+                themeStore.image.resizable().scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .opacity(phase == .answer ? 0.35 : 1)
+            }
+            .accessibilityHidden(true)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.cardLarge))
+        .task(id: quote.id) { await reveal() }
+        .onChange(of: reduceMotion) { reduced in
+            if reduced { phase = .result; isRevealed = true }
+        }
+    }
+
+    @MainActor
+    private func reveal() async {
+        if reduceMotion { phase = .result; isRevealed = true; return }
+        phase = .answer
+        isRevealed = false
+        do {
+            try await Task.sleep(nanoseconds: 180_000_000)
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.22)) { phase = .transforming }
+            try await Task.sleep(nanoseconds: 220_000_000)
+            guard !reduceMotion else { return }
+            withAnimation(.easeOut(duration: 0.24)) { phase = .result }
+            isRevealed = true
+        } catch {
+            // Leaving this screen cancels its task; no delayed state reaches the next screen.
+        }
+    }
 }
 
 struct ReminderScheduleStepView: View {
@@ -250,9 +315,9 @@ struct ReminderScheduleStepView: View {
 
     private var sortedSlots: [NudgeSlot] { selectedSlots.sorted() }
     private var isValid: Bool {
-        if PersonalizationRules.availableSlots(profile: appState.personalizationProfile).isEmpty { return true }
+        if PersonalizationRules.availableSlots(user: appState.syntheticUser).isEmpty { return true }
         return PersonalizationRules.isValidSchedule(slots: sortedSlots, frequency: frequency)
-            && !sortedSlots.contains { PersonalizationRules.isQuiet($0, quietHours: appState.personalizationProfile.answers.ids(for: .quietHours)) }
+            && !sortedSlots.contains { PersonalizationRules.isQuiet($0, quietHours: appState.syntheticUser.quietHours) }
     }
 
     var body: some View {
@@ -282,13 +347,13 @@ struct ReminderScheduleStepView: View {
                         .selectionCard(isSelected: selectedSlots.contains(slot))
                     }
                     .buttonStyle(.plain)
-                    .disabled(PersonalizationRules.isQuiet(slot, quietHours: appState.personalizationProfile.answers.ids(for: .quietHours)))
+                    .disabled(PersonalizationRules.isQuiet(slot, quietHours: appState.syntheticUser.quietHours))
                     .accessibilityIdentifier("onboarding-slot-\(slot.hour)")
                     .accessibilityAddTraits(selectedSlots.contains(slot) ? .isSelected : [])
                 }
             }
-            if !appState.personalizationProfile.answers.ids(for: .quietHours).filter({ $0 != "none" }).isEmpty {
-                Text(String(localized: PersonalizationRules.availableSlots(profile: appState.personalizationProfile).isEmpty
+            if !appState.syntheticUser.quietHours.filter({ $0 != "none" }).isEmpty {
+                Text(String(localized: PersonalizationRules.availableSlots(user: appState.syntheticUser).isEmpty
                             ? "adaptive_no_available_times" : "adaptive_quiet_conflict"))
                     .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)
@@ -340,10 +405,10 @@ struct ReminderScheduleStepView: View {
     private func initializeIfNeeded() {
         guard !didInitialize else { return }
         didInitialize = true
-        let profile = appState.personalizationProfile
+        let profile = appState.syntheticUser.conditioningProfile
         frequency = profile.nudgeSlots.isEmpty
             ? PersonalizationRules.proposedFrequency(struggleFrequency: profile.struggleFrequency) : profile.dailyFrequency
-        let proposed = PersonalizationRules.initialSlots(profile: profile, frequency: frequency)
+        let proposed = PersonalizationRules.initialSlots(user: appState.syntheticUser, frequency: frequency)
         selectedSlots = Set(proposed.filter { !PersonalizationRules.isQuiet($0, quietHours: profile.answers.ids(for: .quietHours)) })
         if profile.nudgeSlots.isEmpty { frequency = max(1, min(frequency, selectedSlots.count)) }
     }
@@ -360,30 +425,25 @@ struct FirstInterventionStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
     @State private var selection: PersonalizedNudgeSelector.Selection?
-    @State private var didRecordDecision = false
+    @State private var deliveryId: String?
+    @State private var revealComplete = false
 
     private var nextSlotLabel: String? {
-        PersonalizationRules.effectiveSlots(profile: appState.personalizationProfile).first?.label
+        PersonalizationRules.effectiveSlots(user: appState.syntheticUser).first?.label
     }
 
     var body: some View {
         OnboardingPage {
             Text("Anicca").font(.system(.title, design: .serif))
             Spacer(minLength: 16)
-            affirmationIcon
-            Text(String(localized: "growth_first_affirmation"))
-                .font(.caption).tracking(2).foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            if let name = appState.personalizationProfile.preferredName {
-                Text(String(format: NSLocalizedString("growth_first_for_name", comment: ""), name))
-                    .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            }
             if let quote = selection?.quote {
-                Text(quote.text)
-                    .font(AppTheme.Typography.onboardingTitle)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("onboarding-first-intervention")
+                AffirmationRevealCard(
+                    quote: quote,
+                    answerSnapshot: appState.syntheticUser.answerSnapshot,
+                    preferredName: appState.personalizationProfile.preferredName,
+                    identifier: "onboarding-first-intervention",
+                    isRevealed: $revealComplete
+                )
             }
             if let nextSlotLabel {
                 Text(String(format: NSLocalizedString("growth_first_next_time", comment: ""), nextSlotLabel))
@@ -392,35 +452,39 @@ struct FirstInterventionStepView: View {
             }
             Spacer(minLength: 16)
         } footer: {
-            PrimaryButton(title: String(localized: "growth_open_today")) {
+            PrimaryButton(title: String(localized: "growth_open_today"), isEnabled: revealComplete) {
                 if let quote = selection?.quote {
-                    DailyAffirmationStore.shared.seed(quote, language: appState.effectiveLanguage.rawValue)
+                    DailyAffirmationStore.shared.seed(quote, language: appState.effectiveLanguage.rawValue, deliveryId: deliveryId)
+                }
+                if let deliveryId {
+                    DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .responded)
                 }
                 next()
             }
             .accessibilityIdentifier("onboarding-intervention-continue")
         }
         .onAppear { computeSelectionIfNeeded() }
+        .onChange(of: revealComplete) { revealed in
+            if revealed, let quote = selection?.quote {
+                AnalyticsManager.shared.track(.firstAffirmationViewed, properties: [
+                    "quote_id": quote.id, "category": quote.categoryID, "source": "first_intervention"
+                ])
+            }
+        }
     }
 
     private func computeSelectionIfNeeded() {
         guard selection == nil else { return }
-        let profile = appState.personalizationProfile
+        let user = appState.syntheticUser
         let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
         selection = PersonalizedNudgeSelector.select(
-            profile: profile,
+            user: user,
             pool: QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage),
-            shownAt: DecisionPointStore.shared.shownTimestamps(),
+            shownAt: user.shownTimestamps,
             band: band
         )
-        if let selection, !didRecordDecision {
-            didRecordDecision = true
-            DecisionPointRecorder.shared.recordDecision(selection: selection, profile: profile, source: "onboarding_first_intervention")
-            AnalyticsManager.shared.track(.firstAffirmationViewed, properties: [
-                "quote_id": selection.quote.id,
-                "category": selection.quote.categoryID,
-                "source": "first_intervention"
-            ])
+        if let selection, deliveryId == nil {
+            deliveryId = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_first_intervention")
         }
     }
 }

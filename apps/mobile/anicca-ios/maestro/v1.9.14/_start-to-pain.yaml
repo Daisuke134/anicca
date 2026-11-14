@@ -20,6 +20,8 @@ name: Fresh onboarding through the pain-point question
     id: onboarding-goal-self_love
 - tapOn:
     id: onboarding-goal-continue
+- assertVisible:
+    id: onboarding-name-field
 - tapOn:
     id: onboarding-name-continue
 - assertVisible:

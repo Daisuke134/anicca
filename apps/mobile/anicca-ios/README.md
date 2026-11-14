@@ -26,13 +26,20 @@ saveable personalized preview → reminder schedule → optional notification
 permission → soft paywall → first intervention → today's affirmation.
 Modules follow stress, anxiety, self-doubt, procrastination, sleep priority,
 independent of selection order. Sleep asks reason, bedtime and wake time separately.
-The journey has 20–24 screens through the first intervention, depending on answers;
+The journey has 20–24 screens through the first intervention, including the name
+step and at least one selected pain point, depending on answers;
 actual completion time must be measured on the simulator/device.
 
 Answers persist in `UserProfile.personalization`, migrating the old separate
-profile on first load. Decision records snapshot stable answer IDs with version 2.
-Name and birth date stay on device; only the age-band ID leaves the device for
-birth-date answers. Quiet hours suppress conflicting delivery slots, including an
+profile on first load. A local `SyntheticUser` record built from enumerated answer
+IDs conditions selection and notification schedules, with intervention history
+preserved across answer changes. The separate name question supplies the on-device
+form of address in the first intervention; saved step 9 resumes at that question.
+Raw names and birth dates never enter the synthetic record or eval cases. Decision records use
+`managerbench-cases.jsonl`: situation → stimulus → measured response, with explicit
+nulls for unobserved outcomes and the actual assignment probability. Notifications
+without sender assignment metadata remain pending observations, not complete eval
+cases. Quiet hours suppress conflicting delivery slots, including an
 empty schedule when all preset times are blocked. The remote APNs sender must
 honor the synchronized schedule; server receipt/delivery is a separate readback.
 The home keeps one affirmation for the local day and language, starting with the

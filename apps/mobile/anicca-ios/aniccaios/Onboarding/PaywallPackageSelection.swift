@@ -113,9 +113,9 @@ enum PaywallTrialPresentation: Equatable {
     static func resolve(hasFreeTrial: Bool, isEligible: Bool?) -> Self {
         guard hasFreeTrial else { return .none }
         switch isEligible {
-        case true: return .eligible
-        case false: return .none
-        case nil: return .conditional
+        case .some(true): return .eligible
+        case .some(false): return .none
+        case .none: return .conditional
         }
     }
 }

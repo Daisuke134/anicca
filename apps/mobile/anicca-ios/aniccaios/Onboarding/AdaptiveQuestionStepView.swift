@@ -118,8 +118,9 @@ struct AdaptiveQuestionStepView: View {
         var profile = appState.personalizationProfile
         var answers = profile.answers
         if question == .birthContext {
-            answers.birthDate = !skipped && useBirthDate ? birthDate : nil
-            answers.values[question.rawValue] = skipped ? ["unknown"] : useBirthDate ? ["date_provided"] : options.filter { selected.contains($0) }
+            answers.setBirthContext(
+                birthDate: !skipped && useBirthDate ? birthDate : nil,
+                zodiacIDs: skipped ? [] : options.filter { selected.contains($0) })
         } else {
             answers.set(question, ids: options.filter { selected.contains($0) })
             if question == .priorAttempts { answers.values.removeValue(forKey: OnboardingQuestion.priorHelpfulness.rawValue) }

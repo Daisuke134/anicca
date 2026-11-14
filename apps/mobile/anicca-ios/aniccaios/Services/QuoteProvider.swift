@@ -57,13 +57,13 @@ final class QuoteProvider {
         "rumination": ["presence", "letting_go"],
         "anger": ["calm", "letting_go"]
     ]
+    static let goalCategories = ["reduce_anxiety": "calm", "feel_peace": "calm", "sleep_better": "rest", "build_discipline": "growth", "focus_more": "presence", "break_habit": "letting_go"]
 
     static func recommendations(from pool: [Quote], goals: [String], problems: [String] = [], likedIDs: Set<String>, recentIDs: [String]) -> [Quote] {
         let recent = Set(recentIDs.suffix(20))
         let unseen = pool.filter { !recent.contains($0.id) }
         let candidates = unseen.isEmpty ? pool : unseen
-        let legacyGoals = ["reduce_anxiety": "calm", "feel_peace": "calm", "sleep_better": "rest", "build_discipline": "growth", "focus_more": "presence", "break_habit": "letting_go"]
-        var preferredCategories = Set(goals.map { legacyGoals[$0] ?? $0 })
+        var preferredCategories = Set(goals.map { goalCategories[$0] ?? $0 })
         preferredCategories.formUnion(problems.flatMap { problemCategories[$0] ?? [] })
         // Stable quote IDs encode category even after that quote leaves the candidate pool.
         preferredCategories.formUnion(likedIDs.map { Quote(id: $0, text: "").categoryID })

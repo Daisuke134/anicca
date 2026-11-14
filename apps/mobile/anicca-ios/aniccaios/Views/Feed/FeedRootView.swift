@@ -10,6 +10,7 @@ struct FeedRootView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var quote: Quote?
+    @State private var deliveryId: String?
     @State private var showSettings = false
     @State private var showSaved = false
     @State private var showReminders = false
@@ -44,7 +45,7 @@ struct FeedRootView: View {
                 GeometryReader { contentGeometry in
                     ScrollView {
                         if let quote {
-                            QuoteCardView(quote: quote, pageWidth: geo.size.width)
+                            QuoteCardView(quote: quote, pageWidth: geo.size.width, deliveryId: deliveryId)
                                 .frame(minHeight: contentGeometry.size.height)
                         }
                     }
@@ -120,25 +121,21 @@ struct FeedRootView: View {
 
     private func refreshToday() {
         let now = Date()
+        appState.refreshSyntheticUserIfNeeded(now: now)
         let language = appState.effectiveLanguage
-        quote = DailyAffirmationStore.shared.todayQuote(language: language.rawValue, now: now) {
-            let profile = appState.personalizationProfile
+        let presentation = DailyAffirmationStore.shared.todayAffirmation(language: language.rawValue, now: now) {
+            let user = appState.syntheticUser
             let catalog = QuoteProvider.shared.all(preferredLanguage: language)
-            if !profile.hasAnswers {
-                return QuoteProvider.recommendations(
-                    from: catalog, goals: appState.userProfile.goals, problems: appState.userProfile.problems,
-                    likedIDs: likedStore.likedIds,
-                    recentIDs: UserDefaults.standard.stringArray(forKey: "anicca.feed.recent-quote-ids") ?? []
-                ).first
-            }
             let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: now))
             guard let selection = PersonalizedNudgeSelector.select(
-                profile: profile, pool: catalog,
-                shownAt: DecisionPointStore.shared.shownTimestamps(), now: now, band: band
-            ) else { return catalog.first }
-            DecisionPointRecorder.shared.recordDecision(selection: selection, profile: profile, source: "daily_home")
-            return selection.quote
+                user: user, pool: catalog,
+                shownAt: user.shownTimestamps, now: now, band: band
+            ) else { return catalog.first.map { .init(quote: $0, deliveryId: nil) } }
+            let origin = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "daily_home")
+            return .init(quote: selection.quote, deliveryId: origin)
         }
+        quote = presentation?.quote
+        deliveryId = presentation?.deliveryId
         applyPendingQuoteNavigation()
         recordViewedQuoteIfNeeded()
     }
@@ -146,9 +143,11 @@ struct FeedRootView: View {
     private func applyPendingQuoteNavigation() {
         var catalog = QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)
         if let quote, !catalog.contains(where: { $0.id == quote.id }) { catalog.append(quote) }
+        let notificationDeliveryId = quoteNavigation.pendingRequest?.deliveryId
         guard let destination = quoteNavigation.resolveQuote(in: catalog) else { return }
         quote = destination
-        DailyAffirmationStore.shared.seed(destination, language: appState.effectiveLanguage.rawValue)
+        deliveryId = notificationDeliveryId
+        DailyAffirmationStore.shared.seed(destination, language: appState.effectiveLanguage.rawValue, deliveryId: notificationDeliveryId)
         AnalyticsManager.shared.track(.notificationDestinationResolved, properties: ["quote_id": destination.id, "result": "displayed"])
         recordViewedQuoteIfNeeded()
     }

@@ -101,6 +101,12 @@ struct AdaptiveAnswers: Codable, Equatable {
         if values[question.rawValue]?.isEmpty == true { values[question.rawValue] = ["unknown"] }
     }
 
+    mutating func setBirthContext(birthDate: Date?, zodiacIDs: [String]) {
+        self.birthDate = birthDate
+        // date_provided belongs to the exported snapshot, not the selectable signs.
+        set(.birthContext, ids: birthDate == nil ? zodiacIDs : [])
+    }
+
     func ageBand(now: Date, calendar: Calendar = .current) -> String {
         guard let birthDate, birthDate <= now,
               let age = calendar.dateComponents([.year], from: birthDate, to: now).year,
@@ -145,6 +151,11 @@ struct OnboardingAnswerSnapshot: Codable, Equatable {
 extension PersonalizationProfile {
     var answers: AdaptiveAnswers { adaptiveAnswers ?? AdaptiveAnswers() }
 
+    mutating func recordNotificationPermission(_ result: String) {
+        // A legacy resume at permission must not create adaptive answers.
+        adaptiveAnswers?.values["notification_permission"] = [result]
+    }
+
     func answerSnapshot(now: Date = Date()) -> OnboardingAnswerSnapshot {
         var result: [String: [String]] = [:]
         let activeSteps = OnboardingStep.journey(painPointIds: painPointIds, priorAttempts: answers.ids(for: .priorAttempts))
@@ -174,24 +185,6 @@ extension PersonalizationProfile {
         }
         result["daily_frequency"] = [(1...3).contains(dailyFrequency) ? ["one", "two", "three"][dailyFrequency - 1] : "unknown"]
         return OnboardingAnswerSnapshot(version: 2, values: result)
-    }
-
-    /// Delivery configuration is separate from analytics: only the server gets
-    /// wall-clock times/timezone. It still receives no name or birth date.
-    func deliveryPayload() -> [String: Any] {
-        let slots = PersonalizationRules.effectiveSlots(profile: self)
-        let snapshot = answerSnapshot()
-        return [
-            "desiredState": desiredState ?? "",
-            "painPointIds": painPointIds,
-            "struggleFrequency": struggleFrequency ?? "",
-            "nudgeSlots": slots.map { $0.label },
-            "dailyFrequency": slots.count,
-            "answerIds": snapshot.values,
-            "answerVersion": snapshot.version,
-            "timezone": timezoneIdentifier,
-            "schemaVersion": schemaVersion
-        ]
     }
 
     private static func enumerated(_ value: String?, allowed: [String]) -> String {

@@ -7,6 +7,7 @@ import UIKit
 struct QuoteCardView: View {
     let quote: Quote
     let pageWidth: CGFloat
+    var deliveryId: String? = nil
 
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
@@ -52,6 +53,7 @@ struct QuoteCardView: View {
                 ),
                 "aniccaai.com"
             ], onComplete: {
+                DecisionPointRecorder.shared.recordQuoteResponse(messageId: quote.id, deliveryId: deliveryId, event: .shared)
                 AnalyticsManager.shared.track(.affirmationShared, properties: ["quote_id": quote.id, "category": quote.categoryID])
             })
         }
@@ -71,6 +73,7 @@ struct QuoteCardView: View {
                 AnalyticsManager.shared.track(didFavorite ? .affirmationLiked : .affirmationUnliked, properties: ["quote_id": quote.id, "category": quote.categoryID, "source": "feed"])
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
+                    DecisionPointRecorder.shared.recordQuoteResponse(messageId: quote.id, deliveryId: deliveryId, event: .saved)
                     ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
                         requestReview()
                     }

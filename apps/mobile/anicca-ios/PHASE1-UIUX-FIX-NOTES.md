@@ -304,3 +304,228 @@ Maestroは補助flow（stress/self_doubt、procrastination）→main flow（anxi
 | commit/push/merge/ASC/worktree cleanup | 全て未実施。HEAD `1f26b0f42` のまま、指定branch/worktreeに差分を保持 |
 
 `verification-before-completion`、`finishing-a-development-branch`、同期不具合について `systematic-debugging` も実読。利用可能な検査の成功と、未実施のSwift型検査/実画面/外部readbackを分けて引き継ぐ。既存Xcode projectのアプリ側は `PBXFileSystemSynchronizedRootGroup` のため、新Swift/ローカライズファイルは自動所属。新XCTestは既に登録されたテストファイル内へ追加している。
+
+## 第3ラウンド — Issue #9353（2026-11-14）
+
+### 確定仕様・作業境界・実装計画
+
+仕様は本会話の18:45/18:49–18:51 JST確定指示。開始HEAD `10c4cc93c`、root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git directory `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git`、開始時クリーン。指定worktreeで第1・2ラウンドに続け、commit/push/merge/ASC提出は行わない。
+
+`bash scripts/verify-source-boundary.sh` は旧Life Manager固定パスでexit 2。今回の明示指定と実origin/branchの一致を優先し、境界スクリプトを変更しない。Astra Advisorは公開ツールにない。インストール済みSuperpowers 7.0.1の `using-superpowers`（Codex reference含む）、`systematic-debugging`、`brainstorming`、`writing-plans`、`test-driven-development`、`subagent-driven-development` を読み、確定済み仕様を既存Swift/SwiftUI/UserDefaults/JSONLで実装する。新依存は追加しない。手順内の追加承認・commit規則より本委任の実装・未コミット引渡し指定を優先する。
+
+- [x] A: 第1・2ラウンドの全差分と失敗frontendバッチを調査し、確定原因と未確定事項を分ける。実際にエラーとなる変更だけを直す。build全文保存・エラー表示・要約・失敗artifactを追加し、元の終了コードを維持する。
+- [x] B-1/B-2: `InitialAffirmationExperience.swift` の04/08だけに回答→見える変換→テーマ画像と一体の結果カードを実装。既存画像・言葉・質問UIを再利用。Reduce Motion、画面離脱、長文を確認し、1画面1問を維持する。
+- [x] B-3: `SyntheticUser.swift` とAppStateを中心に列挙IDだけの構造化モデルを保存する。selector/catalog/schedule/syncの入力を揃え、旧profile移行、更新時の履歴保持、signoutをテストする。
+- [x] C（端末内実装。送信側未接続は下記に明記）: `DecisionPointRecorder.swift` と通知/ホーム操作を状況・刺激・反応の行へ接続。確率・時刻・null/false・重複結合・プライバシーのテストを追加。未知backend割当を推測しない。
+- [x] 統合: 別エージェントのread-onlyレビュー、Python検査、HEAD比のローカライズ照合、diff検査を実行し、この節へ対応表と証拠を追記する。Xcode/実画面未確認を成功扱いしない。
+
+独立担当の所有境界: A=workflow/ビルド原因/pbxproj、B=合成ユーザー/AppState/selector/sync、C=評価記録/通知delegate/ホーム操作。統合担当=04/08/Feedの呼出/本記録/BOARD。共有APIを先に合意し、重なるファイルの編集は直列化する。重点レビューは保存後の再開、モデル履歴保持、通知の誤結合、未観測の偽陰性、名前/DOB/自由文の混入。
+
+**D-01〜D-16は引き続き全件未完了。** 再撮影フレームの目視以外では閉鎖しない。
+
+### A: ビルド原因・修正・監査
+
+`PaywallPackageSelection.swift` の第1ラウンド追加 `PaywallTrialPresentation.resolve` が、`Bool?` に `case true / false / nil` を使っていた。取得できた失敗ログはXcode 16.4（16F6）で、完全なfrontendバッチにはこのファイルも含まれる。Optionalへの暗黙昇格を伴うリテラルパターンを、この世代のSwiftコンパイラは網羅性の根拠にできず、`switch must be exhaustive` になる。
+
+根拠は同一最小例を記録した [Swift issue #61817](https://github.com/swiftlang/swift/issues/61817) と、実読した [Swift 6.1.2 TypeCheckPattern.cpp](https://github.com/swiftlang/swift/blob/swift-6.1.2-RELEASE/lib/Sema/TypeCheckPattern.cpp) の `trySimplifyExprPattern`（BoolのみをBoolPatternへ変換）。[修正PR #79759](https://github.com/swiftlang/swift/pull/79759) はmainへ統合されているが、その6.1.2ソースには未収録。[同版のコンパイラテスト](https://github.com/swiftlang/swift/blob/swift-6.1.2-RELEASE/test/stmt/switch_stmt2.swift) と同じ明示的な `.some(true)` / `.some(false)` / `.none` に直した。戻り値の真理値表は変えていない。
+
+**確定できるのは、このソース形が該当世代でコンパイル不備になること。失われたrunの診断本文を回収したとは言わず、唯一の原因・iOSビルド成功とも断定しない。** このLinuxにはSwift/Xcodeがなく、ローカルのコンパイラRED/GREENは未実測。
+
+調査した範囲と結果:
+
+- 第1・2ラウンドの54 Swift変更と指定frontendバッチを、型・未解決参照・重複型・actor境界・循環の観点で監査。追加の確定コンパイル不備は見つからなかった。
+- `DailyAffirmationStore` はObservableObject/@Publishedを使わずFoundationだけでよい。QuoteはCodable。Combine不足の仮説は棄却。Feed/介入のseedと読み出しの型は一致。
+- `DailyAffirmationStoreTests` / `PaywallDisclosureTests` のpbxproj登録は正しい。今回の `SyntheticUserTests` / `ManagerBenchCaseTests` も同じ形で追加し、4件それぞれFileRef/BuildFile/group/Sources各1件を確認。アプリ側新Swiftは既存FS同期groupに自動所属。
+- 第1ラウンド削除13 Viewの完全一致参照は0、同名トップレベル型の重複も0。Adaptiveのenum→step→flow→analyticsとPersonalizationProfileへの型接続を監査。
+- 合成ユーザーの人物切替に合わせ、Daily storeに `clear()` を追加。signout/reset後に前の人の今日の言葉を再利用しないテストを追加した。これはビルド原因とは別のモデル整合修正。
+
+workflowのbuildステップはstdout/stderr全文を `$RUNNER_TEMP/build-output.log` に保存し、エラー行と末尾40行を表示、元のxcodebuild終了コードを返す。失敗時に `ios-build-log-${{ github.sha }}` artifactをアップロードする。他ジョブ・実行条件・既存単体テストステップは変更しない。新Python検査は実workflowのshellを模擬compilerで動かし、先頭のstdout/stderrエラー保存・exit65保持と正常終了を確認（RED 2件→GREEN 2件）。模擬compilerの成功はiOSビルド成功ではない。
+
+### B-1/B-2: 魔法の瞬間の実装と根拠
+
+原本は `anicca-ops/files/ux-experience-winner-research-2026-11-14.md` のCal AI節・211行目（blob `65330a19164cf637946beb67a2d965ed3ce443e4`）。採用したのは「1つの入力→見える変換→結果の出現」という構造だけ。I amの具体的な時間・イージング・種類の実測資料は無く、動きの逐語コピーとはしない。
+
+04/08は共通 `AffirmationRevealCard` で、選んだgoalのラベルを表示→そのラベルが薄れテーマ画像が現れる→同じカード内に選ばれた言葉が現れる。既存のThemeStore/画像/セリフ体を再利用し、文字だけの着地を廃止。待機を装うprogressやネットワーク処理は追加しない。実装値は入力表示180ms、変換220ms、結果のfade240msで、合計約640ms。これは実装上の値であり勝者の実測値でもUX合格の証明でもない。CTAは結果表示開始時に利用可能になり余分な待ちを課さない。Reduce Motion時は待機・fade無し。画面離脱時はtask cancellationで後続state更新を止める。
+
+04の保存は表示中のテーマとdelivery_idへ結合。08の継続は同じquoteをDaily storeへseedして実測respondedを記録する。Maestroは04/08で結果の出現とanimation終了を待ってから撮影する。新しい派手な動きや複数質問の画面は追加していない。受け入れの物差しは「答え終えて数秒で分かってもらえた」と感じることだが、実画面・本人の反応はまだ未測定。
+
+### B-3: 合成ユーザーの軸 ↔ 質問
+
+`Models/SyntheticUser.swift` の構造化モデルをUserDefaultsの `com.anicca.syntheticUser` に保存。回答更新→モデル生成/保存→選択、質問完了/オンボ完了時にも生成保存する。既存UserProfileは回答の材料で、選択器/通知条件/通知同期payloadはSyntheticUserを正として読む。`conditioningProfile` は保存済み列挙IDだけから既存pure rulesへ渡す投影で、元UserProfileを直接読み直すものではない。
+
+| 合成ユーザーの軸 | 質問・取得元の安定ID | 具体的な利用 |
+|---|---|---|
+| `attributes.age_band`, `birth_context` | 生年月日または星座 `birth_context` | 年齢層、既存の誕生日季節の暦文脈。DOB実値は含めず、性格を推測しない |
+| `attributes.life_context` | `life_context` | 仕事/育児/学業/転機の候補条件 |
+| `initialState.mood_baseline` | `mood_baseline` | 初期状態。heavy/very_heavyはgentle限定 |
+| `beliefThemes` | `belief_themes` | 信念テーマの候補加点 |
+| `triggerContext.pain_points`, `struggle_frequency` | 苦しみの選択/頻度 | カテゴリ、強度、頻度提案 |
+| `triggerContext.stress_trigger` | `stress_trigger` | stressの深掘り |
+| `triggerContext.anxiety_target` | `anxiety_target` | anxietyの深掘り |
+| `triggerContext.self_criticism` | `self_criticism` | self_doubtの深掘り |
+| `triggerContext.avoidance_task` | `avoidance_task` | procrastinationの深掘り |
+| `triggerContext.sleep_reason` | `sleep_reason` | sleepの深掘り |
+| `receptivityWindows.routine_anchors` | `routine_anchors` | 起床/通勤/昼食/就寝から受容時間を提案 |
+| `receptivityWindows.bedtime`, `wake_time` | `bedtime` / `wake_time`（別画面） | sleepモジュールの生活時間帯 |
+| `receptivityWindows.reminder_slots`, `daily_frequency` | 既存の通知予定設定 | 本人の時間枠/頻度を列挙IDで保持 |
+| `quietHours` | `quiet_hours` | 該当予定を抑制。勝手に別時刻へ移動しない |
+| `motivation.desired_state`, `start_reason` | goal / `start_reason` | 第一カテゴリ、開始動機の候補タグ |
+| `preferences.tone` | `tone` | 文体の条件 |
+| `preferences.prior_attempts`, `prior_helpfulness` | `prior_attempts` / `prior_helpfulness`（別画面） | 試した経験と、合わなかった方法の除外 |
+| `preferences.notification_permission` | 通知許可画面の回答/取得結果 | 回答としてのallowed/denied/skipped/unknown。evalのOS実測状態とは別 |
+| `interventionHistory` | 追加質問なし。割当・通知・アプリ操作の実測 | delivery_id/message_id/列挙event/実測日時。選択・配信だけをcooldownへ使用 |
+
+追加質問は不要。**名前質問は合成ユーザーのどの条件づけ軸にも寄与しないため新規journeyから外した。** name_statusを架空の嗜好として残さずモデルから除去。保存済み名前の端末内表示は維持し、rawValue9は再開時birthContextへ移行する。旧01b-name撮影は廃止し、Maestroは名前入力が表示されないことを確認する。1画面1問を維持し、導線は名前質問を除いた19〜23画面（第一介入まで、回答による）。
+
+未回答はunknown、未提示はnot_asked。日跨ぎの年齢層/誕生日季節は材料から列挙IDを更新する。回答更新や再起動でも同じpersonの履歴を保持し、signout/resetでは仮名を回転して旧モデルと今日の言葉を除去する。選択器のpolicy_versionは `rule_v3_synthetic_user`。
+
+原本は `user-simulation-loop-spec-2026-11-14.md`（blob `a3ad3bb45214cfe65773c31e59531212e1706ed6`）と `humansand-competitor-research-2026-11-13.md`（blob `6ec8f4013cd5c960887c7129eee6a7a83341153f`）。回答と本人の反応履歴で条件づける記録を実装したもので、人物シミュレーションの忠実度や学習済みManagerの性能を証明したものではない。
+
+### C: アプリのフィールド ↔ eval共通形
+
+| アプリのJSONフィールド | ManagerBench 共通形・意味 |
+|---|---|
+| `person_id`, `delivery_id`, `decision_point_at`, `source` | 一人×一判断点の仮名ID、結合キー、判断時刻、製品内の露出元 |
+| `situation.answer_snapshot`, `answer_version` | 状況: synthetic userが持つ安定列挙ID辞書と語彙バージョン |
+| `situation.scheduled_time_band`, `weekday` | 状況: 予定の時間帯列挙ID、曜日列挙ID（端末即時表示はその時点） |
+| `situation.notification_permission`, `notification_permission_observed_at` | 状況: OSの実測status IDと観測時刻。未取得はunknown、観測時刻は省略。回答snapshotのallowed/denied/skippedとは別 |
+| `stimulus.message_id`, `category`, `tags` | 刺激: 選択されたcatalog ID、カテゴリ、編集済み候補のtone/intensity/belief/context/method/time-band列挙タグ |
+| `stimulus.scheduled_at`, `delivered_at` | 刺激: 予定時刻、OS実測配信時刻。未配信/未観測はnull。端末内即時表示の予定時刻は判断時刻 |
+| `stimulus.treatment_assigned`, `assigned_probability`, `policy_version` | 刺激: 選択された処置、選択器が返した正確な確率（必須・空欄禁止）、選択規則ID |
+| `response.notification_delivered`, `_at` | 反応: OS通知到達の実測と最初の時刻 |
+| `response.notification_opened`, `_at` | 反応: 通知開封の実測と最初の時刻 |
+| `response.app_opened`, `_at` | 反応: 判断点の観測窓内のアプリ復帰/通知起動と最初の時刻 |
+| `response.responded`, `_at` | 反応: 初回介入CTA応答と最初の時刻 |
+| `response.skipped`, `_at` | 反応: 通知dismissと最初の時刻 |
+| `response.saved`, `_at` | 反応: 保存実測と最初の時刻 |
+| `response.shared`, `_at` | 反応: OS share completion実測と最初の時刻 |
+| `outcome_window_sec`, `observation_window_closed_at` | 窓の長さ(既存30分)と締切。窓内responseと後続反応を混同しない |
+
+#### 未観測・無反応・窓外の区別
+
+- responseの全7 bool/時刻は初期nullをJSONに明記する（欠落keyにしない）。stimulusのscheduled_at/delivered_atもnull明記。
+- 30分の締切を超えたアプリ復帰でwindow close。実測callbackを持つapp_opened、露出済み端末内case/通知開封済みcaseのsaved/shared、初回介入caseのrespondedだけ未観測からfalseに確定。
+- 通知到達の背景callbackが存在しないため、未観測notification_deliveredをfalseにしない。notification_openedをfalseにできるのは実到達が観測された場合だけ。skippedは未観測のまま（OSによる通知消去を人のdismissと決めつけない）。
+- 窓外の実測は `outside-window-observations.jsonl` に時刻つきで保持する。窓内falseを後からtrueに書き換えない。synthetic user historyには窓外の本人反応も渡す（選択条件づけには有用）。
+- 旧v1/v2 recordのproximalOutcome=trueは時刻nullのまま保持。時刻を捏造しない。既存decision-points.jsonlは削除せず、person+deliveryで移行重複防止。確率不明の旧outcomeはpendingに保持。
+
+#### 通知senderの情報不足と未接続範囲
+
+現行APNsの既存payloadには `messageId` / `quoteId` があり、assigned_probability・判断時回答snapshot等の完全sender assignmentがない。このためnotificationの実測は `pending-decision-observations.jsonl` に保存し、完全なManagerBench学習行には昇格しない。`assigned_probability=1`などは補わない。
+
+`decision_point` payloadに同じ共通schemaの situation / stimulus / decision_point_at が添付される場合の取り込み口を追加。person/delivery/source/windowは端末側で固定し、実測responseをpayloadから信用しない。未知field/自由文の回答値を列挙語彙境界で拒否、messageは既知catalog ID、category/tagsはそのcatalogから再取得、確率はsender値をそのまま保存。対応policyはrule_v1と現行selector version。完全case到着時に同person+deliveryのpending実測をjoinする。
+
+**通知senderのpayload変更、サーバー側case同期、モデル学習job、実機でのreadbackは今回のローカル範囲では未実施。現在の通知がすべて完全eval行になったとは報告しない。** ローカルpreview/first intervention/daily homeは完全行になる実装済み。
+
+#### プライバシー
+
+合成userの列挙snapshotを正として読む。名前、DOB実値、通知本文、自由文は新caseとobservation journalへ入れない。person_idは端末生成UUID、delivery_idは既存配送ID。remote snapshotは軸・値のallowlistで検査。旧source journalは元の場所に保持する。
+
+
+原本 `anicca-ops/files/one-benchmark-plan-2026-11-13.md`（blob `17aeab41b7e8c65444c9ddc47502012f5e8903e1`）の「状況→AIが作ったもの→人の実測反応」に合わせた端末内の行。原本は具体的なJSONキー一覧を定義していないため、上表のsnake_caseをこのアプリの明示的な対応形式とする。ground truthはOS/app callbackによる実測だけで、合成反応を混ぜない。
+
+### 第3ラウンドの検証・レビュー・引き継ぎ
+
+使用した手順の実ファイルは `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` 下の `using-superpowers/SKILL.md`、`systematic-debugging/SKILL.md`、`brainstorming/SKILL.md`、`writing-plans/SKILL.md`、`test-driven-development/SKILL.md`、`subagent-driven-development/SKILL.md`、`verification-before-completion/SKILL.md`、`requesting-code-review/SKILL.md`。計画の記録場所は本節に統合し、別SSOTを作らない。
+
+| 実行・証拠 | 結果・限界 |
+|---|---|
+| Python全体 `python3 -m unittest discover -s apps/mobile/anicca-ios/scripts/tests -p 'test_*.py'` | 39件、37成功・Swift依存2skip。`/tmp/anicca-round3-final-tests.log`。開始時は36件・35成功1skipで、新規workflow検査2件成功、native課金helper検査1件skip |
+| analytics provider契約・hardcoded SwiftUI文字検査 | 両方PASS。`test_analytics_provider_contract.py`、`check_hardcoded_swiftui_text.py` |
+| ローカライズHEAD比 | Localizable / InfoPlist / AdaptiveAffirmations の全6言語のキー集合と不足/余分集合が開始HEADと完全一致。**新規欠落0** |
+| 全体ローカライズ照合 | 既存不備でexit1。de/fr/pt-BR各missing1327 extra3、es missing104 extra5、ja missing0 extra0を保持。全体PASSとはしない |
+| workflow差分の構造照合 | YAML読込後、maestro job・既存build job条件・単体テストstep・他step・triggerをHEADと比較し一致。変更はbuild診断と失敗artifactのみ |
+| Maestro / shell | v1.9.14の全3 YAML parse、`bash -n scripts/run-soft-paywall-maestro.sh` 成功。実際のjourney実行ではない |
+| `git diff --check` | 成功 |
+| Swiftテスト追加 | 最終の対象XCTestはSyntheticUser10件、ManagerBench9件、Daily store7件（既存を含む）。初期実装の追加に加え修正waveで回帰5ケースを追加。旅程/selector/payloadの既存期待値も移行。**Xcode不在につきXCTest未実行** |
+| iOSビルド・実画面 | **未実行**。Swift/swiftc/xcodebuild未検出。再撮影・Reduce Motion・長文/大型文字・実通知・共有結果のreadbackも未確認 |
+| 独立レビュー | `gpt-6.1-sol` / `high` を明示指定したfresh read-only reviewer。実装担当3件はnative harness継承、CLIモデルreadback無し。レビュー結果は下記追記 |
+| commit / push / PR / merge / ASC / cleanup | 全て未実施。開始HEADと同じ既存branch/worktreeに差分を残す |
+
+文書とコードの相違: Life Managerの旧origin/固定checkout/ハード課金/commit規則は今回のAnicca指定・soft paywall・未コミット引渡しと一致しないため、今回の明示指示を優先した。READMEの旧「名前質問あり・回答snapshot v2」を新旅程/合成ユーザー/共通行へ更新した。release説明に残るLife Manager remoteは今回のsource originと異なるがrelease構成は対象外で変更しない。通知senderが完全な割当情報を付けない現状と、評価用完全行の入力契約の差は上記の未接続範囲として明記した。
+
+#### 独立レビューの指摘と統合
+
+Solの初回レビューは **3 findings / 3 blocking、Nit 0**。全差分と現行C実装をread-onlyで評価し、下記を受理した。レポート `/tmp/anicca-round3-review-report.md`、修正前snapshot `/tmp/anicca-round3-before-fixes/`。
+
+| 指摘 | 問題・必要な修正 | 状態 |
+|---|---|---|
+| R3-1 | 第2ラウンドまでの本人の判断/反応履歴が、新SyntheticUserの初回生成で欠落。元のperson・delivery・実測日時を保って冪等に移行する | 解消（独立再レビュー ADDRESSED） |
+| R3-2 | Phase 1以前のgoals/problems/保存嗜好/直近履歴が新selectorに渡らない。既存の語彙と推薦mapを再利用して列挙材料として移行し、明示した新回答を優先する | 解消（独立再レビュー ADDRESSED） |
+| R3-3 | 同じquoteの「最新delivery」推定が、実際に表示したものとは別の通知へ保存/共有を誤結合。Daily storeへquoteと由来delivery_idを一組で保存/復元し、旧cacheの由来不明を推測しない | 解消（独立再レビュー ADDRESSED） |
+
+通知senderのassignment情報不足、Xcode未実行、画面目視未実施はコード指摘とは分けて継続制約とした。特に現在の全通知のModel/Eval/Product接続完了とは判定しない。
+
+
+修正waveは11ファイル。R3-1は既存case/pending/窓外実測から現在personの元IDと元日時を読み、AppStateからモデル生成へ渡す。時刻不明の旧positiveは元caseに保持し、合成履歴へ偽日時を作らない。R3-2は既存QuoteProviderのmapを抽出して再利用し、列挙カテゴリと既知message IDだけの `LegacySignals` を保存する。明示したPhase 1回答は優先し、旧recentには日時を補わない。追加snapshot軸は `legacy_goal_categories` / `legacy_problem_categories` / `legacy_liked_categories` / `legacy_recent_message_ids`。合成記録はschema 2、回答snapshotはversion 4。signout/reset時は前personのliked IDs/保存quote/theme/recentを製品コード内でクリアし、新personへの移行を防ぐ。実runtimeストアの削除はしていない。
+
+R3-3は `DailyAffirmationStore.Presentation(quote, deliveryId)` を保存/復元するAPIへ統一。初回介入・新規daily選択・通知routeの全経路から元IDを渡し、message一致によるlatest ID推定APIを削除。旧cacheはID不明のまま読み込み、反応を別通知へ付け替えない。修正5ケースを既存XCTestへ追加し、Python39件は37成功・2skip。詳細報告 `/tmp/anicca-round3-fix-report.md`、修正差分 `/tmp/anicca-round3-fixes.diff` を独立再レビューへ渡した。
+
+
+独立再レビューはR3-1/R3-2/R3-3 **全件ADDRESSED、修正差分の新規指摘0**。同じSol reviewerが修正11ファイルと全API callerを確認。再レビュー報告 `/tmp/anicca-round3-rereview-report.md`。修正後に統合担当がPython全39件を再実行し **37成功・2skip**（`/tmp/anicca-round3-final-tests.log`）、analytics/文字検査、全18ローカライズテーブルのHEAD一致、4 XCTestのpbx登録一意を再確認した。Swift/Xcodeの実コマンドはいずれもexit127。コードレビュー解消をビルド成功・UI合格・通知完全case接続完了とは混同しない。
+
+最終引渡し: HEAD `10c4cc93c`、branch/originは開始時のまま。commit/push/PR更新/merge/ASC提出なし。指定worktreeに全差分を保持。**D-01〜D-16は全件未完了**。委任元によるcommit/push後のXcodeビルド/単体テストと実画面再撮影、通知senderの完全assignment metadata接続・実測readbackが残る。
+
+## 第4ラウンド — 独立レビュー指摘の修正（2026-11-14）
+
+### 作業境界と根拠
+
+指定worktree `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git` を実読した。開始HEADは `10c4cc93c`。第1〜第3ラウンドの変更済み・未追跡34ファイルを `/tmp/anicca-round4-before/` に退避コピーして比較の基準にした。
+
+`bash scripts/verify-source-boundary.sh` は旧固定パスで exit 2。今回の先行承認どおり指定treeで続行し、境界スクリプトは変更しない。commit、push、merge、PR作成、ASC提出、監査原本の変更、有料支払いは行わない。新しいworktreeや別SSOTは作らない。
+
+一次資料 `/tmp/ops-check/files/onboarding-answer-change-mapping-2026-11-14.md` の名前行と規則4を再読した。名前は最初から端末内の呼びかけ専用だった。名前画面とMaestroは開始HEADの第1ラウンド由来実装を再利用する。保存、回答語彙、観測窓、CIログも既存実装に限定して修正する。loop-registryの配信loopとは別のiOS画面・モデル修正であり、loopやproductionの変更はない。
+
+手順の実読先は `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` 下の `using-superpowers/SKILL.md`、同 `references/codex-tools.md`、`receiving-code-review/SKILL.md`、`systematic-debugging/SKILL.md`、`test-driven-development/SKILL.md` と `writing-good-tests.md`、`dispatching-parallel-agents/SKILL.md`、`verification-before-completion/SKILL.md`、`requesting-code-review/SKILL.md`。文章には `/home/hatch/.codex/plugins/cache/pstack-claude/pstack/0.9.128/skills/` の `technical-writing/SKILL.md` と `unslop/SKILL.md` を使用した。Astra Advisorは公開ツールに存在しない。Ponytailの最小解確認として既存View・語彙・保存先・テストを再利用し、新依存は追加しない。
+
+修正は名前の導線、モデルの観測・読込境界、CI検査の3つに分けた。モデルとCIは所有ファイルが重ならないLuna worker各1名（実指定 `gpt-6-luna`, effort `high`）へ委任し、親が実差分を確認した。Swiftの回帰テストを先に記述したが、`swiftc` は exit 127のためネイティブのRED/GREENは実測できていない。
+
+### 指摘ごとの対応
+
+| 指摘 | 対応と判断 |
+|---|---|
+| B-1 未解決シンボル | 着手時の `SyntheticUser.swift:33` はすでに `QuoteProvider.goalCategories` だった。`QuoteProvider.swift` の実宣言と一致し、`dualCategories` のSwift参照は0件。このラウンドで自分が置換したとは記録しない。前回のPython native検査は `PaywallPackageSelection.swift` 単体しかコンパイル対象にせず、新モデルの参照不備を検出できなかった。検査拡張と限界は下記に記録する。 |
+| M-1 名前質問 | journeyを `welcome → goal → name → birthContext` に復帰。rawValue 9は不変で `.name → .birthContext` の再開変換を削除。削除されていた `PreferredNameStepView` を開始HEADからそのまま戻し、trim済みの名前を `UserProfile.personalization.preferredName` へ保存する経路を復帰。Maestro 01の非表示assertを表示assertと `01b-name` 撮影へ戻し、共有の `_start-to-pain.yaml` も名前画面を通る。journey、再開、進捗のSwiftテストとREADMEを更新。 |
+| m-1 許可回答と適応モード | `PersonalizationProfile.recordNotificationPermission` は既存の `adaptiveAnswers` がある場合だけ許可回答を書き込む。`NotificationPermissionStepView.savePermission` はこの処理を使用する。旧版からnotificationsで再開してnilのユーザーには適応回答を作らず、`hasAdaptiveAnswers=false` を維持。allowed/denied/skippedと既存回答保持のXCTestを追加。OS許可要求と実測analyticsの経路は維持。 |
+| m-2 app_openedの無反応判定 | `closeObservationWindow` で未観測の `app_opened` をfalseへ確定するsourceを `notification` に限定。daily_home、onboarding_preview、onboarding_first_interventionでは未復帰でもnullを保つ。窓内の実測trueと最初の時刻は保持。sourceごとのXCTestを追加。定義表は下記で訂正する。 |
+| m-3 失敗ログartifact | 修正。unit testも `$RUNNER_TEMP/test-output.log` に全文保存し、upload stepをunit testの後へ移動。`failure()` でbuildとtest両ログを同じartifactへ保存する。build失敗時にtestがskipされてもbuildログを回収する。元のxcodebuild終了コードを維持。模擬compilerによるshell検査を追加。GitHub Actionsの実実行は行わない。 |
+| m-4 DOBと選択語彙 | DOB保存は `AdaptiveAnswers.setBirthContext` を使用。DOB実値は `birthDate` だけへ置き、選択肢欄は既存 `set(.birthContext, ids: [])` によりunknownへ正規化する。`date_provided` は `answerSnapshot` がDOBの存在から生成する公開IDに限定し、星座の選択肢へ追加しない。旧保存値のdate_providedもids(for:)で星座と誤認しない。DOB保存・再読込、星座への切替、skipのXCTestを追加。 |
+| m-5 schemaゲート | 修正。`SyntheticUserStore.load()` はdecode可能なschema 1または現行2だけを受理する。旧1の省略可能なlegacySignalsには既存Codableの互換性を使う。未知の版や不正なschemaを現在のモデルとして使用しない。未知版の推測移行は追加しない。受理・拒否ケースのXCTestを追加。 |
+| m-6 同期payloadの世代混在 | 現状維持。`ProfileSyncService` が取り出したUserProfileで外側のpayloadを作り、personalizationは送信時の `AppState.syntheticUser` から作るため、待機中の回答更新で世代が異なり得る。新しい回答は既存 `ProfileSyncBuffer` に残り次送信へ進むが、各payload全体の世代一致は保証していない。raw name/DOBを送らない境界は維持。同期の入力一式・時点を揃える変更は今回の必須修正ではないため行わず、制約として残す。 |
+| m-7 Viewとscreen_id | `.name` は `PreferredNameStepView`、`.birthContext` は出生質問へ個別に接続。復帰後は両方が到達可能となり、既存 `AnalyticsScreenID` の `onboarding.name` と `onboarding.birth_context` に表示内容が一致する。screen IDとrawValue 9再開のXCTestも更新。 |
+
+### 第3ラウンド記述の訂正
+
+第3ラウンドの本文は履歴として書き換えず、次の記述を本節で訂正する。
+
+- A節「追加の確定コンパイル不備は見つからなかった」は、独立レビューでB-1が見つかったため、差分に追加の不備がなかった根拠にはならない。新モデルの未解決参照を見落としていた。
+- 再レビューの「修正差分の新規指摘0」は、そのレビュー時の報告だった。後続の独立レビューでB-1、M-1、m-1〜m-7が出ており、最終差分に指摘が残っていないという意味の記録としては誤りだった。
+- B-3節「条件づけ軸に寄与しないため名前質問を外した」は仕様逸脱だった。名前は合成ユーザーの軸ではなく、一次資料で定めた端末内の呼びかけに必要な質問として聞く。名前をSyntheticUserの軸へ加えない。raw nameを分析、同期payload、eval、SyntheticUser記録へ入れない既存境界は維持する。
+- `rawValue9 → birthContext`、01b撮影廃止、名前入力の非表示assertという説明は撤回する。rawValue9は名前画面へ再開し、01bを撮影する。
+- 「19〜23画面」は名前を除いた数だった。必須の困りごと選択が最低1件ある本番経路は、名前込みで**20〜24画面**（welcomeから最初の介入まで、paywall込み）。深掘りが1〜4画面、過去の経験に対する補足が0〜1画面で変わる。空のpain fixtureのinitialJourneyは17ステップで、本番の最短全画面数とは区別する。
+
+| 第3ラウンドC節の訂正対象 | 第4ラウンドの定義 |
+|---|---|
+| `response.app_opened`, `_at` | 判断点の窓内に観測したアプリ復帰または通知起動ならtrueと最初の時刻。初期表示中であること自体から実測イベントを捏造しない。 |
+| 窓を閉じた時の未観測app_opened | 通知sourceだけfalse。アプリ内sourceはアプリがすでに開かれていたため、復帰なしを無反応と解釈せずnullを保持。 |
+| その他のresponseと窓外実測 | 既存の到達・開封条件、saved/shared/responded、未観測skipped、窓外journalの扱いを維持。 |
+
+### 検証と引き継ぎ
+
+検証結果は下記へ追記する。Swift/Xcode不在のため、Python成功をiOSビルドやXCTest成功へ読み替えない。
+
+**D-01〜D-16は引き続き全件未完了。** 新しい再撮影フレームの目視確認は行っていない。指定branch/worktreeに未コミット差分を残し、統合操作と実環境でのビルド・再撮影は委任元へ引き継ぐ。
+
+### 統合側の追記（2026-11-14、委任元による実測）
+
+第4ラウンドの実行は、編集と本節の起票が着地した後、VM の /tmp 一時的な容量不足（`No space left on device`）で最終検査結果の保存だけが未了のまま終了した。統合側（委任元）が作業ツリーの実物を直接検証した結果は次のとおり:
+
+- B-1: `SyntheticUser.swift` の当該行は、行単位の SHA-256 照合で `QuoteProvider` の実在宣言（`QuoteProvider.swift` 60行目）を参照していることを確認した。未解決だった参照は現行ツリーに存在しない。
+- M-1: `.name`（rawValue 9）が journey に復帰し、`OnboardingFlowView` は `.name` を `PreferredNameStepView` へ個別に接続している。再開変換（`.name → .birthContext`）は現行ツリーに無い。
+- m-1: `recordNotificationPermission` は `AdaptiveOnboarding.swift` に定義され、`NotificationPermissionStepView` が使用している。
+- m-2: `ManagerBenchCase.closeObservationWindow` の近傍で source の区別（notification のみ false 確定）が入っていることを確認した。
+- Maestro: `maestro/v1.9.14/01-soft-paywall.yaml` に 01b（名前画面）の撮影が復帰している。
+- Python 検査: 統合側で `python3 -m unittest discover -s scripts/tests` を実行し、44件中 OK（skipped=2）。第3ラウンド時点の39件から増えたのは第4ラウンドの検査拡張分。
+- XCTest は VM に Xcode が無いため未実行のまま。判定は GitHub Actions（macOS）の同一 SHA の結果で行う。
+
+**D-01〜D-16は引き続き全件未完了。** 閉鎖は再撮影フレームの目視確認でのみ行う。

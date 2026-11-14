@@ -16,8 +16,9 @@ struct NotificationPermissionStepView: View {
 
     private var previewQuote: Quote {
         if let previewQuoteOverride { return previewQuoteOverride }
-        let quoteIDs = ["self_love": "q013", "calm": "q021", "confidence": "q041", "letting_go": "q071"]
-        let id = quoteIDs[appState.userProfile.goals.first ?? "self_love"] ?? "q013"
+        let quoteIDs = ["self_love": "q013", "calm": "q021", "confidence": "q041", "focus": "q001"]
+        let goal = appState.syntheticUser.answerSnapshot.values["desired_state"]?.first ?? "unknown"
+        let id = quoteIDs[goal] ?? "q013"
         return QuoteProvider.shared.byId(id, preferredLanguage: appState.effectiveLanguage)
             ?? QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)[0]
     }
@@ -25,9 +26,9 @@ struct NotificationPermissionStepView: View {
     /// The schedule line shows the slots the user actually chose in the
     /// previous step; the fixed free schedule is only a fallback.
     private var scheduleText: String {
-        let profile = appState.personalizationProfile
-        let chosen = PersonalizationRules.effectiveSlots(profile: profile).map { $0.label }
-        if chosen.isEmpty, profile.adaptiveAnswers != nil {
+        let user = appState.syntheticUser
+        let chosen = PersonalizationRules.effectiveSlots(user: user).map { $0.label }
+        if chosen.isEmpty, user.hasAdaptiveAnswers {
             return String(localized: "adaptive_no_available_times")
         }
         if !chosen.isEmpty {
@@ -101,14 +102,14 @@ struct NotificationPermissionStepView: View {
         }
         .onAppear {
             if previewQuoteOverride == nil,
-               let lastDecision = DecisionPointStore.shared.allRecords().last(where: { $0.recordKind == "decision" && $0.source == "onboarding_preview" }),
-               let messageId = lastDecision.messageId {
+               let lastDecision = DecisionPointStore.shared.allCases().last(where: { $0.personId == DecisionPointRecorder.shared.personId && $0.source == "onboarding_preview" }) {
+                let messageId = lastDecision.stimulus.messageId
                 previewQuoteOverride = QuoteProvider.shared.byId(messageId, preferredLanguage: appState.effectiveLanguage)
             }
             if !hasTrackedPriming {
                 hasTrackedPriming = true
                 AnalyticsManager.shared.track(.notificationPrimingViewed, properties: [
-                    "goal": appState.userProfile.goals.first ?? "unknown",
+                    "goal": appState.syntheticUser.answerSnapshot.values["desired_state"]?.first ?? "unknown",
                     "quote_id": previewQuote.id,
                     "flow_id": "onboarding"
                 ])
@@ -118,9 +119,7 @@ struct NotificationPermissionStepView: View {
 
     private func savePermission(_ result: String) {
         var profile = appState.personalizationProfile
-        var answers = profile.answers
-        answers.values["notification_permission"] = [result]
-        profile.adaptiveAnswers = answers
+        profile.recordNotificationPermission(result)
         appState.updatePersonalizationProfile(profile)
     }
 

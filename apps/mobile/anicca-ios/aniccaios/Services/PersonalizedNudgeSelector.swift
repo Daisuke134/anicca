@@ -17,7 +17,7 @@ import Foundation
 ///    returned and must be stored with the decision record — never
 ///    reconstructed afterwards.
 enum PersonalizedNudgeSelector {
-    static let policyVersion = "rule_v2_adaptive"
+    static let policyVersion = "rule_v3_synthetic_user"
     static let explorationProbability = 0.1
     static let cooldownDays = 14
 
@@ -46,7 +46,9 @@ enum PersonalizedNudgeSelector {
     }
 
     /// Categories the profile asks for, primary first.
-    static func preferredCategories(profile: PersonalizationProfile) -> [String] {
+    static func preferredCategories(user: SyntheticUser) -> [String] {
+        let profile = user.conditioningProfile
+        if !profile.hasAnswers, let legacy = user.legacySignals { return legacy.preferredCategories.sorted() }
         var ordered: [String] = []
         if let primary = PersonalizationRules.primaryCategory(desiredState: profile.desiredState) {
             ordered.append(primary)
@@ -59,7 +61,11 @@ enum PersonalizedNudgeSelector {
         return ordered
     }
 
-    static func score(quote: Quote, profile: PersonalizationProfile) -> Int {
+    static func score(quote: Quote, user: SyntheticUser) -> Int {
+        let profile = user.conditioningProfile
+        if !profile.hasAnswers, let legacy = user.legacySignals {
+            return legacy.preferredCategories.contains(quote.categoryID) ? 2 : 0
+        }
         var value = 0
         if let primary = PersonalizationRules.primaryCategory(desiredState: profile.desiredState),
            quote.categoryID == primary {
@@ -72,7 +78,7 @@ enum PersonalizedNudgeSelector {
         guard profile.adaptiveAnswers != nil else { return value }
         value *= 100 // desired state remains primary; other axes refine it.
         guard let traits = AdaptiveAffirmationCatalog.traits(for: quote) else { return value }
-        let snapshot = profile.answerSnapshot().values
+        let snapshot = user.answerSnapshot.values
         let themes = Set(profile.answers.ids(for: .beliefThemes))
         value += Set(traits.beliefThemes).intersection(themes).count * 5
         for (axis, options) in traits.answerMatches {
@@ -85,7 +91,8 @@ enum PersonalizedNudgeSelector {
 
     /// Eligibility runs before cooldown and exploration. Unknown editorial tags
     /// cannot establish that a message respects the new answers.
-    static func isEligible(quote: Quote, profile: PersonalizationProfile, band: TimeBand, now: Date) -> Bool {
+    static func isEligible(quote: Quote, user: SyntheticUser, band: TimeBand) -> Bool {
+        let profile = user.conditioningProfile
         guard let traits = AdaptiveAffirmationCatalog.traits(for: quote) else {
             return profile.adaptiveAnswers == nil
         }
@@ -95,13 +102,13 @@ enum PersonalizedNudgeSelector {
         if let tone = profile.answers.ids(for: .tone).first, traits.tone != tone { return false }
         let contexts = Set(profile.answers.ids(for: .lifeContext))
         if !Set(traits.contexts).isSubset(of: contexts) { return false }
-        let snapshot = profile.answerSnapshot(now: now).values
+        let snapshot = user.answerSnapshot.values
         for (axis, options) in traits.answerMatches {
             if Set(options).isDisjoint(with: snapshot[axis] ?? []) { return false }
         }
         if !Set(traits.methods).isDisjoint(with: snapshot["prior_helpfulness"] ?? []) { return false }
         if !traits.timeBands.isEmpty, !traits.timeBands.contains(band.rawValue) { return false }
-        if traits.milestone == "birthday_season", !profile.answers.isBirthdaySeason(now: now) { return false }
+        if traits.milestone == "birthday_season", user.preferences["birthday_season"] != ["active"] { return false }
         return true
     }
 
@@ -109,7 +116,7 @@ enum PersonalizedNudgeSelector {
     ///   - shownAt: message id → last time it was shown (decision history).
     ///   - random: uniform [0, 1) source, injected for testability.
     static func select(
-        profile: PersonalizationProfile,
+        user: SyntheticUser,
         pool: [Quote],
         shownAt: [String: Date] = [:],
         now: Date = Date(),
@@ -117,14 +124,19 @@ enum PersonalizedNudgeSelector {
         random: () -> Double = { Double.random(in: 0..<1) }
     ) -> Selection? {
         guard !pool.isEmpty else { return nil }
+        let profile = user.conditioningProfile
+        let shownAt = user.shownTimestamps.merging(shownAt, uniquingKeysWith: max)
 
         // Time-band fit: rest/sleep content is not sent in the morning
         // unless sleep is one of the user's own pain points.
-        var candidates = pool.filter { isEligible(quote: $0, profile: profile, band: band, now: now) }
+        var candidates = pool.filter { isEligible(quote: $0, user: user, band: band) }
         if band == .morning, !profile.painPointIds.contains("sleep") {
             let nonRest = candidates.filter { $0.categoryID != "rest" }
             if !nonRest.isEmpty { candidates = nonRest }
         }
+        let recent = Set(user.legacySignals?.recentMessageIDs ?? [])
+        let unseen = candidates.filter { !recent.contains($0.id) }
+        if !unseen.isEmpty { candidates = unseen }
 
         // 14-day message cooldown; if everything is in cooldown the pool
         // reopens rather than sending nothing.
@@ -138,8 +150,8 @@ enum PersonalizedNudgeSelector {
         // Deterministic ranking: score desc, unseen first, then id — so the
         // greedy pick is stable and the recorded reason is reproducible.
         let ranked = candidates.sorted { lhs, rhs in
-            let lScore = score(quote: lhs, profile: profile)
-            let rScore = score(quote: rhs, profile: profile)
+            let lScore = score(quote: lhs, user: user)
+            let rScore = score(quote: rhs, user: user)
             if lScore != rScore { return lScore > rScore }
             let lSeen = shownAt[lhs.id] != nil
             let rSeen = shownAt[rhs.id] != nil
@@ -159,10 +171,12 @@ enum PersonalizedNudgeSelector {
         }
         let probability = (chosen.id == top.id ? (1 - epsilon) : 0) + epsilon / Double(count)
 
-        let chosenScore = score(quote: chosen, profile: profile)
+        let chosenScore = score(quote: chosen, user: user)
         let reason: String
         if profile.adaptiveAnswers != nil {
             reason = "adaptive_answer_match"
+        } else if !profile.hasAnswers, user.legacySignals != nil, chosenScore > 0 {
+            reason = "legacy_preference_match"
         } else if chosenScore >= 3 {
             reason = "desired_state_and_pain_point_match"
         } else if chosenScore == 2 {
