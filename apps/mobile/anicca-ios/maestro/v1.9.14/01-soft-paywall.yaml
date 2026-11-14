@@ -24,6 +24,14 @@ name: First launch to free affirmations, optional Premium, and free continuation
     id: onboarding-struggles-next
 - tapOn:
     id: onboarding-depth-daily
+# Acquisition source question (anicca-ops #82): one tap answers and advances.
+- extendedWaitUntil:
+    visible:
+      id: onboarding-source-tiktok
+    timeout: 15000
+- takeScreenshot: onboarding-source-question
+- tapOn:
+    id: onboarding-source-tiktok
 - assertVisible:
     id: onboarding-first-affirmation
 - tapOn:
