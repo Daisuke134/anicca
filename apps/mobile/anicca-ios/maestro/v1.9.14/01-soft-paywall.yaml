@@ -16,9 +16,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
             id: onboarding-welcome-cta
           timeout: 60000
       - runFlow: _dismiss-apple-account.yaml
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 00-welcome
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: onboarding-welcome-cta
 - tapOn:
@@ -187,9 +187,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
             id: paywall-plan-cta
           timeout: 60000
       - runFlow: _dismiss-apple-account.yaml
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 07-paywall
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: paywall-close-button
 - runFlow: _dismiss-apple-account.yaml
@@ -254,9 +254,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
             id: paywall-plan-cta
           timeout: 60000
       - runFlow: _dismiss-apple-account.yaml
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 14-premium-from-themes
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - runFlow:
           when:
             visible:
@@ -265,9 +265,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
             - tapOn:
                 id: paywall-other-plans
             - runFlow: _dismiss-apple-account.yaml
-            - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
             - takeScreenshot: 14b-alternative-plans
-            - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
             - tapOn:
                 id: paywall-other-plans-close
       - tapOn:
@@ -294,7 +294,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     commands:
       - runFlow:
           when:
-            visible: "(?i)sign in to (your )?apple (account|id)"
+            visible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
           commands:
             - tapOn:
                 text: Cancel
@@ -313,9 +313,9 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
           id: quote-text
       - assertTrue: ${maestro.copiedText === output.intervention}
       - runFlow: _dismiss-apple-account.yaml
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 13-feed-after-relaunch
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
 - tapOn:
     id: feed-themes
 - assertVisible:

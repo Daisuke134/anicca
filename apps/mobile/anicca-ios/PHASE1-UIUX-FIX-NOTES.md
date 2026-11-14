@@ -765,3 +765,50 @@ Run flow when id: ${READY_ID} is visible and "(?i)sign in to (your )?apple (acco
 - PyYAML 6.0.1 `yaml.safe_load_all`: **v1.9.14の5ファイル構文PASS**（header/commandsの2文書）。開始HEADとの構造比較で、全37撮影指定の順序、既存assertVisible/assertNotVisible/assertTrue（廃止対象helperのJSゲートを除く）、extendedWaitUntilの条件・timeoutが一致。5箇所すべてで消去の次に実値IDの待機があること、READY_ID/WAIT_TIMEOUT_MS/storeKitScreenReady参照が残っていないことを確認。これは静的検査でありMaestro実行検証ではない。
 - `bash -n apps/mobile/anicca-ios/scripts/run-soft-paywall-maestro.sh`: **exit 0**（スクリプト自体は未変更）。`git diff --check`: **exit 0**。
 - 既存FIX-NOTES全文の保持と末尾追記のみを照合。最終変更はフロー3ファイルと本記録の計4ファイル。未コミット差分を指定worktreeに保持し、統合・worktree削除は行わない。
+
+## 第10ラウンド — Apple AccountタイトルのNBSP照合修正（2026-11-14）
+
+### 実測と根本原因
+
+統合側が実読した [Maestro run 43606475166](https://github.com/Daisuke134/anicca/actions/runs/43606475166) の画面階層JSONについて、委任元から提供された一次証拠の記録に基づく。本担当がartifactを再取得・実読したものではない。
+
+- メイン（2分20秒）・適応（4分20秒）とも、失敗文は `Assertion is false: id: onboarding-welcome-cta is visible`。
+- `step-012/016/020-assertCondition-onboarding-welcome-cta.json` はいずれも同内容。待機中の画面階層にはアプリ側要素が一切なく、OSアラートだけが含まれていた。タイトルは `Sign in to Apple\xa0Account`（AppleとAccountの間が **U+00A0**）、ボタンは `Cancel` と `OK`。
+- 第8・第9ラウンドの `(?i)sign in to (your )?apple (account|id)` はApple直後に通常空白U+0020を要求するため、実在のタイトルに一致せず消去が一度も発火しなかった。アラートだけの階層ではwelcomeのID表示待機も成功しない。委任元の実測整理では、これが第3〜第5のMaestro試行共通の詰まりであり、第8ラウンドのJSフラグ問題は重なっていた別問題。
+- [PRビルド＋単体テスト run 43606478090](https://github.com/Daisuke134/anicca/actions/runs/43606478090) は委任元報告でsuccess。これをMaestro成功とは扱わない。
+
+### 修正とローカル照合
+
+`grep -RnF '(?i)sign in to (your )?apple (account|id)' apps/mobile/anicca-ios/maestro/v1.9.14` で全箇所を列挙。`01-soft-paywall.yaml` の11箇所と `_dismiss-apple-account.yaml`、`_wait-for-storekit-screen.yaml`、`_start-to-pain.yaml` の各1箇所、計4ファイル14箇所の文字列だけを以下に置換した。
+
+```yaml
+"(?i)sign in to (your )?apple[ \u00A0](account|id)"
+```
+
+YAMLの二重引用符内の `\u00A0` はパーサーでU+00A0に解決される。文字クラスは通常空白とNBSPを明示的に許容し、タイトル全体の照合を保持する。既存の条件付きCancelと第9ラウンドの「有界消去ループ → 素のextendedWaitUntil」を再利用した。発火条件の構造、回数、待機時間、アサーション、フレーム名・番号・順序には変更なし。
+
+Python `re.fullmatch` による修正前の再現結果:
+
+| 入力（Python表記） | 旧パターン | 修正後（YAMLから読み戻した14箇所すべて） |
+|---|---|---|
+| `'Sign in to Apple\xa0Account'` | False | True |
+| `'Sign in to Apple Account'` | True | True |
+
+加えて `'Sign in to your Apple ID'` も修正後14箇所すべてでTrue。検査は `yaml.safe_load_all` の解析結果を再帰走査し、各selectorに対して `assert re.fullmatch(pattern, title)` を実行した。Python照合はローカルの文字列検査であり、Maestro実走の成功証拠ではない。
+
+### 検証・作業境界
+
+- 開始HEAD `8a59bd237868c9c3f6d44e6fc9fd9b9d83fe9fc6`、root `/home/hatch/workspace/life-manager-phase1`、branch `claude/phase1-personalized-onboarding`、common Git dir `/home/hatch/workspace/life-manager/.git`、origin `https://github.com/Daisuke134/anicca.git` を確認。開始時の未追跡 `error.log` は変更せず保持。
+- `bash scripts/verify-source-boundary.sh`: **exit 2**（旧固定パス要求）。旧canonical path/originの文書と現在の環境との既知の不一致には先行承認を適用。境界スクリプトは変更なし。
+- 実読手順: `/home/hatch/.codex/plugins/cache/openai-curated-remote/superpowers/7.0.1/skills/` の `using-superpowers/SKILL.md`、`systematic-debugging/SKILL.md`、`verification-before-completion/SKILL.md`。既存実装を再利用し、依存追加なし。
+- PyYAML **6.0.1** の `yaml.safe_load_all`: v1.9.14の **全5ファイル構文PASS**（各header/commandsの2文書）。各ファイルを開始HEADと比較し、`after == before.replace(old, new)` が全件成立。照合文字列以外の変更がないこと、未変更の適応フローを含む全フレーム・アサーション・ループ・待機の保持を確認。
+
+**Maestro・再撮影・目視監査は未実施。今回のrunは撮影ステップに到達しておらず、撮影パス修正は依然未検証。判定は統合側のpush後のActionsで行う。D-01〜D-16は再撮影フレームの目視確認まで全件「未完了」のまま。**
+
+変更対象はフロー4ファイルと本記録のみ。Swift・実行スクリプトを変更する必要はなく、監査ファイルも変更していない。今回の限定指示を優先しBOARD追記は行わない。commit / push / merge / PR作成 / ASC提出 / 新規の有料支払いなし。指定worktreeに未コミット差分として保持する。
+
+最終ローカル検証結果:
+
+- `apps/mobile/anicca-ios` 配下で `python3 -m unittest discover -s scripts/tests`: **Ran 44 tests in 16.728s / OK (skipped=2)、exit 0**。42成功・既存2件skip。
+- 全5 YAMLの構文・14 selectorの照合・開始HEADとのパターン以外不変検査: **PASS、exit 0**。
+- `git diff --check`: **exit 0**。本記録は開始HEADの全文を保持して末尾追記のみ。最終変更は指定範囲内の5ファイル。

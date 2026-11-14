@@ -3,7 +3,7 @@ name: Dismiss only the StoreKit Apple Account sign-in dialog
 ---
 - runFlow:
     when:
-      visible: "(?i)sign in to (your )?apple (account|id)"
+      visible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
     commands:
       - tapOn:
           text: Cancel

@@ -15,7 +15,7 @@ name: Fresh onboarding through the pain-point question
           visible:
             id: onboarding-welcome-cta
           timeout: 60000
-      - assertNotVisible: "(?i)sign in to (your )?apple (account|id)"
+      - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: onboarding-welcome-cta
 - tapOn:
