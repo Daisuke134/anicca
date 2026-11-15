@@ -17,6 +17,7 @@ struct QuoteCardView: View {
     @Environment(\.requestReview) private var requestReview
 
     @State private var showShareSheet = false
+    @State private var showWidgetGuide = false
     @State private var copyFlashOpacity: Double = 0
     @ScaledMetric(relativeTo: .title) private var quoteFontSize: CGFloat = 32
 
@@ -58,6 +59,11 @@ struct QuoteCardView: View {
             Spacer().frame(height: 32)
         }
         .frame(width: pageWidth)
+        .alert(String(localized: "widget_guide_title"), isPresented: $showWidgetGuide) {
+            Button(String(localized: "common_close"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "widget_guide_body"))
+        }
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(items: [
                 ShareImageRenderer.render(
@@ -87,8 +93,14 @@ struct QuoteCardView: View {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
                     DecisionPointRecorder.shared.recordQuoteResponse(messageId: quote.id, deliveryId: deliveryId, event: .saved)
-                    ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
-                        requestReview()
+                    let hadWidgetAssignment = WidgetExperience.hasAssignedPrompt
+                    if WidgetExperience.guideAfterSave() {
+                        showWidgetGuide = true
+                        WidgetExperience.guideShown()
+                    } else if hadWidgetAssignment {
+                        ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
+                            requestReview()
+                        }
                     }
                 }
             }

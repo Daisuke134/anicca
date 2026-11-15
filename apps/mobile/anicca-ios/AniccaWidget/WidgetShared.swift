@@ -29,62 +29,6 @@ enum AppGroup {
     static var userDefaults: UserDefaults { cachedDefaults }
 }
 
-// MARK: - NudgeWidgetDataStore (read-only for widget)
-
-enum NudgeWidgetDataStore {
-    private static let textsKey = "widget_nudge_texts"
-    private static let strugglesKey = "widget_user_struggles"
-
-    static func loadTexts() -> [String: [String]] {
-        guard let data = AppGroup.userDefaults.data(forKey: textsKey),
-              let texts = try? JSONDecoder().decode([String: [String]].self, from: data) else {
-            return [:]
-        }
-        return texts
-    }
-
-    static func loadStruggles() -> [String] {
-        AppGroup.userDefaults.stringArray(forKey: strugglesKey) ?? []
-    }
-}
-
-// MARK: - ProblemType (icon only — mirror of main app's ProblemType)
-
-enum ProblemType: String {
-    case stayingUpLate = "staying_up_late"
-    case cantWakeUp = "cant_wake_up"
-    case selfLoathing = "self_loathing"
-    case rumination = "rumination"
-    case procrastination = "procrastination"
-    case anxiety = "anxiety"
-    case lying = "lying"
-    case badMouthing = "bad_mouthing"
-    case pornAddiction = "porn_addiction"
-    case alcoholDependency = "alcohol_dependency"
-    case anger = "anger"
-    case obsessive = "obsessive"
-    case loneliness = "loneliness"
-
-    var icon: String {
-        switch self {
-        case .stayingUpLate: return "🌙"
-        case .cantWakeUp: return "☀️"
-        case .selfLoathing: return "🤍"
-        case .rumination: return "💭"
-        case .procrastination: return "⏰"
-        case .anxiety: return "🌊"
-        case .lying: return "🤥"
-        case .badMouthing: return "💬"
-        case .pornAddiction: return "🚫"
-        case .alcoholDependency: return "🍺"
-        case .anger: return "🔥"
-        case .obsessive: return "🔄"
-        case .loneliness: return "💙"
-        }
-    }
-}
-
-
 // Widget extension has its own target; keep its palette aligned with AppTheme.
 enum WidgetAppearance {
     static let accent = Color(red: 48 / 255, green: 92 / 255, blue: 69 / 255)

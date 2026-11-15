@@ -10,6 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [Codex / Q2 widget gate] claim: `codex/widget-gate-fix`、iOS widget・共有保存・案内計測・docs/gates を所有。ASC/ops/production変更なし。
 - [Codex / Phase 1 UIUX 監査修正] claim: `claude/phase1-personalized-onboarding` / PR #9352、Muse の委任。所有: iOS UI/導線・テスト・Maestro・FIX-NOTES。差分作成済み、MuseのCI/再撮影待ち。提出/commit/push なし。
 - [Codex / soft-paywall 1.9.14] claim: codex/anicca-soft-paywall-1914。所有: Anicca onboarding/paywall/theme/test/maestro、限定CI、実動画と提出証拠。1.9.13通知lane・価格・RC実験設定は保持。ops progress参照。
 - [ChatGPT / Manager P09+BFM+INT02 evidence] claim: research/manager-p09-bfm01-bfm02-int02-20261107 (isolated .worktrees/manager-model-eval-20261107). Own only new pinned empirical HeartSteps assignment evaluator, open-license Qwen heldout evaluation, scoped tests/workflow, source-backed verification docs/slides. No production, credentials, marketing, current SSOT cursor or other agents' owned scripts. Existing P09 PR #9292 preserved.
@@ -376,3 +377,5 @@
 - 2026-11-14 / Codex / Anicca iOS Issue #9353 第2ラウンド: 指定PR #9352 branchの1f26b0f42上に、Q-A〜I・最大2つのpain別深掘り・Q-G適応補足、UserProfile保存/ID snapshot、gentle優先と静かな時間、6言語、49候補、21 XCTest、Maestro新17フレーム導線を実装。FIX-NOTESへ質問→合成データ/実装/テスト/監査対応を記録。Python 36件中35成功・Swift依存1skip、Swift/Xcode/実撮影と独立レビュー/配信readbackは未完了。未commit差分を委任元へ引渡し、push/merge/ASC提出なし。
 
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
+
+- 2026-11-16 JST / Codex / Issue #96 widget再開: 全差分の破損監査、iOS 16.6互換経路・17以降個別設定/保存・案内/対照群計測を実装。gate 14→2 FAIL/1 WARN（共有・ストア掲載残）、iOS16は6 FAIL/1 WARN。既存40成功/2既存失敗/2skip維持。Swift/Xcode/実機未検証。証拠 docs/gates/widget-verification.md、現在branchへcommitのみ、push/ASC変更なし。

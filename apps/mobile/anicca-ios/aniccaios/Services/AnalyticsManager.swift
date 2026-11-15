@@ -352,6 +352,11 @@ final class AnalyticsManager {
 // MARK: - Analytics Events
 
 enum AnalyticsEvent: String {
+    case widgetPromptAssigned = "widget_prompt_assigned"
+    case widgetGuideShown = "widget_guide_shown"
+    case widgetInstallationObserved = "widget_installation_observed"
+    case widgetInstallationUnknown = "widget_installation_unknown"
+    case widgetOpened = "widget_opened"
     case screenViewed = "screen_viewed"
     case screenExited = "screen_exited"
     case firstAffirmationViewed = "first_affirmation_viewed"

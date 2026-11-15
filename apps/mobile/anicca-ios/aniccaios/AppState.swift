@@ -246,6 +246,7 @@ final class AppState: ObservableObject {
         userProfile = UserProfile()
         clearSyntheticUser()
         subscriptionInfo = .free
+        WidgetExperience.clear()
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
     }
@@ -334,6 +335,7 @@ final class AppState: ObservableObject {
         userProfile = UserProfile()
         clearSyntheticUser()
         subscriptionInfo = .free
+        WidgetExperience.clear()
         cachedOffering = nil
 
         // Mixpanel: リセット
@@ -366,6 +368,7 @@ final class AppState: ObservableObject {
         userProfile = UserProfile()
         clearSyntheticUser()
         subscriptionInfo = .free
+        WidgetExperience.clear()
         cachedOffering = nil
 
         // Mixpanel: リセット
@@ -682,6 +685,7 @@ final class AppState: ObservableObject {
     
     func clearSubscriptionCache() {
         subscriptionInfo = .free
+        WidgetExperience.syncPremium(.free)
         updateOffering(nil)
     }
     
@@ -695,6 +699,7 @@ final class AppState: ObservableObject {
     func updateSubscriptionInfo(_ info: SubscriptionInfo) {
         let wasEntitled = subscriptionInfo.isEntitled
         subscriptionInfo = info
+        WidgetExperience.syncPremium(info)
         if let data = try? JSONEncoder().encode(info) {
             defaults.set(data, forKey: subscriptionKey)
         }

@@ -123,6 +123,13 @@ struct FeedRootView: View {
 
     private let autoAdvanceTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    private func syncWidgetSurface() {
+        NudgeWidgetDataStore.sync(struggles: appState.userProfile.struggles)
+        WidgetExperience.syncPremium(appState.subscriptionInfo)
+        likedStore.importWidgetSaves()
+        WidgetExperience.observeInstallation()
+    }
+
     private var managePaymentURL: URL {
         appState.subscriptionInfo.managementURL
             ?? URL(string: "https://apps.apple.com/account/subscriptions")!
@@ -195,6 +202,7 @@ struct FeedRootView: View {
         .analyticsScreen(.feed, flowID: "feed")
         .onAppear {
             backgroundDrift = true
+            syncWidgetSurface()
             refreshToday()
         }
         .onReceive(autoAdvanceTimer) { now in
@@ -216,6 +224,7 @@ struct FeedRootView: View {
         .onChange(of: scenePhase) { phase in
             switch phase {
             case .active:
+                syncWidgetSurface()
                 lastInteractionAt = Date()
                 refreshToday()
                 if displayedIndex == nil, !deckModel.cards.isEmpty {

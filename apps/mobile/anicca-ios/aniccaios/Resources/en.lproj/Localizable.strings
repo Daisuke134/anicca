@@ -2894,3 +2894,6 @@
 "adaptive_prior_attempts_hint" = "Trying something does not mean it failed. Next, you can tell us what did not suit you.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"widget_guide_title" = "Keep these words close";
+"widget_guide_body" = "On your Home Screen, touch and hold an empty area, choose Edit → Add Widget, then search for Anicca and choose a size. Touch and hold your widget to edit its category, theme and refresh frequency. For your Lock Screen, touch and hold it, choose Customize, then Add Widgets → Anicca. Lock Screen words are always general to protect your privacy. Individual category, theme and refresh settings require iOS 17 or later.";

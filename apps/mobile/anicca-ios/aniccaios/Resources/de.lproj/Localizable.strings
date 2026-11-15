@@ -1528,3 +1528,6 @@
 "adaptive_prior_attempts_hint" = "Dass du etwas ausprobiert hast, bedeutet nicht, dass es dir nicht geholfen hat. Im nächsten Schritt kannst du angeben, was nicht zu dir gepasst hat.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"widget_guide_title" = "Behalte diese Worte bei dir";
+"widget_guide_body" = "Halte eine freie Stelle auf dem Home-Bildschirm gedrückt, wähle Bearbeiten → Widget hinzufügen und suche Anicca. Wähle eine Größe. Halte das Widget gedrückt, um Kategorie, Thema und Aktualisierung zu ändern. Auf dem Sperrbildschirm: gedrückt halten → Anpassen → Widgets hinzufügen → Anicca. Dort erscheinen zum Schutz deiner Privatsphäre nur allgemeine Worte. Individuelle Einstellungen für Kategorie, Thema und Aktualisierung erfordern iOS 17 oder neuer.";
