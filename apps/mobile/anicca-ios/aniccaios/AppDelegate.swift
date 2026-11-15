@@ -60,6 +60,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Distinct open days for post-value App Store review prompts.
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
+            for notification in await UNUserNotificationCenter.current().deliveredNotifications() {
+                recordDeliveredNotification(notification)
+            }
             DecisionPointRecorder.shared.recordAppOpened()
         }
         // Best-effort: recover APNs token registration if it was delayed on first run.
@@ -88,22 +91,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let content = notification.request.content
+        let deliveryId = content.userInfo["delivery_id"] as? String ?? content.userInfo["messageId"] as? String ?? notification.request.identifier
         AnalyticsManager.shared.track(.notificationReceived, properties: [
             "notification_id": content.userInfo["messageId"] as? String ?? notification.request.identifier,
             "quote_id": content.userInfo["quoteId"] as? String ?? "unavailable",
             "app_state": "foreground",
+            "delivery_id": deliveryId,
         ])
         // Phase 1 decision-point record: foreground receipt = delivered.
-        let deliveryId = content.userInfo["delivery_id"] as? String ?? content.userInfo["messageId"] as? String ?? notification.request.identifier
-        let messageId = content.userInfo["quoteId"] as? String
         Task { @MainActor in
-            DecisionPointRecorder.shared.recordNotificationAssignment(userInfo: content.userInfo, deliveryId: deliveryId)
-            DecisionPointRecorder.shared.recordNotificationOutcome(
-                deliveryId: deliveryId,
-                messageId: messageId,
-                outcome: "delivered",
-                at: notification.date
-            )
+            recordDeliveredNotification(notification)
         }
         if #available(iOS 14.0, *) {
             completionHandler([.banner, .list, .sound])
@@ -121,12 +118,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let deliveryId = content.userInfo["delivery_id"] as? String ?? content.userInfo["messageId"] as? String ?? response.notification.request.identifier
 
         Task { @MainActor in
-            DecisionPointRecorder.shared.recordNotificationAssignment(userInfo: content.userInfo, deliveryId: deliveryId)
-            // The OS notification date is actual delivery evidence, including a
-            // background notification opened after relaunch.
-            DecisionPointRecorder.shared.recordNotificationOutcome(
-                deliveryId: deliveryId, messageId: quoteID, outcome: "delivered", at: response.notification.date
-            )
+            recordDeliveredNotification(response.notification)
             DecisionPointRecorder.shared.recordNotificationOutcome(
                 deliveryId: deliveryId,
                 messageId: quoteID,
@@ -135,12 +127,29 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             if !isDismiss {
                 DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .appOpened)
                 AnalyticsManager.shared.track(.notificationOpened, properties: [
-                    "quote_id": quoteID ?? "unavailable", "notification_id": deliveryId
+                    "quote_id": quoteID ?? "unavailable", "notification_id": deliveryId, "delivery_id": deliveryId
                 ])
                 QuoteNavigationCoordinator.shared.request(quoteID: quoteID, alertBody: alertBody, deliveryId: deliveryId)
             }
             completionHandler()
         }
+    }
+
+    @MainActor
+    private func recordDeliveredNotification(_ notification: UNNotification) {
+        let userInfo = notification.request.content.userInfo
+        let deliveryId = userInfo["delivery_id"] as? String ?? userInfo["messageId"] as? String ?? notification.request.identifier
+        let decision = userInfo["decision_point"] as? [String: Any]
+        let stimulus = decision?["stimulus"] as? [String: Any]
+        let messageId = userInfo["quoteId"] as? String ?? stimulus?["message_id"] as? String
+        DecisionPointRecorder.shared.recordNotificationAssignment(userInfo: userInfo, deliveryId: deliveryId)
+        DecisionPointRecorder.shared.recordDelivery(
+            deliveryId: deliveryId, messageId: messageId ?? "unavailable",
+            source: "notification", userInfo: userInfo, at: notification.date
+        )
+        DecisionPointRecorder.shared.recordNotificationOutcome(
+            deliveryId: deliveryId, messageId: messageId, outcome: "delivered", at: notification.date
+        )
     }
 
     // MARK: - APNs registration

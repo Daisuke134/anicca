@@ -92,6 +92,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
         XCTAssertEqual(selection?.quote.id, "growth.calm.0")
         XCTAssertEqual(selection?.reason, "desired_state_and_pain_point_match")
         XCTAssertEqual(selection?.candidateCount, 4)
+        XCTAssertEqual(Set(selection?.candidateIDs ?? []), Set(pool.map(\.id)))
         XCTAssertEqual(selection?.assignedProbability ?? 0, 0.9 + 0.1 / 4, accuracy: 1e-9)
     }
 
@@ -101,6 +102,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
             user: syntheticUser(profile), pool: pool,
             shownAt: ["growth.calm.0": Date()], band: .day, random: sequenceRandom([0.99]))
         XCTAssertEqual(selection?.quote.id, "growth.presence.0")
+        XCTAssertFalse(selection?.candidateIDs.contains("growth.calm.0") ?? true)
     }
 
     func test_selector_morningExcludesRestUnlessSleepPain() {
@@ -121,6 +123,7 @@ final class PersonalizationPhase1Tests: XCTestCase {
             user: syntheticUser(profile), pool: pool, band: .day, random: sequenceRandom([0.05, 0.999]))
         // Ranked order for an empty profile is by id; index 3 is the last.
         XCTAssertEqual(selection?.quote.id, "growth.rest.0")
+        XCTAssertEqual(Set(selection?.candidateIDs ?? []), Set(pool.map(\.id)))
         XCTAssertEqual(selection?.assignedProbability ?? 0, 0.1 / 4, accuracy: 1e-9)
     }
 
@@ -472,12 +475,15 @@ extension PersonalizationPhase1Tests {
                              scheduledTimeBand: "morning", weekday: "saturday", notificationPermission: "allowed"),
             stimulus: .init(messageId: quote.id, category: quote.categoryID, tags: [],
                             scheduledAt: nil, treatmentAssigned: quote.id,
-                            assignedProbability: 0.5, policyVersion: PersonalizedNudgeSelector.policyVersion)
+                            assignedProbability: 0.5, policyVersion: PersonalizedNudgeSelector.policyVersion,
+                            candidateIDs: [quote.id, "another-candidate"])
         )
         let carryover = PersonalizedNudgeSelector.previewCarryoverSelection(
             cases: [previewCase], personId: "person-carry", preferredLanguage: language)
         XCTAssertEqual(carryover?.selection.quote.id, quote.id)
         XCTAssertEqual(carryover?.deliveryId, "delivery-preview")
+        XCTAssertEqual(carryover?.selection.assignedProbability, 0.5)
+        XCTAssertEqual(carryover?.selection.candidateIDs, [quote.id, "another-candidate"])
         // Another person's preview, or none at all, must not carry over.
         XCTAssertNil(PersonalizedNudgeSelector.previewCarryoverSelection(
             cases: [previewCase], personId: "someone-else", preferredLanguage: language))

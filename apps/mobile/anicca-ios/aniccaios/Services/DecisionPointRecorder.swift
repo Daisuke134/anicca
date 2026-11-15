@@ -269,6 +269,29 @@ final class DecisionPointRecorder {
         return deliveryId
     }
 
+    /// A delivery keeps the assignment ID across preview, home and notification
+    /// navigation. Re-displaying that same intervention is not a new assignment.
+    func recordDelivery(deliveryId: String, messageId: String, source: String, userInfo: [AnyHashable: Any]? = nil, at date: Date = Date()) {
+        let key = "com.anicca.measuredInterventionDeliveries"
+        var measured = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        guard !measured.contains(deliveryId) else { return }
+        let stimulus = DecisionPointStore.shared.allCases().first {
+            $0.personId == personId && $0.deliveryId == deliveryId
+        }?.stimulus
+        let decision = userInfo?["decision_point"] as? [String: Any]
+        let payload = decision?["stimulus"] as? [String: Any]
+        let candidates = stimulus?.candidateIDs ?? (payload?["candidate_ids"] as? [String])
+            ?? (userInfo?["candidate_ids"] as? [String])
+        let probability = stimulus?.assignedProbability ?? (payload?["assigned_probability"] as? Double)
+            ?? (userInfo?["assigned_probability"] as? Double)
+        AnalyticsManager.shared.trackInterventionDelivered(
+            deliveryId: deliveryId, messageId: messageId, candidateIDs: candidates,
+            assignedProbability: probability, source: source, at: date
+        )
+        measured.insert(deliveryId)
+        UserDefaults.standard.set(Array(measured), forKey: key)
+    }
+
     func recordResponse(deliveryId: String, event: ManagerBenchEvent, at date: Date = Date(), messageId: String? = nil) {
         guard DecisionPointStore.shared.recordResponse(personId: personId, deliveryId: deliveryId, event: event, at: date, messageId: messageId) else { return }
         let recordedMessageId = DecisionPointStore.shared.allCases().first { $0.personId == personId && $0.deliveryId == deliveryId }?.stimulus.messageId ?? messageId

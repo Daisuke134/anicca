@@ -36,7 +36,8 @@ struct ManagerBenchCase: Codable, Equatable {
 
         private enum CodingKeys: String, CodingKey {
             case messageId, category, tags, scheduledAt, deliveredAt
-            case treatmentAssigned, assignedProbability, policyVersion, candidateIDs, selectionReason
+            case treatmentAssigned, assignedProbability, policyVersion, selectionReason
+            case candidateIDs = "candidateIds"
         }
 
         func encode(to encoder: Encoder) throws {

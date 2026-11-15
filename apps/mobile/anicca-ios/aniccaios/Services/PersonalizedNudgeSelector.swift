@@ -40,6 +40,7 @@ enum PersonalizedNudgeSelector {
         let reason: String
         /// Size of the candidate set the choice was made from.
         let candidateCount: Int
+        let candidateIDs: [String]
         /// Exact probability of this quote under the ε-greedy policy.
         let assignedProbability: Double
         let policyVersion: String
@@ -142,9 +143,10 @@ enum PersonalizedNudgeSelector {
         let selection = Selection(
             quote: quote,
             reason: "onboarding_preview_carryover",
-            candidateCount: 1,
-            assignedProbability: 1.0,
-            policyVersion: policyVersion
+            candidateCount: previewCase.stimulus.candidateIDs?.count ?? 1,
+            candidateIDs: previewCase.stimulus.candidateIDs ?? [],
+            assignedProbability: previewCase.stimulus.assignedProbability,
+            policyVersion: previewCase.stimulus.policyVersion
         )
         return (selection, previewCase.deliveryId)
     }
@@ -243,6 +245,7 @@ enum PersonalizedNudgeSelector {
             quote: chosen,
             reason: reason,
             candidateCount: count,
+            candidateIDs: ranked.map(\.id),
             assignedProbability: probability,
             policyVersion: policyVersion,
             candidateIDs: ranked.map(\.id)

@@ -378,3 +378,4 @@
 
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
 - 2026-11-16 JST / Codex / Anicca iOS Account Deletion gate: Settingsから確認付きDELETE /mobile/accountを開始し、成功後のみ端末・Keychain・App Group identityを消去するフロー、進行/失敗UI、6言語文言、静的回帰テストを追加。サーバー/ASC操作0。次: Xcode CI後にRestore Purchases gate。
+- 2026-11-16 / Codex / MG-06 (codex/mg06-wiring): 選択候補IDの保存、intervention_delivered（オンボーディングreveal・Living home・通知受信/復帰照合）、通知received/openedのdelivery_idを追加。UX/選択ロジック維持。XCTest追加（Swift/Xcode不在で未実行）。Python既存44件:40成功/2既存失敗/2skip、analytics契約の既存失敗もHEADで再現。通知sender/notification_sent emitterはcheckoutに存在せず送信側接続は未完、app docsに契約を記録。指定overrideで現ブランチにcommit、pushなし。
