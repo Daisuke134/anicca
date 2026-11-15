@@ -339,6 +339,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
       "-uiTesting": ""
+      # Recording mode: on this final home segment the living home must
+      # visibly change words on camera (HomeAutoAdvance recordingInterval).
+      # Kept off the first launch so the intervention equality check above
+      # stays deterministic.
+      "-aniccaRecordingMode": ""
 - retry:
     maxRetries: 2
     commands:
