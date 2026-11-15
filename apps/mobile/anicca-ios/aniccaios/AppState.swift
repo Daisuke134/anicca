@@ -13,6 +13,7 @@ final class AppState: ObservableObject {
 
     @Published private(set) var authStatus: AuthStatus = .signedOut
     @Published private(set) var userProfile: UserProfile = UserProfile()
+    @Published private(set) var needsFamilySharingEducation = false
     @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
     
     // サーバーからのプロファイル取得中フラグ（UIフラッシュ防止用）
@@ -682,6 +683,7 @@ final class AppState: ObservableObject {
     
     func clearSubscriptionCache() {
         subscriptionInfo = .free
+        needsFamilySharingEducation = false
         updateOffering(nil)
     }
     
@@ -692,7 +694,22 @@ final class AppState: ObservableObject {
         updateSubscriptionInfo(info)
     }
 
+    // Per RevenueCat identity: acknowledging one account must not educate another.
+    private var familySharingEducationKey: String {
+        "familySharingEducationAcknowledged.\(Purchases.shared.appUserID)"
+    }
+
+    /// The education surface acknowledges only after the benefits have been shown.
+    func acknowledgeFamilySharingEducation() {
+        guard needsFamilySharingEducation else { return }
+        defaults.set(true, forKey: familySharingEducationKey)
+        needsFamilySharingEducation = false
+    }
+
     func updateSubscriptionInfo(_ info: SubscriptionInfo) {
+        needsFamilySharingEducation = info.isEntitled && info.ownershipType == .familyShared
+            && SubscriptionManager.shared.isConfigured
+            && !defaults.bool(forKey: familySharingEducationKey)
         let wasEntitled = subscriptionInfo.isEntitled
         subscriptionInfo = info
         if let data = try? JSONEncoder().encode(info) {

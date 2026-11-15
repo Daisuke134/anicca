@@ -311,6 +311,13 @@ extension SubscriptionInfo {
             plan = .free
         }
 
+        let ownershipType: OwnershipType?
+        switch entitlement?.ownershipType {
+        case .purchased: ownershipType = .purchased
+        case .familyShared: ownershipType = .familyShared
+        default: ownershipType = nil
+        }
+
         let productId = entitlement?.productIdentifier
         let offering = AppState.shared.cachedOffering
         let package = offering?
@@ -350,7 +357,8 @@ extension SubscriptionInfo {
             monthlyUsageLimit: nil,
             monthlyUsageRemaining: nil,
             monthlyUsageCount: nil,
-            willRenew: willRenew
+            willRenew: willRenew,
+            ownershipType: ownershipType
         )
     }
 }

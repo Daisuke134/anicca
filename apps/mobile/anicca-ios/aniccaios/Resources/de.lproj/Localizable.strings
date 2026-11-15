@@ -1528,3 +1528,5 @@
 "adaptive_prior_attempts_hint" = "Dass du etwas ausprobiert hast, bedeutet nicht, dass es dir nicht geholfen hat. Im nächsten Schritt kannst du angeben, was nicht zu dir gepasst hat.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"paywall_family_sharing" = "Mit Familienfreigabe verfügbar";

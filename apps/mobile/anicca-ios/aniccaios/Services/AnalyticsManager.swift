@@ -296,12 +296,16 @@ final class AnalyticsManager {
     
     /// 購入完了
     func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo, flowID: String) {
-        guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
         let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]
+        // Shared receipts and unknown ownership are not new sales.
+        guard entitlement?.ownershipType == .purchased,
+              entitlement?.productIdentifier == package.storeProduct.productIdentifier else { return }
+        guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
         let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial
         var properties: [String: MixpanelType] = [
             "product_id": package.storeProduct.productIdentifier,
             "result": "success",
+            "ownership_type": "PURCHASED",
             "entitlement_state": isTrial ? "trial" : (entitlement?.isActive == true ? "active" : "unknown"),
             "flow_id": flowID,
         ]

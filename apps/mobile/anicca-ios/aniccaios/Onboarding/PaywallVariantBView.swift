@@ -305,6 +305,13 @@ struct PaywallVariantBView: View {
                         .background(AppTheme.Colors.accent, in: Capsule())
                         .accessibilityIdentifier("paywall-plan-badge-best-value")
                 }
+                if package.storeProduct.isFamilyShareable {
+                    Text(String(localized: "paywall_family_sharing"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("paywall-family-sharing")
+                }
                 Text(localizedPlanTitle(for: package))
                     .font(.subheadline)
                 Text(billedAmount(for: package))

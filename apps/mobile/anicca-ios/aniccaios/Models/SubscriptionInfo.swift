@@ -2,6 +2,11 @@ import Foundation
 
 struct SubscriptionInfo: Codable, Equatable {
     enum Plan: String, Codable { case free, grace, pro }
+    enum OwnershipType: String, Codable {
+        case purchased = "PURCHASED"
+        case familyShared = "FAMILY_SHARED"
+    }
+    var ownershipType: OwnershipType?
     var plan: Plan
     var status: String
     var currentPeriodEnd: Date?
@@ -60,8 +65,10 @@ struct SubscriptionInfo: Codable, Equatable {
         monthlyUsageLimit: Int?,
         monthlyUsageRemaining: Int?,
         monthlyUsageCount: Int?,
-        willRenew: Bool?
+        willRenew: Bool?,
+        ownershipType: OwnershipType? = nil
     ) {
+        self.ownershipType = ownershipType
         self.plan = plan
         self.status = status
         self.currentPeriodEnd = currentPeriodEnd
@@ -119,6 +126,7 @@ struct SubscriptionInfo: Codable, Equatable {
         case monthlyUsageRemaining = "monthly_usage_remaining"
         case monthlyUsageCount = "monthly_usage_count"
         case willRenew = "will_renew"
+        case ownershipType = "ownership_type"
     }
     
     private enum LegacyCodingKeys: String, CodingKey {
@@ -134,12 +142,15 @@ struct SubscriptionInfo: Codable, Equatable {
         case monthlyUsageRemaining
         case monthlyUsageCount
         case willRenew
+        case ownershipType
     }
     
     init(from decoder: Decoder) throws {
         let snake = try decoder.container(keyedBy: SnakeCodingKeys.self)
         let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
         
+        ownershipType = try snake.decodeIfPresent(OwnershipType.self, forKey: .ownershipType)
+            ?? legacy.decodeIfPresent(OwnershipType.self, forKey: .ownershipType)
         plan = try snake.decodeIfPresent(Plan.self, forKey: .plan)
             ?? legacy.decodeIfPresent(Plan.self, forKey: .plan)
             ?? .free
@@ -174,6 +185,7 @@ struct SubscriptionInfo: Codable, Equatable {
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: SnakeCodingKeys.self)
+        try container.encodeIfPresent(ownershipType, forKey: .ownershipType)
         try container.encode(plan, forKey: .plan)
         try container.encode(status, forKey: .status)
         try container.encodeIfPresent(currentPeriodEnd, forKey: .currentPeriodEnd)

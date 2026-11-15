@@ -2894,3 +2894,5 @@
 "adaptive_prior_attempts_hint" = "Trying something does not mean it failed. Next, you can tell us what did not suit you.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"paywall_family_sharing" = "Available with Family Sharing";
