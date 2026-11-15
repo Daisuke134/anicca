@@ -378,3 +378,5 @@
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
 
 - 2026-11-16 / Codex / anicca codex/app-gates-2担当: Apple認証入口・資格状態・Keychain移行・既存削除導線、RevenueCat起動監視/復帰同期/識別境界を修正。source回帰10成功、XCTest6追加（Swift/Xcode不在で未実行）。SIWA Gate 3未達・store-origin Gate 5未達を監査記録へ保存。サーバー/ASC/実機未確認。指定ブランチにcommitのみ、push/本番変更なし。
+
+- 2026-11-16 04:45 JST / Codex / Muse委任 PR #9367: CI run 43752394966のKeychain -34018とtest hostのCODE_SIGNING_ALLOWED=NOを確認。シミュレーターunit testのみ既存entitlementsを用いたad-hoc署名に変更、初回保存readback assertion追加。本番Keychain変更なし。Python回帰10/10・YAML/bash構文・diff検査成功。Xcode不在のためXCTest/CI再実行未確認。source-boundaryはLife Manager専用パス不一致、今回の明示overrideで指定branch継続。pushなし、Museレビュー/CI待ち。

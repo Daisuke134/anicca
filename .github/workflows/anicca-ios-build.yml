@@ -56,6 +56,7 @@ jobs:
           path: ${{ runner.temp }}/soft-paywall-evidence
           if-no-files-found: warn
   build:
+    # Preserve the existing check name for branch protection.
     name: Build and unit tests (unsigned)
     if: github.event_name != 'workflow_dispatch' || !inputs.run_maestro
     runs-on: macos-15
@@ -97,7 +98,7 @@ jobs:
           tail -40 "$RUNNER_TEMP/build-output.log"
           exit "$BUILD_EXIT"
 
-      - name: Run unit tests (unsigned)
+      - name: Run unit tests (ad-hoc signed simulator)
         # The macos-15 image (Xcode 16.4) ships no pre-created "iPhone 15"
         # simulator; pick the first available iPhone simulator instead of
         # hard-coding a device name.
@@ -112,12 +113,18 @@ jobs:
           # "Invalid API Key", offerings never load and the paywall is
           # unreachable by design. Those tests belong to the Xcode Cloud
           # lane, where ci_post_clone.sh injects the real configuration.
+          # Keychain requires the host's application-identifier entitlement.
+          # Let Xcode embed the existing target entitlements using a local
+          # ad-hoc signature; simulator signing needs no certificate/profile.
+          # Keep the device build above unsigned and release signing unchanged.
           xcodebuild test \
             -project aniccaios.xcodeproj \
             -scheme aniccaios \
             -destination "platform=iOS Simulator,id=$UDID" \
             -only-testing:aniccaiosTests \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
             > "$RUNNER_TEMP/test-output.log" 2>&1
           TEST_EXIT=$?
           set -e

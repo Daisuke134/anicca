@@ -43,6 +43,7 @@ final class AppleAuthenticationTests: XCTestCase {
         let account = "test.apple-auth." + UUID().uuidString
         defer { KeychainService.delete(account: account) }
         try KeychainService.save(Data("old".utf8), account: account)
+        XCTAssertEqual(KeychainService.load(account: account), Data("old".utf8))
         try KeychainService.save(Data("new".utf8), account: account)
         XCTAssertEqual(KeychainService.load(account: account), Data("new".utf8))
         KeychainService.delete(account: account)
