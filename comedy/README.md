@@ -1,24 +1,28 @@
 # Comedy
 
-Life Manager 内のお笑いネタ保管庫。
+AI × 人間のライブお笑いネタの正本。各ネタを独立したMarkdownで管理する。
 
-## Current canonical
+## 最初に読む
+1. `HANDOVER.md` — 全AI共通の引き継ぎ。
+2. 対象ネタの最新稿。
+3. 必要に応じて過去稿・リハーサル記録。
 
-- **詐欺電話 / 安心安全管理センター:** [sagi-call-current.md](./sagi-call-current.md)
-- **就職面接 / ちっちゃいグミ:** [job-interview-small-gummy.md](./job-interview-small-gummy.md)
+## 詐欺電話
+- **残高詐欺電話（最新完全稿）:** [sagi-zandaka.md](./sagi-zandaka.md)
+- **グミ詐欺電話（新規再構成稿 v0.1）:** [sagi-gummy-scam.md](./sagi-gummy-scam.md) — 元稿未発見。復元稿ではない。
+- **旧稿:** [sagi-call-current.md](./sagi-call-current.md)、[sagi-call-duped.md](./sagi-call-duped.md)、[rehearsal-2026-09-13.md](./rehearsal-2026-09-13.md)
 
-## Other preserved material
+## 別ネタ（混同・上書き禁止）
+- **就職面接／ちっちゃいグミ本舗:** [job-interview-small-gummy.md](./job-interview-small-gummy.md) — グミ詐欺電話とは別ネタ。
 
-- [sagi-call-duped.md](./sagi-call-duped.md) — 詐欺電話の別バージョン。全国残高調整協会／3m鼻ネギ／設定崩壊。
-- [rehearsal-2026-09-13.md](./rehearsal-2026-09-13.md) — 音声リハーサルで出た即興導線。
-- [COMMON-RULES.md](./COMMON-RULES.md) — AI×人間コント共通ルール。
-- [FRAGMENTS.md](./FRAGMENTS.md) — 完成稿ではない断片。
-- [HANDOVER.md](./HANDOVER.md) — 次セッション／別エージェントへの引き継ぎ正本。
+## 共通資料
+- [COMMON-RULES.md](./COMMON-RULES.md)
+- [FRAGMENTS.md](./FRAGMENTS.md)
+- [HANDOVER.md](./HANDOVER.md)
 
-## Status
-
-現時点で、独立した完成ネタとして回収できているのは主に2本：
-1. 就職面接（ちっちゃいグミ）
-2. 詐欺電話（安心安全管理センター）
-
-競馬の馬名ネタなどは会話断片のみで、完全台本としてはまだ保存対象に達していない。
+## 運用
+- このフォルダをSingle Source of Truth（正本）とする。
+- どのAIもHANDOVERとREADMEを読み、GitHubの最新版を優先する。
+- 改稿したら必ず該当Markdownを更新する。
+- 旧稿は削除しない。大改稿は別バージョンで残す。
+- 書き込み成功を確認するまで「更新済み」と報告しない。
