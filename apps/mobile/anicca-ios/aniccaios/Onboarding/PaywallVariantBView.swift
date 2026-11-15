@@ -254,7 +254,10 @@ struct PaywallVariantBView: View {
                 .accessibilityIdentifier("paywall-plan-\(package.packageType.rawValue)")
             }
         }
-        .accessibilityIdentifier("paywall-plan-cards")
+        // No identifier on this container: SwiftUI propagates a container's
+        // accessibility identifier over the cards' own, which hid
+        // paywall-plan-<type> from UI tests (verified in the build-830
+        // E2E hierarchy dump).
     }
 
     /// Longest commitment first: annual, monthly, weekly, then lifetime.
