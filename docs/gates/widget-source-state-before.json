@@ -1,0 +1,44 @@
+{
+  "_note": "Q2 checkout source audit before edits; same code gaps as supplied fixture, except lock-screen text is personalized (additional W-7 privacy failure).",
+  "recorded": true,
+  "inventory": {
+    "families": [
+      "systemSmall",
+      "systemMedium",
+      "accessoryRectangular"
+    ],
+    "configuration_type": "static",
+    "teach_prompt": false,
+    "measurement": false
+  },
+  "configuration": {
+    "type": "static",
+    "per_widget_category": false,
+    "per_widget_theme": false,
+    "refresh_frequency_selectable": false
+  },
+  "actions": {
+    "like_from_widget": false,
+    "share_from_widget": false
+  },
+  "content": {
+    "uses_user_context": true,
+    "selection": "day_of_year_rotation",
+    "fallback_when_no_data": true
+  },
+  "teach": {
+    "guide_shown": false,
+    "timing": null
+  },
+  "store": {
+    "widget_shown_in_screenshots": false,
+    "widget_claim_matches_shipped": false
+  },
+  "measurement": {
+    "adoption_rate": false,
+    "taps_into_app": false,
+    "retention_widget_vs_non": false,
+    "retention_read_with_control": false
+  },
+  "lock_screen_sensitive_by_default": true
+}

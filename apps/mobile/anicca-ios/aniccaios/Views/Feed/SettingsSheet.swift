@@ -11,6 +11,7 @@ struct SettingsSheet: View {
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var appState = AppState.shared
 
     @State private var showSignOutConfirmation = false
     @State private var showPurchasePlans = false
@@ -55,12 +56,18 @@ struct SettingsSheet: View {
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
 
             Section {
-                Button {
-                    showPurchasePlans = true
-                } label: {
-                    Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                // Subscribers never see a paywall entry (user rule,
+                // 2026-11-15): the subscribe button exists only while the
+                // entitlement is inactive. Managing an existing plan stays
+                // available below via the Customer Center.
+                if appState.subscriptionInfo.shouldShowPaywall {
+                    Button {
+                        showPurchasePlans = true
+                    } label: {
+                        Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                    }
+                    .accessibilityIdentifier("settings-subscribe")
                 }
-                .accessibilityIdentifier("settings-subscribe")
 
                 NavigationLink {
                     RevenueCatUI.CustomerCenterView()

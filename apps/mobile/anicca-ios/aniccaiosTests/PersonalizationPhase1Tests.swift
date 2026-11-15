@@ -480,4 +480,64 @@ extension PersonalizationPhase1Tests {
         XCTAssertNil(PersonalizedNudgeSelector.previewCarryoverSelection(
             cases: [], personId: "person-carry", preferredLanguage: language))
     }
+
+    // MARK: - Living home deck
+
+    func test_rankedCandidates_headMatchesGreedySelect() {
+        let profile = PersonalizationProfile(desiredState: "calm", painPointIds: ["anxiety"])
+        let user = syntheticUser(profile)
+        let ranked = PersonalizedNudgeSelector.rankedCandidates(user: user, pool: pool, band: .day)
+        let selection = PersonalizedNudgeSelector.select(
+            user: user, pool: pool, band: .day, random: sequenceRandom([0.99]))
+        XCTAssertEqual(ranked.count, 4)
+        XCTAssertEqual(ranked.first?.id, "growth.calm.0")
+        XCTAssertEqual(ranked.first?.id, selection?.quote.id)
+    }
+
+    func test_rankedCandidates_cooldownNarrowsTheDeck() {
+        let profile = PersonalizationProfile(desiredState: "calm", painPointIds: ["anxiety"])
+        let ranked = PersonalizedNudgeSelector.rankedCandidates(
+            user: syntheticUser(profile), pool: pool,
+            shownAt: ["growth.calm.0": Date()], band: .day)
+        XCTAssertEqual(ranked.first?.id, "growth.presence.0")
+        XCTAssertFalse(ranked.contains { $0.id == "growth.calm.0" })
+    }
+
+    func test_rankedCandidates_morningExcludesRest() {
+        let ranked = PersonalizedNudgeSelector.rankedCandidates(
+            user: syntheticUser(PersonalizationProfile(desiredState: "calm")), pool: pool, band: .morning)
+        XCTAssertEqual(ranked.count, 3)
+        XCTAssertFalse(ranked.contains { $0.id == "growth.rest.0" })
+    }
+
+    func test_autoAdvance_requiresIdleActiveMultiCardAndNoSheet() {
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(7.9), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 3, anySheetPresented: false))
+        XCTAssertTrue(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(8), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 3, anySheetPresented: false))
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+            isSceneActive: false, cardCount: 3, anySheetPresented: false))
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 1, anySheetPresented: false))
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 3, anySheetPresented: true))
+        // UI tests: never advance, however long the flow takes between
+        // steps (build-830 E2E run 43678244497 raced the 8s interval).
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 3, anySheetPresented: false,
+            isUITesting: true))
+    }
+
+    func test_autoAdvance_nextIndexWraps() {
+        XCTAssertEqual(HomeAutoAdvance.nextIndex(current: 0, count: 3), 1)
+        XCTAssertEqual(HomeAutoAdvance.nextIndex(current: 2, count: 3), 0)
+        XCTAssertEqual(HomeAutoAdvance.nextIndex(current: 0, count: 0), 0)
+    }
 }

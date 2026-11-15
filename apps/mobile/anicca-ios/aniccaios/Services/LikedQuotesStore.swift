@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 
 /// UserDefaults-backed Set<String> of liked quote ids.
 /// Used by ♡ button + Saved/Liked screens.
@@ -21,6 +22,19 @@ final class LikedQuotesStore: ObservableObject {
         self.persistedQuotes = defaults.data(forKey: Self.quotesKey)
             .flatMap { try? JSONDecoder().decode([String: Quote].self, from: $0) } ?? [:]
         self.persistedThemes = defaults.dictionary(forKey: Self.themesKey) as? [String: String] ?? [:]
+    }
+
+    func importWidgetSaves() {
+        let shared = AppGroup.userDefaults
+        for word in WidgetContentStore(defaults: shared).savedWords {
+            let importedKey = "widget_imported_" + word.id
+            guard !shared.bool(forKey: importedKey) else { continue }
+            likedIds.insert(word.id)
+            persistedQuotes[word.id] = Quote(id: word.id, text: word.text)
+            persistedThemes[word.id] = "sageMist"
+            persist()
+            shared.set(true, forKey: importedKey)
+        }
     }
 
     func isLiked(_ id: String) -> Bool { likedIds.contains(id) }
@@ -48,6 +62,11 @@ final class LikedQuotesStore: ObservableObject {
     func toggle(_ id: String) -> Bool {
         if likedIds.contains(id) {
             likedIds.remove(id)
+            if id.hasPrefix("nudge_") {
+                AppGroup.userDefaults.removeObject(forKey: "widget_saved_" + id)
+                AppGroup.userDefaults.removeObject(forKey: "widget_imported_" + id)
+                WidgetCenter.shared.reloadTimelines(ofKind: "AniccaWidget")
+            }
             persistedQuotes.removeValue(forKey: id)
             persistedThemes.removeValue(forKey: id)
             persist()

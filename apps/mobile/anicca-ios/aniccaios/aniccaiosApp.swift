@@ -27,6 +27,11 @@ struct aniccaiosApp: App {
                 .onOpenURL { url in
                     guard url.scheme == "anicca" else { return }
 
+                    if url.host == "widget" {
+                        WidgetExperience.recordTap(url)
+                        return
+                    }
+
                     // 4-daily affirmation deep link: anicca://quote/<qid>
                     if url.host == "quote" {
                         let qid = url.lastPathComponent

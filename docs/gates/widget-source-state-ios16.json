@@ -1,0 +1,54 @@
+{
+  "_note": "iOS 16.6 compatibility source audit. Static daily widget, no per-instance settings or interactive save/share. All four sizes and safe lock screen remain.",
+  "recorded": true,
+  "inventory": {
+    "families": [
+      "systemSmall",
+      "systemMedium",
+      "systemLarge",
+      "accessoryRectangular"
+    ],
+    "configuration_type": "static",
+    "teach_prompt": true,
+    "measurement": true
+  },
+  "configuration": {
+    "type": "static",
+    "per_widget_category": false,
+    "per_widget_theme": false,
+    "refresh_frequency_selectable": false
+  },
+  "actions": {
+    "like_from_widget": false,
+    "share_from_widget": false
+  },
+  "content": {
+    "uses_user_context": true,
+    "selection": "current_struggles_then_saved_word_and_category_preference_with_presentation_cooldown",
+    "fallback_when_no_data": true
+  },
+  "teach": {
+    "guide_shown": true,
+    "timing": "after_feed_save_randomized_guide_or_holdout"
+  },
+  "store": {
+    "widget_shown_in_screenshots": false,
+    "widget_claim_matches_shipped": false
+  },
+  "measurement": {
+    "adoption_rate": true,
+    "taps_into_app": true,
+    "retention_widget_vs_non": true,
+    "retention_read_with_control": true
+  },
+  "lock_screen_sensitive_by_default": false,
+  "_evidence": {
+    "W-1": "AniccaWidget.swift: both configurations list four families",
+    "W-2": "WidgetConfiguration.swift: NudgeConfiguration parameters; premium theme/refresh resolved by provider",
+    "W-3": "SaveWidgetWordIntent -> WidgetContentStore.save -> LikedQuotesStore.importWidgetSaves; share absent",
+    "W-4": "NudgeWidgetDataStore.sync + WidgetContentStore.select; safeText on empty data",
+    "W-5": "QuoteCardView after successful favorite -> WidgetExperience guide/holdout assignment",
+    "W-6": "No store screenshot or shipped-build readback in this task",
+    "W-7": "WidgetExperience observed/unknown installation, cohort, days_since_eligible and opened events; generic lock-screen entry and view. Instrumentation only; no measured adoption or causal retention claim."
+  }
+}

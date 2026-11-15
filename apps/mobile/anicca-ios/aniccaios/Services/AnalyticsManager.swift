@@ -14,6 +14,7 @@ final class AnalyticsManager {
     private let purchaseObservations = PurchaseObservationLedger()
     private var sessionID: String { screenVisits.sessionID }
     private var screenVisits = ScreenVisitLedger()
+    private var onboardingAbandonment = OnboardingAbandonmentTracker()
 
     private var context: [String: MixpanelType] {
         #if targetEnvironment(simulator)
@@ -141,6 +142,71 @@ final class AnalyticsManager {
             "next_screen_id": exit.nextScreenID,
             "observed_duration_ms": exit.observedDurationMS,
         ])
+    }
+
+    // MARK: - Onboarding funnel (answer-carrying completion + abandonment)
+
+    /// Arms the abandonment tracker for the step that just became visible.
+    /// Called from OnboardingFlowView.recordStepView alongside the
+    /// existing step-viewed events.
+    func noteOnboardingStepViewed(step: OnboardingStep, flowID: String) {
+        onboardingAbandonment.beginStep(
+            stepID: AnalyticsScreenID.onboarding(step).rawValue,
+            stepIndex: step.rawValue,
+            flowID: flowID
+        )
+    }
+
+    /// `onboarding_step_completed` with the step's answer attached.
+    ///
+    /// Every step view saves its answer into `AppState.personalizationProfile`
+    /// *before* calling `next()`, so the profile read here already holds the
+    /// answer for the completing step. The payload carries `answer_ids`
+    /// (selected choice IDs from the snapshot vocabulary — a birth date is
+    /// only ever the kind token `date_provided`, the free-text name only
+    /// `provided` / `unknown`) and the same IDs are set as a Mixpanel user
+    /// property, so the funnel can be broken down by answer and joined to
+    /// paywall / purchase outcomes per person.
+    func trackOnboardingStepCompleted(step: OnboardingStep, profile: PersonalizationProfile, flowID: String = "onboarding") {
+        let screenID = AnalyticsScreenID.onboarding(step)
+        let payload = OnboardingAnalytics.stepCompletedPayload(
+            step: step, screenID: screenID.rawValue, flowID: flowID, profile: profile)
+        track(.onboardingStepCompleted, properties: [
+            "step_id": payload.stepID,
+            "step_index": payload.stepIndex,
+            "flow_id": payload.flowID,
+            "answer_ids": payload.answerIDs,
+            "answer_axis": payload.answerAxis,
+        ])
+        for property in OnboardingAnalytics.userProperties(for: step, profile: profile) {
+            setUserProperty(property.key, value: property.answerIDs)
+        }
+        onboardingAbandonment.markCompleted()
+    }
+
+    /// `onboarding_step_abandoned`, sent exactly once per step visit when
+    /// the app leaves the foreground with onboarding unfinished.
+    ///
+    /// Wired from both lifecycle surfaces so neither is a single point of
+    /// failure — OnboardingFlowView's `scenePhase` change and
+    /// AppDelegate's `applicationDidEnterBackground` — and the tracker
+    /// dedupes the two firings of the same transition. Termination is
+    /// covered by the background firing: iOS gives no reliable
+    /// will-terminate callback for a suspended app, so the background
+    /// event is the deterministic abandonment point.
+    /// Returns true when an event was actually sent (for tests / logs).
+    @discardableResult
+    func trackOnboardingAbandonedIfNeeded() -> Bool {
+        guard let payload = onboardingAbandonment.abandonmentPayloadIfNeeded() else { return false }
+        track(.onboardingStepAbandoned, properties: [
+            "step_id": payload.stepID,
+            "step_index": payload.stepIndex,
+            "flow_id": payload.flowID,
+        ])
+        // The process may be suspended right after backgrounding; flush so
+        // the abandon event is not left sitting in the on-device queue.
+        Mixpanel.mainInstance().flush()
+        return true
     }
 
     /// Backgrounding is not a user exit; keep the screen so foreground can start a fresh visit.
@@ -286,11 +352,17 @@ final class AnalyticsManager {
 // MARK: - Analytics Events
 
 enum AnalyticsEvent: String {
+    case widgetPromptAssigned = "widget_prompt_assigned"
+    case widgetGuideShown = "widget_guide_shown"
+    case widgetInstallationObserved = "widget_installation_observed"
+    case widgetInstallationUnknown = "widget_installation_unknown"
+    case widgetOpened = "widget_opened"
     case screenViewed = "screen_viewed"
     case screenExited = "screen_exited"
     case firstAffirmationViewed = "first_affirmation_viewed"
     case personalizationApplied = "personalization_applied"
     case affirmationViewed = "affirmation_viewed"
+    case affirmationDisplayEnded = "affirmation_display_ended"
     case affirmationLiked = "affirmation_liked"
     case affirmationUnliked = "affirmation_unliked"
     case affirmationShared = "affirmation_shared"
@@ -315,6 +387,7 @@ enum AnalyticsEvent: String {
     case onboardingStarted = "onboarding_started"
     case onboardingStepCompleted = "onboarding_step_completed"
     case onboardingStepViewed = "onboarding_step_viewed"
+    case onboardingStepAbandoned = "onboarding_step_abandoned"
     case onboardingWelcomeCompleted = "onboarding_welcome_completed"
     case onboardingStrugglesCompleted = "onboarding_struggles_completed"
     case onboardingStruggleDepthCompleted = "onboarding_struggle_depth_completed"

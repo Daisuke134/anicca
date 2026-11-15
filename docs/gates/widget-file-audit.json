@@ -1,0 +1,187 @@
+{
+  "note": "Resume audit after compatibility changes. No truncated or corrupt file found; all original changed files retained. This is not a native build. Manifest does not hash itself.",
+  "files": [
+    {
+      "file": "apps/mobile/anicca-ios/AniccaWidget/WidgetConfiguration.swift",
+      "bytes": 2297,
+      "sha256": "6aadb94cc5c2c5d3907375b5fa6a7cd1f6ad8a2358e5dcf9726be989e0dd4f2e",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Services/WidgetExperience.swift",
+      "bytes": 3975,
+      "sha256": "1b6cc958a3ab7ebe526601eb5de5c948ee50ae9ede5253f60da8a21d817569e3",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Shared/WidgetContentStore.swift",
+      "bytes": 2977,
+      "sha256": "cb6a67e9b2acd6eb7bdaec18c3924e91363dcb4bfcdee2887a6745f2e663ce12",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/gates/widget-q2-plan.md",
+      "bytes": 2687,
+      "sha256": "d923fcd01abdac178586a9005dc0f2cdbbfba96332007be4556bc93147db616f",
+      "check": "UTF-8/full diff inspection",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/gates/widget-source-state-after.json",
+      "bytes": 2058,
+      "sha256": "096b981d2f85a29e8d0e373871d75ad55b07a37bd14eafcefe0f24b3d6ba8c43",
+      "check": "JSON parse",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/gates/widget-source-state-before.json",
+      "bytes": 1124,
+      "sha256": "2c6348650bf8722701e1da93df631c06101dd24601c0fa384b155eff49a43f99",
+      "check": "JSON parse",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/gates/widget-source-state-ios16.json",
+      "bytes": 2051,
+      "sha256": "d8fc237aa6beda2bd9105b729961e62552d5bc89965a50c91a97fbf7f891d4dc",
+      "check": "JSON parse",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/gates/widget-verification.md",
+      "bytes": 6039,
+      "sha256": "0cf752d1b5e0636da55e23d841fb70655e5ddc49af8a49e5408fbc29594fa87b",
+      "check": "UTF-8/full diff inspection",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/AniccaWidget/AniccaWidget.swift",
+      "bytes": 7287,
+      "sha256": "b561d81784523d3ef3e4c5fb0ed121e133c0f9d605a80eb29c75c4d96e74c086",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/AniccaWidget/AniccaWidgetBundle.swift",
+      "bytes": 712,
+      "sha256": "db58f3340e98853ab27b1cfbf76de3d59163368c087aa91f4e4635acc75e0b7a",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/AniccaWidget/WidgetShared.swift",
+      "bytes": 1477,
+      "sha256": "0d7c23625ab1ea033ae0c9b6b99c0440a3f0f553fdcd61377e769329c71f36af",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios.xcodeproj/project.pbxproj",
+      "bytes": 76820,
+      "sha256": "3746d7ea72ce86af5960b85730c9fdfe75638ce853492f3a7abab179186fa6de",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/AppState.swift",
+      "bytes": 44650,
+      "sha256": "802145081a29491789317dbe5f9342d762abb77fa7d89235685c215572e5ae75",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/de.lproj/Localizable.strings",
+      "bytes": 101018,
+      "sha256": "27eddec1b103658c0a65c146e02add9e5c9ac5787665f197d0cfdadb706684ef",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/en.lproj/Localizable.strings",
+      "bytes": 259837,
+      "sha256": "942c5eac89f89b461d64e42d195a2a102b938731309c1f2db0f4b61226d5b0bc",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/es.lproj/Localizable.strings",
+      "bytes": 267312,
+      "sha256": "00a7b83239a9bab658ade03d323b31e2d679c983e1279f9674e0d3dabae7cf1c",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/fr.lproj/Localizable.strings",
+      "bytes": 102292,
+      "sha256": "3a06aedb4f9cb9278f128209dd6558cefdfcb7c2c5c5101d0478bee445b5ccaa",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/ja.lproj/Localizable.strings",
+      "bytes": 287857,
+      "sha256": "fbfa63091f3cf8867e0633ee61e18134a4d87438f634145ac78099615e8983bf",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Resources/pt-BR.lproj/Localizable.strings",
+      "bytes": 98669,
+      "sha256": "f97d133910a3496f32344823fc86a0c5304718840c18ce8b6b634c02a8b736ae",
+      "check": "OpenStep parse (whole-line // comments omitted for parser compatibility)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Services/AnalyticsManager.swift",
+      "bytes": 24415,
+      "sha256": "28263a008ff604fe09e3c8fde6807b4b34bc4cc366fa940b722107cadd5cf0a1",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Services/LikedQuotesStore.swift",
+      "bytes": 3381,
+      "sha256": "b5cb4a1e757d29b9a9d78b4b6b771e0f7009a5e10e20a4629cbbe0cd347bfded",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Shared/NudgeWidgetDataStore.swift",
+      "bytes": 829,
+      "sha256": "4822a236c5aff2c81420fad27f4802a2fd97313e5a83e8029770b6773419b7ca",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Views/Feed/FeedRootView.swift",
+      "bytes": 23462,
+      "sha256": "4f6ce9622e626fd5d6a71f42d14d0f0b869301ad3d24876bd6c9f436a11595fe",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/Views/Feed/QuoteCardView.swift",
+      "bytes": 6110,
+      "sha256": "d89525169f63afffa575bc703729ac418c1e440a0bc0e64fd4955f5e598a2165",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "apps/mobile/anicca-ios/aniccaios/aniccaiosApp.swift",
+      "bytes": 1404,
+      "sha256": "976d9369c369a1072e46a111b6dc42e866e59a10040775e1e77a1b97089872af",
+      "check": "tree-sitter-swift syntax (not Swift type checking)",
+      "result": "PASS"
+    },
+    {
+      "file": "docs/team/BOARD.md",
+      "bytes": 165295,
+      "sha256": "823082295297c363052585c7f69a053abe988f1463354331104918637f7392d7",
+      "check": "UTF-8/full diff inspection",
+      "result": "PASS"
+    }
+  ]
+}

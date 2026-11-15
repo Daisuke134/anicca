@@ -137,18 +137,17 @@ enum PersonalizedNudgeSelector {
         return (selection, previewCase.deliveryId)
     }
 
-    /// - Parameters:
-    ///   - shownAt: message id → last time it was shown (decision history).
-    ///   - random: uniform [0, 1) source, injected for testability.
-    static func select(
+    /// The candidate pipeline behind `select`: eligibility, time-band fit,
+    /// recency, and the 14-day cooldown, in deterministic rank order.
+    /// `select` picks from the head of this list; the living-home deck
+    /// presents the list itself as further words behind today's intervention.
+    static func rankedCandidates(
         user: SyntheticUser,
         pool: [Quote],
         shownAt: [String: Date] = [:],
         now: Date = Date(),
-        band: TimeBand,
-        random: () -> Double = { Double.random(in: 0..<1) }
-    ) -> Selection? {
-        guard !pool.isEmpty else { return nil }
+        band: TimeBand
+    ) -> [Quote] {
         let profile = user.conditioningProfile
         let shownAt = user.shownTimestamps.merging(shownAt, uniquingKeysWith: max)
 
@@ -174,7 +173,7 @@ enum PersonalizedNudgeSelector {
 
         // Deterministic ranking: score desc, unseen first, then id — so the
         // greedy pick is stable and the recorded reason is reproducible.
-        let ranked = candidates.sorted { lhs, rhs in
+        return candidates.sorted { lhs, rhs in
             let lScore = score(quote: lhs, user: user)
             let rScore = score(quote: rhs, user: user)
             if lScore != rScore { return lScore > rScore }
@@ -183,6 +182,22 @@ enum PersonalizedNudgeSelector {
             if lSeen != rSeen { return !lSeen }
             return lhs.id < rhs.id
         }
+    }
+
+    /// - Parameters:
+    ///   - shownAt: message id → last time it was shown (decision history).
+    ///   - random: uniform [0, 1) source, injected for testability.
+    static func select(
+        user: SyntheticUser,
+        pool: [Quote],
+        shownAt: [String: Date] = [:],
+        now: Date = Date(),
+        band: TimeBand,
+        random: () -> Double = { Double.random(in: 0..<1) }
+    ) -> Selection? {
+        guard !pool.isEmpty else { return nil }
+        let profile = user.conditioningProfile
+        let ranked = rankedCandidates(user: user, pool: pool, shownAt: shownAt, now: now, band: band)
         guard let top = ranked.first else { return nil }
 
         let count = ranked.count

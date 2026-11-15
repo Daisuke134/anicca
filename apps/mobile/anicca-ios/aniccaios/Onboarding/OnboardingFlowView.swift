@@ -8,11 +8,13 @@ import UserNotifications
 /// purchase; the paywall is closable and the intervention is shown either way.
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.scenePhase) private var scenePhase
     @State private var step: OnboardingStep = .welcome
     @State private var lastTrackedStep: OnboardingStep?
     @State private var didTrackOnboardingStart = false
     @State private var showPaywall = false
     @State private var showFirstIntervention = false
+    @State private var showRatingPrompt = false
 
     var body: some View {
         ZStack {
@@ -54,6 +56,15 @@ struct OnboardingFlowView: View {
             }
         }
         .onChange(of: step) { _ in recordStepView() }
+        // Abandonment: leaving for the background with questions
+        // unfinished fixes the step the person left at. AppDelegate's
+        // applicationDidEnterBackground fires the same tracker for the
+        // same transition; the tracker dedupes it to one event.
+        .onChange(of: scenePhase) { phase in
+            if phase == .background, !appState.onboardingQuestionsCompleted, !appState.isOnboardingComplete {
+                AnalyticsManager.shared.trackOnboardingAbandonedIfNeeded()
+            }
+        }
         // Phase 1 ending: after the questions, show the soft paywall, then
         // the first personalized intervention — whether the user purchases
         // or closes the paywall — and only then complete into the feed.
@@ -73,9 +84,18 @@ struct OnboardingFlowView: View {
         .fullScreenCover(isPresented: $showFirstIntervention) {
             FirstInterventionStepView(next: {
                 showFirstIntervention = false
-                completeFreeOnboarding()
+                showRatingPrompt = true
             })
             .environmentObject(appState)
+        }
+        // The review step closes onboarding: after the value moment
+        // (the first personalized words above), never at first launch.
+        // See RatingPrePromptStepView for the placement reasoning.
+        .fullScreenCover(isPresented: $showRatingPrompt) {
+            RatingPrePromptStepView(next: {
+                showRatingPrompt = false
+                completeFreeOnboarding()
+            })
         }
     }
 
@@ -125,6 +145,7 @@ struct OnboardingFlowView: View {
         lastTrackedStep = step
         let screenID = AnalyticsScreenID.onboarding(step)
         AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: screenID, flowID: "onboarding")
+        AnalyticsManager.shared.noteOnboardingStepViewed(step: step, flowID: "onboarding")
         AnalyticsManager.shared.track(.onboardingStepViewed, properties: [
             "screen_id": screenID.rawValue,
             "step_index": step.rawValue,
@@ -133,18 +154,17 @@ struct OnboardingFlowView: View {
     }
 
     private func advance() {
-        let screenID = AnalyticsScreenID.onboarding(step)
-        AnalyticsManager.shared.track(.onboardingStepCompleted, properties: [
-            "step_id": screenID.rawValue,
-            "step_index": step.rawValue,
-            "flow_id": "onboarding",
-        ])
+        // The completing step's view saved its answer into
+        // personalizationProfile before calling next(), so this event
+        // carries that answer as answer_ids (+ user property).
+        AnalyticsManager.shared.trackOnboardingStepCompleted(
+            step: step, profile: appState.personalizationProfile)
 
         if step == .notifications {
             appState.markOnboardingQuestionsCompleted()
             AnalyticsManager.shared.track(.onboardingCompleted)
             AnalyticsManager.shared.updateSKANConversionValue(1)
-            showPaywall = true
+            presentPaywallOnlyIfNotSubscribed()
             return
         }
 
@@ -154,6 +174,25 @@ struct OnboardingFlowView: View {
             AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.onboarding(next).rawValue)
             step = next
             appState.setOnboardingStep(step)
+        }
+    }
+
+    /// The paywall is for non-subscribers only (user rule, 2026-11-15):
+    /// a user whose entitlement is already active goes straight to the
+    /// first intervention and never sees a purchase screen. The
+    /// entitlement is refreshed live first, so a subscription started on
+    /// another device is honored; the decision itself lives in
+    /// PaywallPresentationPolicy so every entry point agrees.
+    private func presentPaywallOnlyIfNotSubscribed() {
+        Task {
+            let refreshed = await SubscriptionManager.shared.refreshCustomerInfo()
+            if PaywallPresentationPolicy.shouldPresent(
+                refreshedIsEntitled: refreshed,
+                cachedIsEntitled: appState.subscriptionInfo.isEntitled) {
+                showPaywall = true
+            } else {
+                showFirstIntervention = true
+            }
         }
     }
 

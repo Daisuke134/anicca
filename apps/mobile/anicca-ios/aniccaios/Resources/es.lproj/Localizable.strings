@@ -2810,3 +2810,8 @@
 "adaptive_quiet_conflict" = "No recibirás recordatorios durante tus horas de silencio. Puedes elegir otra hora.";
 "adaptive_no_available_times" = "Tus horas de silencio abarcan todo el día, así que no se programarán recordatorios.";
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
+"feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_picked_from_answers" = "Picked for you, from your answers";
+
+"widget_guide_title" = "Ten estas palabras cerca";
+"widget_guide_body" = "Mantén pulsado un espacio vacío de la pantalla de inicio, elige Editar → Añadir widget y busca Anicca. Elige un tamaño. Mantén pulsado el widget para cambiar categoría, tema y frecuencia. En la pantalla de bloqueo, mantén pulsado, elige Personalizar → Añadir widgets → Anicca. Allí solo mostramos palabras generales para proteger tu privacidad. Los ajustes individuales de categoría, tema y frecuencia requieren iOS 17 o posterior.";

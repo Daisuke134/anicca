@@ -8,18 +8,32 @@ struct QuoteCardView: View {
     let quote: Quote
     let pageWidth: CGFloat
     var deliveryId: String? = nil
+    /// Why this word was chosen, when the surface knows (the living home
+    /// passes it; other surfaces leave it nil and stay unchanged).
+    var selectionCaption: String? = nil
 
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
     @Environment(\.requestReview) private var requestReview
 
     @State private var showShareSheet = false
+    @State private var showWidgetGuide = false
     @State private var copyFlashOpacity: Double = 0
     @ScaledMetric(relativeTo: .title) private var quoteFontSize: CGFloat = 32
 
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
+
+            if let selectionCaption {
+                Text(selectionCaption)
+                    .font(.footnote)
+                    .foregroundStyle(themeStore.selected.foregroundColor.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: max(120, pageWidth - 64))
+                    .accessibilityIdentifier("quote-selection-caption")
+            }
 
             Text(quote.text)
                 .font(.system(size: quoteFontSize, weight: .regular, design: .serif))
@@ -45,6 +59,11 @@ struct QuoteCardView: View {
             Spacer().frame(height: 32)
         }
         .frame(width: pageWidth)
+        .alert(String(localized: "widget_guide_title"), isPresented: $showWidgetGuide) {
+            Button(String(localized: "common_close"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "widget_guide_body"))
+        }
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(items: [
                 ShareImageRenderer.render(
@@ -74,8 +93,14 @@ struct QuoteCardView: View {
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
                     DecisionPointRecorder.shared.recordQuoteResponse(messageId: quote.id, deliveryId: deliveryId, event: .saved)
-                    ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
-                        requestReview()
+                    let hadWidgetAssignment = WidgetExperience.hasAssignedPrompt
+                    if WidgetExperience.guideAfterSave() {
+                        showWidgetGuide = true
+                        WidgetExperience.guideShown()
+                    } else if hadWidgetAssignment {
+                        ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
+                            requestReview()
+                        }
                     }
                 }
             }

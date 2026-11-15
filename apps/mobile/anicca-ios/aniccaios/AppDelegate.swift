@@ -67,6 +67,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
+        // Onboarding abandonment is recorded before the visit is
+        // suspended: suspending alone never produced an exit, so the
+        // step a person left at was undeterminable. The tracker inside
+        // AnalyticsManager dedupes this against OnboardingFlowView's
+        // scenePhase firing of the same transition (one event per step).
+        AnalyticsManager.shared.trackOnboardingAbandonedIfNeeded()
         AnalyticsManager.shared.suspendCurrentScreenVisit()
     }
 
