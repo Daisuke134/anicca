@@ -2,7 +2,8 @@ import SwiftUI
 import RevenueCat
 import StoreKit
 
-/// One primary offer, with alternative plans available in a separate sheet.
+/// Every plan on sale is shown as a card on the first screen (Issue #9356);
+/// no plan hides behind an "Other plans" sheet.
 struct PaywallVariantBView: View {
     let variant: String
     let onPurchaseSuccess: (CustomerInfo) -> Void
@@ -16,7 +17,6 @@ struct PaywallVariantBView: View {
     @State private var hasShownRetention = false
     @State private var didAcceptRetention = false
     @State private var showRetention = false
-    @State private var showOtherPlans = false
     @State private var showReloadAfterTimeout = false
     @State private var trackedOfferingLoadOutcomes: Set<String> = []
     @State private var eligibility: [String: IntroEligibility] = [:]
@@ -101,9 +101,6 @@ struct PaywallVariantBView: View {
                 trackOfferingLoadResult(updatedLoad)
             }
         }
-        .sheet(isPresented: $showOtherPlans) {
-            alternativePlans
-        }
         .sheet(isPresented: $showRetention, onDismiss: {
             if !didAcceptRetention {
                 AnalyticsManager.shared.trackScreenViewed(screenID: .paywall, flowID: flowID)
@@ -134,15 +131,7 @@ struct PaywallVariantBView: View {
             if packages.isEmpty {
                 loadingContent
             } else if let package = selectedPackage {
-                offerCard(package: package, isSelected: true)
-                if packages.count > 1 {
-                    Button(String(localized: "paywall_other_plans")) { showOtherPlans = true }
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.Colors.accent)
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("paywall-other-plans")
-                        .disabled(isPurchasing)
-                }
+                planCards
                 if let end = trialEndDate {
                     trialTimeline(end: end, package: package)
                 }
@@ -246,46 +235,76 @@ struct PaywallVariantBView: View {
         }
     }
 
-    private var alternativePlans: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    Text(String(localized: "paywall_other_plans"))
-                        .font(.system(.title2, design: .serif))
-                        .accessibilityAddTraits(.isHeader)
-                    ForEach(packages, id: \.identifier) { package in
-                        Button {
-                            selectedPackage = package
-                            AnalyticsManager.shared.track(.productSelected, properties: [
-                                "product_id": package.storeProduct.productIdentifier,
-                                "offering_id": offering?.identifier ?? "unknown",
-                                "source": "paywall",
-                            ])
-                            showOtherPlans = false
-                        } label: {
-                            offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("paywall-plan-\(package.packageType.rawValue)")
-                    }
+    /// The three plans the paywall sells, as selectable cards on the first screen.
+    private var planCards: some View {
+        VStack(spacing: 10) {
+            ForEach(orderedPackages, id: \.identifier) { package in
+                Button {
+                    selectedPackage = package
+                    AnalyticsManager.shared.track(.productSelected, properties: [
+                        "product_id": package.storeProduct.productIdentifier,
+                        "offering_id": offering?.identifier ?? "unknown",
+                        "source": "paywall",
+                    ])
+                } label: {
+                    offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
                 }
-                .padding(24)
-            }
-            .background(AppBackground())
-            .foregroundStyle(AppTheme.Colors.label)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(String(localized: "common_close")) { showOtherPlans = false }
-                        .accessibilityIdentifier("paywall-other-plans-close")
-                }
+                .buttonStyle(.plain)
+                .disabled(isPurchasing)
+                .accessibilityIdentifier("paywall-plan-\(Self.planIdentifierName(for: package.packageType))")
             }
         }
-        .tint(AppTheme.Colors.accent)
+        // No identifier on this container either: the cards' own
+        // identifiers are the E2E contract and nothing may shadow them.
+    }
+
+    /// Stable accessibility-identifier suffix for a plan card.
+    /// `PackageType.rawValue` is an Int in RevenueCat (lifetime 0,
+    /// annual 1, monthly 5, weekly 6), so interpolating it produced
+    /// `paywall-plan-1` etc. and the E2E flows could not address the
+    /// cards by name — build-830 E2E runs 43664427417 and 43667965841
+    /// both failed on `paywall-plan-annual` while the hierarchy dump
+    /// showed all four cards on screen with numeric ids.
+    static func planIdentifierName(for packageType: PackageType) -> String {
+        switch packageType {
+        case .annual: return "annual"
+        case .monthly: return "monthly"
+        case .weekly: return "weekly"
+        case .lifetime: return "lifetime"
+        case .sixMonth: return "six-month"
+        case .threeMonth: return "three-month"
+        case .twoMonth: return "two-month"
+        case .custom: return "custom"
+        default: return "other"
+        }
+    }
+
+    /// The three plans the paywall sells, in display order: annual
+    /// (highlighted, default), weekly, lifetime. Monthly is filtered out
+    /// here — see PaywallPlanDisplay for the primary-source reasoning.
+    private var orderedPackages: [Package] {
+        let visible = packages.filter {
+            PaywallPlanDisplay.isVisible(planName: Self.planIdentifierName(for: $0.packageType))
+        }
+        return PaywallPlanOrdering.ordered(visible) {
+            PaywallPlanDisplay.rank(planName: Self.planIdentifierName(for: $0.packageType))
+        }
     }
 
     private func offerCard(package: Package, isSelected: Bool) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
+                if package.packageType == .annual {
+                    // The one highlighted plan (RevenueCat best practice:
+                    // highlight a single plan with its badge).
+                    Text(String(localized: "paywall_plan_yearly_badge"))
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(AppTheme.Colors.accent, in: Capsule())
+                        .accessibilityIdentifier("paywall-plan-badge-best-value")
+                }
                 Text(localizedPlanTitle(for: package))
                     .font(.subheadline)
                 Text(billedAmount(for: package))

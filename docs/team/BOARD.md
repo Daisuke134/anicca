@@ -376,3 +376,5 @@
 - 2026-11-14 / Codex / Anicca iOS Issue #9353 第2ラウンド: 指定PR #9352 branchの1f26b0f42上に、Q-A〜I・最大2つのpain別深掘り・Q-G適応補足、UserProfile保存/ID snapshot、gentle優先と静かな時間、6言語、49候補、21 XCTest、Maestro新17フレーム導線を実装。FIX-NOTESへ質問→合成データ/実装/テスト/監査対応を記録。Python 36件中35成功・Swift依存1skip、Swift/Xcode/実撮影と独立レビュー/配信readbackは未完了。未commit差分を委任元へ引渡し、push/merge/ASC提出なし。
 
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
+
+- 2026-11-16 / Codex / anicca codex/app-gates-2担当: Apple認証入口・資格状態・Keychain移行・既存削除導線、RevenueCat起動監視/復帰同期/識別境界を修正。source回帰10成功、XCTest6追加（Swift/Xcode不在で未実行）。SIWA Gate 3未達・store-origin Gate 5未達を監査記録へ保存。サーバー/ASC/実機未確認。指定ブランチにcommitのみ、push/本番変更なし。

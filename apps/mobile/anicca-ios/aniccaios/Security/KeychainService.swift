@@ -8,10 +8,13 @@ enum KeychainService {
             kSecAttrAccount as String: account,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ]
-        SecItemDelete(query as CFDictionary)
-        var attributes = query
-        attributes[kSecValueData as String] = value
-        let status = SecItemAdd(attributes as CFDictionary, nil)
+        let update: [String: Any] = [kSecValueData as String: value]
+        var status = SecItemUpdate(query as CFDictionary, update as CFDictionary)
+        if status == errSecItemNotFound {
+            var attributes = query
+            attributes[kSecValueData as String] = value
+            status = SecItemAdd(attributes as CFDictionary, nil)
+        }
         guard status == errSecSuccess else {
             throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: nil)
         }

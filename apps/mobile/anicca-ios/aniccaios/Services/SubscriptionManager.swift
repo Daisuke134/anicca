@@ -10,12 +10,27 @@ final class SubscriptionManager: NSObject {
     private var offerings: Offerings?
     private var offeringsRefreshGeneration = 0
     private(set) var isConfigured = false
+    private var customerInfoTask: Task<Void, Never>?
+    private var syncInFlight = false
+    private var backendSyncInFlight = false
+    private var identityTask: Task<Void, Never>?
+    private var pendingPromotedPurchases: [(StoreProduct, StartPurchaseBlock)] = []
+
+    private var identityMatchesSession: Bool {
+        guard isConfigured else { return false }
+        if let userID = AppState.shared.authStatus.userId {
+            return Purchases.shared.appUserID == userID
+        }
+        return Purchases.shared.isAnonymous
+    }
+
 
     private override init() {
         super.init()
     }
 
     func configure() {
+        guard !isConfigured else { return }
         // UIテストモード時はRevenueCat初期化をスキップ（CIシミュレータでApple IDダイアログを防止）
         let launchArguments = ProcessInfo.processInfo.arguments
         if launchArguments.contains("UITESTING") || launchArguments.contains("-UITESTING") {
@@ -31,6 +46,9 @@ final class SubscriptionManager: NSObject {
         // 言語設定は自動検出されるため明示的な設定は不要
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
+                .with(appUserID: AppState.shared.authStatus.userId)
+                .with(purchasesAreCompletedBy: .revenueCat, storeKitVersion: .storeKit2)
+                .with(showStoreMessagesAutomatically: true)
                 .with(entitlementVerificationMode: .informational)
                 .build()
         )
@@ -51,40 +69,22 @@ final class SubscriptionManager: NSObject {
         
         isConfigured = true
 
-        // 起動直後にオファリング取得を開始（並列実行で高速化）
+        // RevenueCat owns the transaction listener and finishing after receipt delivery.
+        // Keep the entitlement listener alive regardless of onboarding or paywall visibility.
+        customerInfoTask = Task { await listenCustomerInfo() }
         Task {
-            await withTaskGroup(of: Void.self) { group in
-                group.addTask { _ = await self.refreshOfferings() }
-                group.addTask { await self.listenCustomerInfo() }
-            }
+            _ = await refreshOfferings()
+            await syncNow()
         }
     }
-    
+
     private func listenCustomerInfo() async {
         for await info in Purchases.shared.customerInfoStream {
-            await MainActor.run {
-                var subscription = SubscriptionInfo(info: info)
-                
-                // 重要: RevenueCatの情報を優先して即座に更新
-                AppState.shared.updateSubscriptionInfo(subscription)
-                
-                // サーバーから月次利用量情報を取得してマージ（バックグラウンド）
-                Task.detached(priority: .utility) {
-                    await self.syncUsageInfo(&subscription)
-                    // 利用量情報のみを更新（エンタイトルメント状態は変更しない）
-                    await MainActor.run {
-                        var currentSubscription = AppState.shared.subscriptionInfo
-                        // エンタイトルメント状態を保持したまま、利用量情報のみ更新
-                        currentSubscription.monthlyUsageLimit = subscription.monthlyUsageLimit
-                        currentSubscription.monthlyUsageRemaining = subscription.monthlyUsageRemaining
-                        currentSubscription.monthlyUsageCount = subscription.monthlyUsageCount
-                        AppState.shared.updateSubscriptionInfo(currentSubscription)
-                    }
-                }
-            }
+            guard identityMatchesSession else { continue }
+            AppState.shared.updateSubscriptionInfo(SubscriptionInfo(info: info))
         }
     }
-    
+
     private func syncUsageInfo(_ subscription: inout SubscriptionInfo) async {
         // v0.5.1: 匿名ユーザーでも利用量情報を同期
         let deviceId = AppState.shared.resolveDeviceId()
@@ -123,23 +123,41 @@ final class SubscriptionManager: NSObject {
     }
     
     func handleLogin(appUserId: String) async {
-        guard isConfigured else { return }
-        if Purchases.shared.appUserID != appUserId {
-            _ = try? await Purchases.shared.logIn(appUserId)
-        }
-        await refreshOfferings()
+        await updateIdentity(appUserId: appUserId)
+        startPendingPromotedPurchases()
     }
-    
+
     func handleLogout() async {
-        guard isConfigured else { return }
-        // 匿名ユーザーの場合はログアウト不要
-        guard !Purchases.shared.isAnonymous else {
-            print("[RevenueCat] Skipping logout for anonymous user")
-            return
-        }
-        _ = try? await Purchases.shared.logOut()
+        await updateIdentity(appUserId: nil)
+        startPendingPromotedPurchases()
     }
-    
+
+    private func updateIdentity(appUserId: String?) async {
+        guard isConfigured else { return }
+        let previous = identityTask
+        let task = Task { @MainActor in
+            await previous?.value
+            guard AppState.shared.authStatus.userId == appUserId else { return }
+            do {
+                let info: CustomerInfo
+                if let appUserId {
+                    if Purchases.shared.appUserID == appUserId { return }
+                    info = try await Purchases.shared.logIn(appUserId).customerInfo
+                } else {
+                    guard !Purchases.shared.isAnonymous else { return }
+                    info = try await Purchases.shared.logOut()
+                }
+                guard AppState.shared.authStatus.userId == appUserId else { return }
+                AppState.shared.updateSubscriptionInfo(SubscriptionInfo(info: info))
+            } catch {
+                // Retry on foreground; never discard the anonymous purchase identity.
+                print("[RevenueCat] Identity update failed")
+            }
+        }
+        identityTask = task
+        await task.value
+    }
+
     private static func resolveAniccaOffering(from offerings: Offerings) -> Offering? {
         PaywallOfferingSelection.resolve(
             current: offerings.current,
@@ -203,7 +221,9 @@ final class SubscriptionManager: NSObject {
     func refreshCustomerInfo() async -> Bool? {
         guard isConfigured else { return nil }
         do {
+            let userID = Purchases.shared.appUserID
             let customerInfo = try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)
+            guard identityMatchesSession, Purchases.shared.appUserID == userID else { return nil }
             let subscription = SubscriptionInfo(info: customerInfo)
             AppState.shared.updateSubscriptionInfo(subscription)
             return subscription.isEntitled
@@ -214,14 +234,29 @@ final class SubscriptionManager: NSObject {
     }
     
     func syncNow() async {
-        guard isConfigured else { return }
-        // 1) 端末側の領収書同期
+        guard isConfigured, !syncInFlight else { return }
+        syncInFlight = true
+        defer { syncInFlight = false }
+        await updateIdentity(appUserId: AppState.shared.authStatus.userId)
+        guard identityMatchesSession else { return }
+        startPendingPromotedPurchases()
+        let userID = Purchases.shared.appUserID
         do {
-            _ = try await Purchases.shared.syncPurchases()
+            let info = try await Purchases.shared.syncPurchases()
+            guard identityMatchesSession, Purchases.shared.appUserID == userID else { return }
+            AppState.shared.updateSubscriptionInfo(SubscriptionInfo(info: info))
         } catch {
-            print("[SubscriptionManager] syncPurchases failed: \(error)")
+            // SDK retains unfinished transactions; the next foreground retries.
+            print("[SubscriptionManager] Purchase reconciliation unavailable")
+            _ = await refreshCustomerInfo()
         }
-        
+        await syncBackendUsage()
+    }
+
+    private func syncBackendUsage() async {
+        guard identityMatchesSession, !backendSyncInFlight else { return }
+        backendSyncInFlight = true
+        defer { backendSyncInFlight = false }
         // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
         // 重要(1.6.3): "通常状態ユーザー（= ほぼ全員）" でもサーバがPro/Freeを判定できるようにする。
         // - RevenueCatの購読状態は端末内では分かるが、APNs配信量はサーバが決めるため、サーバ側SSOT(user_subscriptions)の更新が必要。
@@ -252,9 +287,13 @@ final class SubscriptionManager: NSObject {
             // 3) 最新Entitlementを取得
             var subscription = AppState.shared.subscriptionInfo
             await syncUsageInfo(&subscription)
-            await MainActor.run {
-                AppState.shared.updateSubscriptionInfo(subscription)
-            }
+            guard identityMatchesSession, Purchases.shared.appUserID == revenueCatAppUserId else { return }
+            // The response contains usage only. Never restore an older entitlement snapshot.
+            var current = AppState.shared.subscriptionInfo
+            current.monthlyUsageLimit = subscription.monthlyUsageLimit
+            current.monthlyUsageRemaining = subscription.monthlyUsageRemaining
+            current.monthlyUsageCount = subscription.monthlyUsageCount
+            AppState.shared.updateSubscriptionInfo(current)
         } catch {
             print("[SubscriptionManager] Sync error: \(error.localizedDescription)")
             // エラーでも続行（オフライン時など）
@@ -266,7 +305,9 @@ extension SubscriptionManager: PurchasesDelegate {
     func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
         print("[RevenueCat] Delegate received update. Active entitlements: \(customerInfo.entitlements.active.keys)")
         
+        let userID = purchases.appUserID
         Task { @MainActor in
+            guard identityMatchesSession, Purchases.shared.appUserID == userID else { return }
             let subscription = SubscriptionInfo(info: customerInfo)
             
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
@@ -276,17 +317,48 @@ extension SubscriptionManager: PurchasesDelegate {
             // are entitlement state, not new purchase or client revenue events.
             
             // 3. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）
-            await syncNow()
+            await syncBackendUsage()
         }
     }
     
     // 追加: アプリ内課金のプロモーション対応（ベストプラクティス）
     func purchases(_ purchases: Purchases, readyForPromotedProduct product: StoreProduct, purchase: @escaping StartPurchaseBlock) {
-        purchase { (transaction, info, error, cancelled) in
-            if let info = info {
+        pendingPromotedPurchases.append((product, purchase))
+        Task { @MainActor in
+            await updateIdentity(appUserId: AppState.shared.authStatus.userId)
+            startPendingPromotedPurchases()
+        }
+    }
+
+    private func startPendingPromotedPurchases() {
+        // Preserve the continuation across identity failures; foreground reconciliation retries.
+        guard identityMatchesSession else { return }
+        let pending = pendingPromotedPurchases
+        pendingPromotedPurchases.removeAll()
+        for (product, purchase) in pending {
+            let userID = Purchases.shared.appUserID
+            purchase { _, info, error, cancelled in
                 Task { @MainActor in
-                    let sub = SubscriptionInfo(info: info)
-                    AppState.shared.updateSubscriptionInfo(sub)
+                    let outcome: String
+                    if cancelled {
+                        outcome = "cancelled"
+                    } else if let error {
+                        outcome = (error as NSError).code == ErrorCode.paymentPendingError.rawValue ? "pending" : "failed"
+                    } else if let info {
+                        guard self.identityMatchesSession, Purchases.shared.appUserID == userID else {
+                            await self.syncNow()
+                            return
+                        }
+                        AppState.shared.updateSubscriptionInfo(SubscriptionInfo(info: info))
+                        outcome = SubscriptionInfo(info: info).isEntitled ? "granted" : "not_entitled"
+                        await self.syncBackendUsage()
+                    } else {
+                        outcome = "pending"
+                    }
+                    AnalyticsManager.shared.track(.storePurchaseResult, properties: [
+                        "result": outcome, "product_id": product.productIdentifier,
+                        "source": "promoted_product"
+                    ])
                 }
             }
         }

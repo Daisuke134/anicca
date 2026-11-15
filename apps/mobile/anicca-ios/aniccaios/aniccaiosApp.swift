@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct aniccaiosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var appState = AppState.shared
 
     var body: some Scene {
@@ -23,6 +24,13 @@ struct aniccaiosApp: App {
                     #if DEBUG
                     ScreenshotDebugManager.shared.configure()
                     #endif
+                }
+                .onChange(of: scenePhase) { phase in
+                    guard phase == .active else { return }
+                    Task {
+                        await AuthCoordinator.shared.validateCredentialState()
+                        await SubscriptionManager.shared.syncNow()
+                    }
                 }
                 .onOpenURL { url in
                     guard url.scheme == "anicca" else { return }

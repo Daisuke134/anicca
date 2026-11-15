@@ -7,6 +7,10 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
+      # Living-home auto-advance off under test (FeedRootView
+      # HomeAutoAdvance): flow steps can exceed the 8s idle interval.
+      # Not UITESTING — that would skip RevenueCat setup.
+      "-uiTesting": ""
 - retry:
     maxRetries: 2
     commands:
@@ -189,6 +193,27 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - runFlow: _dismiss-apple-account.yaml
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 07-paywall
+      # Issue #9356 as decided 2026-11-15: exactly three plans, each a
+      # card on this first screen — annual highlighted as best value,
+      # weekly, lifetime. Nothing hides behind an "Other plans" sheet,
+      # and monthly is not sold on the paywall at all.
+      - assertVisible:
+          id: "paywall-plan-annual"
+      - assertVisible:
+          id: "paywall-plan-badge-best-value"
+      - assertVisible:
+          id: "paywall-plan-weekly"
+      - assertVisible:
+          id: "paywall-plan-lifetime"
+      - assertNotVisible:
+          id: "paywall-plan-monthly"
+      # Selecting a plan happens in place, on this same screen: the
+      # purchase CTA stays visible and switches to the weekly terms.
+      - tapOn:
+          id: "paywall-plan-weekly"
+      - assertVisible:
+          id: "paywall-plan-cta"
+      - takeScreenshot: 07b-paywall-weekly-selected
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: paywall-close-button
@@ -205,6 +230,18 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 08-first-intervention
 - tapOn:
     id: onboarding-intervention-continue
+# The review step closes onboarding, right after the value moment
+# (the first personalized words) — the form that earned 48 reviews,
+# restored 2026-11-15. It is never the first screen: Honne 1.0.7 was
+# rejected under Guideline 5.6.3 for asking at first launch. Under
+# -uiTesting the step's button advances without the system dialog.
+- extendedWaitUntil:
+    visible:
+      id: onboarding-rating-continue
+    timeout: 15000
+- takeScreenshot: 08b-rating-prompt
+- tapOn:
+    id: onboarding-rating-continue
 - extendedWaitUntil:
     visible:
       id: feed-today
@@ -212,11 +249,29 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
+# The card states why this word is here — chosen from the person's own
+# onboarding answers — so the personalization is visible in the
+# experience, not only in the logs (user rule, 2026-11-15).
+- assertVisible:
+    id: quote-selection-caption
 - takeScreenshot: 09-feed-home
-# Default home stays on this person's daily word when swiped.
+# Living home: the first card is today's intervention, and the deck
+# behind it moves — swiping up reaches further words, swiping back
+# returns to today's words.
 - swipe:
     start: 50%, 75%
     end: 50%, 25%
+    duration: 450
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: quote-text
+- assertTrue: ${maestro.copiedText !== output.intervention}
+- assertVisible:
+    id: quote-selection-caption
+- takeScreenshot: 09b-feed-deck-second
+- swipe:
+    start: 50%, 25%
+    end: 50%, 75%
     duration: 450
 - waitForAnimationToEnd
 - copyTextFrom:
@@ -241,14 +296,6 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     maxRetries: 2
     commands:
       - runFlow: _dismiss-apple-account.yaml
-      # A failed attempt may have left the alternative-plans sheet open.
-      - runFlow:
-          when:
-            visible:
-              id: paywall-other-plans-close
-          commands:
-            - tapOn:
-                id: paywall-other-plans-close
       - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
@@ -258,19 +305,17 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 14-premium-from-themes
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-      - runFlow:
-          when:
-            visible:
-              id: paywall-other-plans
-          commands:
-            - tapOn:
-                id: paywall-other-plans
-            - runFlow: _dismiss-apple-account.yaml
-            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-            - takeScreenshot: 14b-alternative-plans
-            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-            - tapOn:
-                id: paywall-other-plans-close
+      # Issue #9356: on this second paywall appearance too, the three
+      # plans are cards on the first screen and monthly is absent.
+      - assertVisible:
+          id: "paywall-plan-annual"
+      - assertVisible:
+          id: "paywall-plan-weekly"
+      - assertVisible:
+          id: "paywall-plan-lifetime"
+      - assertNotVisible:
+          id: "paywall-plan-monthly"
+      - takeScreenshot: 14b-paywall-all-plans
       - tapOn:
           id: paywall-close-button
 # Unsigned StoreKit can show a sandbox sign-in prompt. Do not sign in.
@@ -289,7 +334,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - assertTrue: ${maestro.copiedText === output.intervention}
 - takeScreenshot: 12-feed-sand-theme
 - stopApp
-- launchApp
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+      "-uiTesting": ""
 - retry:
     maxRetries: 2
     commands:

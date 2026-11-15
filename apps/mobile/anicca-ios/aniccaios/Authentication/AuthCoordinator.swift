@@ -1,201 +1,241 @@
 import AuthenticationServices
+import Combine
 import CryptoKit
 import Foundation
 import OSLog
 
 @MainActor
-final class AuthCoordinator {
+final class AuthCoordinator: ObservableObject {
     static let shared = AuthCoordinator()
-    
+    @Published private(set) var isSigningIn = false
+    @Published private(set) var signInFailed = false
     private let logger = Logger(subsystem: "com.anicca.ios", category: "AuthCoordinator")
     private var currentNonce: String?
-    // v0.4: 復元フロー用のcompletionハンドラ
+    private var attemptID = UUID()
+    private var revocationObserver: NSObjectProtocol?
     private var signInCompletion: ((Bool) -> Void)?
-    
+
     private init() {}
-    
-    lazy var presentationDelegate: AuthPresentationDelegate = {
-        AuthPresentationDelegate(coordinator: self)
-    }()
-    
+
+    lazy var presentationDelegate = AuthPresentationDelegate(coordinator: self)
+
     func configure(_ request: ASAuthorizationAppleIDRequest) {
-        AppState.shared.setAuthStatus(.signingIn)
-        
+        attemptID = UUID()
+        isSigningIn = true
+        signInFailed = false
         let nonce = randomNonceString()
         currentNonce = nonce
-        guard let hashedNonce = sha256Base64(nonce) else {
-            logger.error("Failed to compute nonce hash")
-            AppState.shared.setAuthStatus(.signedOut)
-            return
-        }
-        
         request.requestedScopes = [.fullName, .email]
-        request.nonce = hashedNonce
+        request.nonce = sha256Base64(nonce)
+        AnalyticsManager.shared.track(.appleSignInStarted)
     }
-    
+
     func startSignIn() {
-        let nonce = randomNonceString()
-        currentNonce = nonce
-        guard let hashedNonce = sha256Base64(nonce) else {
-            logger.error("Failed to compute nonce hash")
-            return
-        }
-        
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        let request = appleIDProvider.createRequest()
-        request.requestedScopes = [.fullName, .email]
-        request.nonce = hashedNonce
-        
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = presentationDelegate
-        authorizationController.presentationContextProvider = presentationDelegate
-        
-        AppState.shared.setAuthStatus(.signingIn)
-        authorizationController.performRequests()
+        guard !isSigningIn else { return }
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        configure(request)
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = presentationDelegate
+        controller.presentationContextProvider = presentationDelegate
+        controller.performRequests()
     }
-    
+
     func completeSignIn(result: Result<ASAuthorization, Error>) {
         completeSignIn(result: result, completion: nil)
     }
-    
-    // v0.4: completionハンドラ付きバージョン（復元フロー用）
+
     func completeSignIn(result: Result<ASAuthorization, Error>, completion: ((Bool) -> Void)?) {
+        guard isSigningIn else { completion?(false); return }
         signInCompletion = completion
-        
         switch result {
         case .success(let authorization):
             handleAuthorization(authorization)
         case .failure(let error):
-            // 既にサインイン済みなら無視（AuthorizationError 1000 などの後着エラー対策）
-            if case .signedIn = AppState.shared.authStatus {
-                signInCompletion?(true)
-                return
-            }
-            logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
-            AppState.shared.setAuthStatus(.signedOut)
-            signInCompletion?(false)
+            finishSignIn(outcome: (error as? ASAuthorizationError)?.code == .canceled ? "cancelled" : "failed")
         }
     }
-    
+
+    private func finishSignIn(outcome: String) {
+        currentNonce = nil
+        isSigningIn = false
+        signInFailed = outcome == "failed"
+        AnalyticsManager.shared.track(.appleSignInResult, properties: ["result": outcome])
+        let completion = signInCompletion
+        signInCompletion = nil
+        completion?(outcome == "succeeded")
+    }
+
+    func invalidatePendingSignIn() {
+        attemptID = UUID()
+        currentNonce = nil
+        isSigningIn = false
+        signInCompletion?(false)
+        signInCompletion = nil
+    }
+
     func signOut() {
-        AppState.shared.clearUserCredentials()
-        AppState.shared.resetState()
+        AppState.shared.signOutPreservingSensorAccess()
     }
-    
-    private func handleAuthorization(_ authorization: ASAuthorization) {
-        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            logger.error("Invalid credential type")
-            AppState.shared.setAuthStatus(.signedOut)
-            return
-        }
-        
-        guard let nonce = currentNonce,
-              sha256Base64(nonce) != nil,
-              let identityTokenData = appleIDCredential.identityToken,
-              let identityTokenString = String(data: identityTokenData, encoding: .utf8) else {
-            logger.error("Missing identity token or nonce")
-            AppState.shared.setAuthStatus(.signedOut)
-            return
-        }
-        
-        // Extract user info
-        let userId = appleIDCredential.user
-        let fullName = appleIDCredential.fullName
-        let email = appleIDCredential.email
-        
-        let displayName = [fullName?.givenName, fullName?.familyName]
-            .compactMap { $0 }
-            .joined(separator: " ")
-        
-        // Send to backend for verification
-        Task {
-            await verifyWithBackend(
-                identityToken: identityTokenString,
-                nonce: nonce,
-                userId: userId,
-                displayName: displayName,  // "User"を設定しない
-                email: email
-            )
-        }
-    }
-    
-    private func verifyWithBackend(
-        identityToken: String,
-        nonce: String,
-        userId: String,
-        displayName: String,
-        email: String?
-    ) async {
-        let url = AppConfig.appleAuthURL
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let payload: [String: Any] = [
-            "identity_token": identityToken,
-            "nonce": nonce,
-            "user_id": userId
-        ]
-        
+
+    func deleteAccount() async -> Bool {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return false }
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/account"))
+        request.httpMethod = "DELETE"
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
         do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-            
-            let (data, response) = try await warmSession.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200..<300).contains(httpResponse.statusCode) else {
-                logger.error("Auth backend returned error status")
-                await MainActor.run {
-                    AppState.shared.setAuthStatus(.signedOut)
-                }
-                return
-            }
-            
-            // Parse backend response (expected: { userId, displayName, email })
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let backendUserId = json["userId"] as? String {
-                
-                let jwtToken = json["token"] as? String
-                var expiresAt: Date? = nil
-                if let expMs = json["expiresAt"] as? TimeInterval {
-                    expiresAt = Date(timeIntervalSince1970: expMs / 1000)
-                }
-                if let rt = json["refreshToken"] as? String {
-                    try? KeychainService.save(Data(rt.utf8), account: "rt")
-                }
-                
-                var credentials = UserCredentials(
-                    userId: backendUserId,
-                    displayName: displayName,
-                    email: email
-                )
-                credentials.jwtAccessToken = jwtToken
-                credentials.accessTokenExpiresAt = expiresAt
-                
-                await MainActor.run {
-                    AppState.shared.updateUserCredentials(credentials)
-                }
-                await AppState.shared.bootstrapProfileFromServerIfAvailable()
-                
-                logger.info("Sign in successful for user: \(backendUserId, privacy: .public)")
-                signInCompletion?(true)
-            } else {
-                logger.error("Invalid backend response format")
-                await MainActor.run {
-                    AppState.shared.setAuthStatus(.signedOut)
-                }
-                signInCompletion?(false)
+            try await NetworkSessionManager.shared.setAuthHeaders(for: &request)
+            let (_, response) = try await NetworkSessionManager.shared.session.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 204,
+                  AppState.shared.authStatus.userId == credentials.userId else { return false }
+            AppState.shared.signOutAndWipe()
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    func startObservingCredentials() {
+        guard revocationObserver == nil else { return }
+        revocationObserver = NotificationCenter.default.addObserver(
+            forName: ASAuthorizationAppleIDProvider.credentialRevokedNotification,
+            object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in await self.validateCredentialState() }
+        }
+        Task { await validateCredentialState() }
+    }
+
+    func validateCredentialState() async {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        // Backend IDs are not Apple subjects. Old sessions must authorize again.
+        guard let appleUserID = credentials.appleUserId else {
+            AppState.shared.requireAppleReauthentication()
+            return
+        }
+        let generation = attemptID
+        do {
+            let state = try await ASAuthorizationAppleIDProvider().credentialState(forUserID: appleUserID)
+            guard generation == attemptID,
+                  case .signedIn(let current) = AppState.shared.authStatus,
+                  current.appleUserId == appleUserID else { return }
+            switch state {
+            case .authorized:
+                break
+            case .revoked, .notFound, .transferred:
+                // Transferred subjects require fresh authorization and backend migration.
+                AppState.shared.signOutAndWipe()
+            @unknown default:
+                AppState.shared.signOutAndWipe()
             }
         } catch {
-            logger.error("Failed to verify with backend: \(error.localizedDescription, privacy: .public)")
-            await MainActor.run {
-                AppState.shared.setAuthStatus(.signedOut)
-            }
-            signInCompletion?(false)
+            // Offline is not revocation. Retry on the next foreground transition.
+            logger.notice("Apple credential state unavailable")
         }
     }
-    
+
+    struct FirstGrant: Codable {
+        let userId: String
+        let displayName: String
+        let email: String?
+
+        init(userId: String, displayName: String, email: String?, previous: FirstGrant? = nil) {
+            let matching = previous?.userId == userId ? previous : nil
+            self.userId = userId
+            self.displayName = displayName.isEmpty ? (matching?.displayName ?? "") : displayName
+            self.email = email ?? matching?.email
+        }
+    }
+
+    private func handleAuthorization(_ authorization: ASAuthorization) {
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let nonce = currentNonce,
+              let tokenData = credential.identityToken,
+              let token = String(data: tokenData, encoding: .utf8),
+              let codeData = credential.authorizationCode,
+              let code = String(data: codeData, encoding: .utf8), !code.isEmpty else {
+            finishSignIn(outcome: "failed")
+            return
+        }
+        currentNonce = nil
+        let name = credential.fullName.map { PersonNameComponentsFormatter().string(from: $0) } ?? ""
+        let saved = KeychainService.load(account: "appleFirstGrant")
+            .flatMap { try? JSONDecoder().decode(FirstGrant.self, from: $0) }
+        let grant = FirstGrant(userId: credential.user, displayName: name,
+                               email: credential.email, previous: saved)
+        do {
+            // Apple supplies these once; retain them even if the network request fails.
+            try KeychainService.save(JSONEncoder().encode(grant), account: "appleFirstGrant")
+        } catch {
+            finishSignIn(outcome: "failed")
+            return
+        }
+        let generation = attemptID
+        Task {
+            await verifyWithBackend(identityToken: token, authorizationCode: code,
+                                    nonce: nonce, grant: grant, generation: generation)
+        }
+    }
+
+    private func verifyWithBackend(identityToken: String, authorizationCode: String,
+                                   nonce: String, grant: FirstGrant, generation: UUID) async {
+        var request = URLRequest(url: AppConfig.appleAuthURL)
+        request.httpMethod = "POST"
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var payload: [String: Any] = [
+            "identity_token": identityToken, "authorization_code": authorizationCode,
+            "nonce": nonce, "user_id": grant.userId
+        ]
+        if !grant.displayName.isEmpty { payload["display_name"] = grant.displayName }
+        if let email = grant.email { payload["email"] = email }
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+            let (data, response) = try await warmSession.data(for: request)
+            guard generation == attemptID else { return }
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let backendUserID = json["userId"] as? String, !backendUserID.isEmpty,
+                  let token = json["token"] as? String, !token.isEmpty,
+                  let refreshToken = json["refreshToken"] as? String, !refreshToken.isEmpty else {
+                finishSignIn(outcome: "failed")
+                return
+            }
+            let saved = KeychainService.load(account: "com.anicca.userCredentials")
+                .flatMap { try? JSONDecoder().decode(UserCredentials.self, from: $0) }
+            let previous = saved?.userId == backendUserID &&
+                (saved?.appleUserId == nil || saved?.appleUserId == grant.userId) ? saved : nil
+            let name = (json["displayName"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            var credentials = UserCredentials(
+                userId: backendUserID,
+                displayName: name ?? (grant.displayName.isEmpty ? (previous?.displayName ?? "") : grant.displayName),
+                email: json["email"] as? String ?? grant.email ?? previous?.email
+            )
+            credentials.appleUserId = grant.userId
+            credentials.jwtAccessToken = token
+            credentials.accessTokenExpiresAt = (json["expiresAt"] as? TimeInterval)
+                .map { Date(timeIntervalSince1970: $0 / 1000) }
+            try KeychainService.save(Data(refreshToken.utf8), account: "rt")
+            do {
+                try AppState.shared.persistAuthenticatedCredentials(credentials)
+            } catch {
+                KeychainService.delete(account: "rt")
+                throw error
+            }
+            if let saved, saved.userId != backendUserID {
+                AppState.shared.updateUserProfile(UserProfile(), sync: false)
+                AppState.shared.updateSubscriptionInfo(.free)
+            }
+            AppState.shared.updateUserCredentials(credentials)
+            finishSignIn(outcome: "succeeded")
+            await AppState.shared.bootstrapProfileFromServerIfAvailable()
+        } catch {
+            guard generation == attemptID else { return }
+            logger.error("Apple sign-in verification or secure storage failed")
+            finishSignIn(outcome: "failed")
+        }
+    }
+
     // MARK: - Nonce generation
     
     private func randomNonceString(length: Int = 32) -> String {

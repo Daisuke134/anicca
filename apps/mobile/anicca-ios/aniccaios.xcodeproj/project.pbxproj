@@ -38,6 +38,7 @@
 		F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
 		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
+		A11234567890ABCDEF000001 /* AppleAuthenticationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11234567890ABCDEF000002 /* AppleAuthenticationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -118,6 +119,7 @@
 		F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestURLProtocol.swift; sourceTree = "<group>"; };
 		FE5786A433C595C56594222F /* aniccaiosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
+		A11234567890ABCDEF000002 /* AppleAuthenticationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleAuthenticationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -292,6 +294,7 @@
 				D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */,
 				E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */,
 				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
+				A11234567890ABCDEF000002 /* AppleAuthenticationTests.swift */,
 				76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */,
 				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
 				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
@@ -576,6 +579,7 @@
 				45F4B36D3BD1661C39BFB1A8 /* PushTokenServiceTests.swift in Sources */,
 				9E3903CDA48725E35FA30C8B /* TestURLProtocol.swift in Sources */,
 				SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */,
+				A11234567890ABCDEF000001 /* AppleAuthenticationTests.swift in Sources */,
 				F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */,
 				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
 				09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */,
@@ -676,7 +680,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -710,7 +714,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -744,7 +748,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -778,7 +782,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -946,7 +950,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -997,7 +1001,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1115,7 +1119,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1226,7 +1230,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1271,7 +1275,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1302,7 +1306,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1333,7 +1337,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1364,7 +1368,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 829;
+				CURRENT_PROJECT_VERSION = 830;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;

@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -11,9 +12,16 @@ struct SettingsSheet: View {
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var appState = AppState.shared
+
+    @ObservedObject private var auth = AuthCoordinator.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showSignOutConfirmation = false
     @State private var showPurchasePlans = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var deleteFailed = false
 
     var body: some View {
         List {
@@ -55,12 +63,18 @@ struct SettingsSheet: View {
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
 
             Section {
-                Button {
-                    showPurchasePlans = true
-                } label: {
-                    Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                // Subscribers never see a paywall entry (user rule,
+                // 2026-11-15): the subscribe button exists only while the
+                // entitlement is inactive. Managing an existing plan stays
+                // available below via the Customer Center.
+                if appState.subscriptionInfo.shouldShowPaywall {
+                    Button {
+                        showPurchasePlans = true
+                    } label: {
+                        Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                    }
+                    .accessibilityIdentifier("settings-subscribe")
                 }
-                .accessibilityIdentifier("settings-subscribe")
 
                 NavigationLink {
                     RevenueCatUI.CustomerCenterView()
@@ -74,10 +88,31 @@ struct SettingsSheet: View {
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
 
             Section {
+                if !appState.isSignedIn {
+                    SignInWithAppleButton(.signIn, onRequest: auth.configure) { result in
+                        auth.completeSignIn(result: result)
+                    }
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                    .frame(height: 50)
+                    .disabled(auth.isSigningIn)
+                    .accessibilityIdentifier("settings-apple-sign-in")
+                    if auth.isSigningIn { ProgressView() }
+                    if auth.signInFailed {
+                        Text("auth_sign_in_failed").foregroundStyle(.red)
+                    }
+                }
                 Button(role: .destructive) {
                     showSignOutConfirmation = true
                 } label: {
                     Label(String(localized: "settings_sign_out"), systemImage: "rectangle.portrait.and.arrow.right")
+                }
+                if appState.isSignedIn {
+                    Button(String(localized: "settings_delete_account"), role: .destructive) {
+                        showDeleteConfirmation = true
+                    }
+                    .disabled(isDeletingAccount)
+                    if isDeletingAccount { ProgressView() }
+                    if deleteFailed { Text("auth_delete_failed").foregroundStyle(.red) }
                 }
             }
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
@@ -107,6 +142,19 @@ struct SettingsSheet: View {
                 flowID: "settings_subscription"
             )
             .environmentObject(AppState.shared)
+        }
+        .alert(String(localized: "settings_delete_account"), isPresented: $showDeleteConfirmation) {
+            Button(String(localized: "common_cancel"), role: .cancel) {}
+            Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
+                Task {
+                    isDeletingAccount = true
+                    defer { isDeletingAccount = false }
+                    deleteFailed = !(await auth.deleteAccount())
+                    if !deleteFailed { dismiss() }
+                }
+            }
+        } message: {
+            Text("auth_delete_warning")
         }
         .confirmationDialog(String(localized: "settings_sign_out"), isPresented: $showSignOutConfirmation, titleVisibility: .visible) {
             Button(String(localized: "common_sign_out"), role: .destructive) {

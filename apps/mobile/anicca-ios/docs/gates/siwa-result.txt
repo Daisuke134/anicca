@@ -1,0 +1,5 @@
+FAIL: SA-0 the backend token flow is not recorded (TN3194: identity token + authorization code to the server, /auth/token validation, secure storage of the token response; an unrecorded backend is an unverified half of the sign-in)
+FAIL: SA-2 server-side verification of the identity token is not evidenced (the client sending a token is not verification; TN3194 expects the server to validate the token and Apple's public key before granting access)
+FAIL: SA-3 revocation does not revert the client and clear user data (TN3194: on revocation delete user data on server, in Keychain and locally, and revert to an unauthenticated state)
+FAIL: 3 fail(s), 0 warning(s) -- Anicca codex/app-gates-2, source audit 2026-11-16 (not device/server verification)
+Exit status: 1
