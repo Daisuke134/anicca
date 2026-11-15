@@ -1,5 +1,6 @@
 import SwiftUI
 import StoreKit
+import Combine
 
 /// How a home card stopped being on screen. Recorded with every display so
 /// the eval can separate "the words moved on by themselves" from "the
