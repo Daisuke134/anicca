@@ -1,3 +1,4 @@
+import AppIntents
 import WidgetKit
 import SwiftUI
 

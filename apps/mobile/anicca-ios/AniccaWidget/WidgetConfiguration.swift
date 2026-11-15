@@ -2,6 +2,8 @@ import AppIntents
 import WidgetKit
 
 struct WidgetCategoryOptions: DynamicOptionsProvider {
+    func defaultResult() async -> String? { "For you" }
+
     func results() async throws -> [String] {
         ["For you"] + Set(WidgetContentStore(defaults: AppGroup.userDefaults).words.map(\.category)).sorted()
     }
@@ -36,7 +38,7 @@ struct NudgeConfiguration: WidgetConfigurationIntent {
     static let description = IntentDescription("Choose your words. Extra themes and refresh frequencies require Premium. iOS controls actual refresh timing.")
 
     @Parameter(title: "Name", default: "Anicca") var name: String
-    @Parameter(title: "Category", default: "For you", optionsProvider: WidgetCategoryOptions()) var category: String
+    @Parameter(title: "Category", optionsProvider: WidgetCategoryOptions()) var category: String
     @Parameter(title: "Theme", default: .sage) var theme: NudgeTheme
     @Parameter(title: "Refresh", default: .daily) var refresh: NudgeRefresh
 }

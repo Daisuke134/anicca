@@ -1,5 +1,45 @@
 # Issue #96 widget surface gate — resume verification
 
+## PR #9369 compiler repair (2026-11-15 UTC)
+
+CI run 43753958986 reported four widget compiler diagnostics. The follow-up
+keeps the extension's iOS 16.6 deployment target and Swift 5 language mode:
+
+- `WidgetConfiguration.swift:39`: the dynamic String options initializer has
+  no `default:` argument. Use `WidgetCategoryOptions.defaultResult()` to retain
+  the `For you` default, and pass only title/optionsProvider to `@Parameter`.
+- `AniccaWidget.swift:105`: import AppIntents alongside SwiftUI so the
+  `_AppIntents_SwiftUI` cross-import overlay exposes `Button(intent:label:)`.
+- `AniccaWidgetBundle.swift:9`: remove the sample timer ControlWidget from the
+  Widget-only `buildBlock` call and delete its unused implementation/intents.
+  The folder uses synchronized Xcode membership; no project-file edit is needed.
+- `AniccaWidgetBundle.swift:6`: remove the invalid iOS 18 return expression and
+  keep a top-level iOS 17 availability return plus an unconditional iOS 16
+  fallback, following Swift SE-0360. Both branches contain only Widgets and
+  retain Live Activity. The opaque-return diagnostic accompanied the invalid
+  ControlWidget expression; native confirmation remains pending.
+
+API review references:
+[String options initializer](https://developer.apple.com/documentation/appintents/intentparameter/init(title:description:inputoptions:requestvaluedialog:inputconnectionbehavior:optionsprovider:)),
+[defaultResult](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider/defaultresult()),
+[Button intent initializer](https://developer.apple.com/documentation/swiftui/button/init(intent:label:)),
+[SE-0360, implemented in Swift 5.7](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0360-opaque-result-types-with-availability.md).
+
+Re-ran `python3 -m unittest discover -s apps/mobile/anicca-ios/scripts/tests -v`:
+44 tests, 40 passed, the same two paywall failures named below, two Swift skips.
+Re-ran the unmodified `widget_check.py` on all three source fixtures: before
+14 FAIL/1 WARN, after 2 FAIL/1 WARN, iOS16 6 FAIL/1 WARN, matching the prior
+audit. These are source fixtures, not compiler verification. `git diff --check`
+passed; no references to the deleted control or its intents remain in iOS source.
+Swift/Xcode are unavailable on this Linux host, so no native RED/GREEN or build
+success is claimed. No non-widget production files or Q2 gate fixtures changed.
+
+Read installed Superpowers 7.0.1 using-superpowers, systematic-debugging,
+test-driven-development and verification-before-completion. Astra Advisor is
+not exposed. Source-boundary still rejects the old Life Manager checkout path;
+the explicit assignment overrides it and the team workflow's push instruction.
+Commit on `codex/widget-gate-fix` only, no push; keep the assigned worktree.
+
 ## Result and remaining work
 
 The interrupted changes are retained and completed as a source candidate on

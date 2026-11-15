@@ -379,3 +379,4 @@
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
 
 - 2026-11-16 JST / Codex / Issue #96 widget再開: 全差分の破損監査、iOS 16.6互換経路・17以降個別設定/保存・案内/対照群計測を実装。gate 14→2 FAIL/1 WARN（共有・ストア掲載残）、iOS16は6 FAIL/1 WARN。既存40成功/2既存失敗/2skip維持。Swift/Xcode/実機未検証。証拠 docs/gates/widget-verification.md、現在branchへcommitのみ、push/ASC変更なし。
+- 2026-11-16 JST / Codex / PR #9369 widgetビルド4診断対応: 動的カテゴリの既定値をproviderへ移動、AppIntents import追加、未実装timer Control削除、bundle可用性分岐整理。Q2と非widget動作維持。Python40成功/既知2失敗/2skip、gate既存値維持、API照合済み・Xcode未検証。証拠 docs/gates/widget-verification.md。現branchへcommitのみ、pushなし。次: macOS CIビルド。
