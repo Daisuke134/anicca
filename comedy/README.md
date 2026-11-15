@@ -8,9 +8,12 @@ AI × 人間のライブお笑いネタの正本。各ネタを独立したMarkd
 3. 必要に応じて過去稿・リハーサル記録。
 
 ## 詐欺電話
-- **残高詐欺電話（最新完全稿）:** [sagi-zandaka.md](./sagi-zandaka.md)
-- **グミ詐欺電話（新規再構成稿 v0.1）:** [sagi-gummy-scam.md](./sagi-gummy-scam.md) — 元稿未発見。復元稿ではない。
+- **残高詐欺電話（普通の反応版 v2）:** [sagi-zandaka.md](./sagi-zandaka.md)
+- **グミ詐欺電話（普通の反応版 v2）:** [sagi-gummy-scam.md](./sagi-gummy-scam.md) — 元稿未発見のため新規再構成稿を改稿したもの。
 - **旧稿:** [sagi-call-current.md](./sagi-call-current.md)、[sagi-call-duped.md](./sagi-call-duped.md)、[rehearsal-2026-09-13.md](./rehearsal-2026-09-13.md)
+
+## 新作コント
+- **痛い痛い！救助要請センター:** [sagi-injury-help.md](./sagi-injury-help.md) — 痛がるダイスをチャッピーが適当な救助・救急手配で助けようとするコント。
 
 ## 別ネタ（混同・上書き禁止）
 - **就職面接／ちっちゃいグミ本舗:** [job-interview-small-gummy.md](./job-interview-small-gummy.md) — グミ詐欺電話とは別ネタ。
