@@ -251,13 +251,32 @@ struct PaywallVariantBView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isPurchasing)
-                .accessibilityIdentifier("paywall-plan-\(package.packageType.rawValue)")
+                .accessibilityIdentifier("paywall-plan-\(Self.planIdentifierName(for: package.packageType))")
             }
         }
-        // No identifier on this container: SwiftUI propagates a container's
-        // accessibility identifier over the cards' own, which hid
-        // paywall-plan-<type> from UI tests (verified in the build-830
-        // E2E hierarchy dump).
+        // No identifier on this container either: the cards' own
+        // identifiers are the E2E contract and nothing may shadow them.
+    }
+
+    /// Stable accessibility-identifier suffix for a plan card.
+    /// `PackageType.rawValue` is an Int in RevenueCat (lifetime 0,
+    /// annual 1, monthly 5, weekly 6), so interpolating it produced
+    /// `paywall-plan-1` etc. and the E2E flows could not address the
+    /// cards by name — build-830 E2E runs 43664427417 and 43667965841
+    /// both failed on `paywall-plan-annual` while the hierarchy dump
+    /// showed all four cards on screen with numeric ids.
+    static func planIdentifierName(for packageType: PackageType) -> String {
+        switch packageType {
+        case .annual: return "annual"
+        case .monthly: return "monthly"
+        case .weekly: return "weekly"
+        case .lifetime: return "lifetime"
+        case .sixMonth: return "six-month"
+        case .threeMonth: return "three-month"
+        case .twoMonth: return "two-month"
+        case .custom: return "custom"
+        default: return "other"
+        }
     }
 
     /// Longest commitment first: annual, monthly, weekly, then lifetime.
