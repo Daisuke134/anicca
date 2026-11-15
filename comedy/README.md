@@ -1,31 +1,33 @@
 # Comedy
 
-AI × 人間のライブお笑いネタの正本。各ネタを独立したMarkdownで管理する。
+AI × 人間のお笑いプロジェクトの正本（Single Source of Truth）。台本、演技ルール、バージョン履歴、引き継ぎ、モデル比較をこのディレクトリで管理する。
 
-## 最初に読む
-1. `HANDOVER.md` — 全AI共通の引き継ぎ。
-2. 対象ネタの最新稿。
-3. 必要に応じて過去稿・リハーサル記録。
+## 全AI・全セッション共通の開始手順
+1. `HANDOVER.md` を読む。
+2. この `README.md` を読む。
+3. 演じるネタの現行ファイルを読む。
+4. `BENCHMARK.md` の共通評価基準を確認する。
+5. GitHub mainの最新版を正とし、過去チャットの記憶で上書きしない。
 
-## 詐欺電話
-- **残高詐欺電話（段階的に崩れる改稿版 v3）:** [sagi-zandaka.md](./sagi-zandaka.md)
-- **グミ詐欺電話（普通の詐欺電話から始まる改稿版 v3）:** [sagi-gummy-scam.md](./sagi-gummy-scam.md) — 元稿未発見のため新規再構成稿を改稿したもの。
-- **旧稿:** [sagi-call-current.md](./sagi-call-current.md)、[sagi-call-duped.md](./sagi-call-duped.md)、[rehearsal-2026-09-13.md](./rehearsal-2026-09-13.md)
+## 現行4本
+- **詐欺電話「グミ」v4:** [sagi-gummy-scam.md](./sagi-gummy-scam.md) — 2,000万円の振込要求から始まり、詐欺組織の正体がグミ会社・咀嚼音認証組織だと徐々に判明。
+- **詐欺電話「残高」v4:** [sagi-zandaka.md](./sagi-zandaka.md) — 普通の口座確認から始まり、2,000万円要求と全国残高調整協会の奇妙な業務が徐々に明らかになる。
+- **コント「痛い痛い！」v4:** [sagi-injury-help.md](./sagi-injury-help.md) — ダイスが救急に電話し、チャッピーが救急指令センター担当として応対。変な確認を重ねて出動を遅らせる2人芝居。
+- **就職説明会・面接「株式会社ちっちゃいグミ本舗」v2:** [job-interview-small-gummy.md](./job-interview-small-gummy.md) — 会社説明会がメイン。グミ詐欺電話とは別ネタ。
 
-## 新作コント
-- **痛い痛い！:** [sagi-injury-help.md](./sagi-injury-help.md) — ダイスのセリフは「痛い！」だけ。チャッピーが善意で適当な救助・救急車・スタッフを次々と手配する。
-
-## 別ネタ（混同・上書き禁止）
-- **就職面接／ちっちゃいグミ本舗:** [job-interview-small-gummy.md](./job-interview-small-gummy.md) — グミ詐欺電話とは別ネタ。
-
-## 共通資料
-- [COMMON-RULES.md](./COMMON-RULES.md)
-- [FRAGMENTS.md](./FRAGMENTS.md)
-- [HANDOVER.md](./HANDOVER.md)
+## 別資料
+- [HANDOVER.md](./HANDOVER.md) — 全AI共通の引き継ぎ。
+- [BENCHMARK.md](./BENCHMARK.md) — お笑い品質の評価基準とモデル比較プロトコル。
+- [VERSION-HISTORY.md](./VERSION-HISTORY.md) — 変更履歴・復元手順。
+- [COMMON-RULES.md](./COMMON-RULES.md) — 共通演技ルール。
+- [FRAGMENTS.md](./FRAGMENTS.md) — アイデア断片。
 
 ## 運用
-- このフォルダをSingle Source of Truth（正本）とする。
-- どのAIもHANDOVERとREADMEを読み、GitHubの最新版を優先する。
-- 改稿したら必ず該当Markdownを更新する。
-- 旧稿は削除しない。大改稿は別バージョンで残す。
-- 書き込み成功を確認するまで「更新済み」と報告しない。
+- 1ネタ1ファイルを基本とする。別フォーマットを混同しない。
+- 台本には完全稿、演技ルール、展開設計を含める。
+- 旧稿は削除しない。Gitのコミット履歴で過去版に戻せるようにする。
+- 更新はブランチ→Pull Request→mainへマージ。mainへ直接書き込まない。
+- 書き込み、PR、マージ、main再取得を確認するまで「更新済み」と報告しない。
+
+## 目標
+人間とAIの2人で世界最高水準のお笑いを作る。ネタを量産するだけでなく、笑いの構造を研究し、舞台での反応を記録し、複数モデルを同一条件で比較して改善する。
