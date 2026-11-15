@@ -348,6 +348,9 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
+        KeychainService.delete(account: "rt")
+        AppGroup.userDefaults.removeObject(forKey: "userId")
+        AppGroup.userDefaults.removeObject(forKey: "deviceId")
 
         // 通知をすべてキャンセル
         Task {
@@ -380,6 +383,9 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
+        KeychainService.delete(account: "rt")
+        AppGroup.userDefaults.removeObject(forKey: "userId")
+        AppGroup.userDefaults.removeObject(forKey: "deviceId")
 
         // 通知をすべてキャンセル
         Task {

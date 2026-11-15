@@ -560,7 +560,10 @@
 "legal_terms_of_use" = "Terms of Use (EULA)";
 "settings_delete_account" = "Delete Account";
 "settings_delete_account_confirm" = "Delete";
-"settings_delete_account_message" = "This action cannot be undone. All your data, including purchase history and usage data, will be permanently deleted.";
+"settings_delete_account_message" = "Votre compte Anicca et les données de l’app seront définitivement supprimés. Cette action est irréversible. Les abonnements App Store actifs sont gérés séparément et ne seront pas annulés.";
+"settings_delete_account_progress" = "Suppression du compte…";
+"settings_delete_account_error_title" = "Impossible de supprimer le compte";
+"settings_delete_account_error_message" = "Votre compte n’a pas pu être supprimé. Vérifiez votre connexion et réessayez.";
 "common_error" = "Erreur";
 "common_ok" = "OK";
 
