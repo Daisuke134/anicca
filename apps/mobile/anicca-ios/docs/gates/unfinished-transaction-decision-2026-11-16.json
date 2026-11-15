@@ -1,0 +1,30 @@
+{
+  "app": "Anicca iOS Q5 UF source contract, 2026-11-16; not a device or production observation",
+  "configuration": {
+    "finishing_owner_explicit_or_verified_default": true,
+    "no_conflicting_direct_purchase_path": true,
+    "storekit_version_pinned_if_my_app": true
+  },
+  "delivery": {
+    "delivery_idempotent_on_redelivery": true,
+    "finish_only_after_delivery_and_verification": false,
+    "unverified_not_granted_or_finished_as_delivered": false
+  },
+  "inventory": {
+    "crash_and_redelivery_facts_recorded": true,
+    "finishing_owner_recorded": true,
+    "product_types_enumerated": true
+  },
+  "measurement": {
+    "finishing_failures_tracked": false,
+    "unfinished_count_and_age_tracked": true
+  },
+  "recovery": {
+    "foreground_redrain": false,
+    "launch_drain_or_sdk_equivalent_verified": false
+  },
+  "repurchase": {
+    "redelivery_not_double_counted": true,
+    "unfinished_does_not_block_forever": false
+  }
+}

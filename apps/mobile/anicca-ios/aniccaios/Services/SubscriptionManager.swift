@@ -9,6 +9,7 @@ final class SubscriptionManager: NSObject {
     private static let aniccaFallbackOfferingIdentifier = "anicca_variant_b"
     private var offerings: Offerings?
     private var offeringsRefreshGeneration = 0
+    private var isObservingUnfinished = false
     private(set) var isConfigured = false
 
     private override init() {
@@ -29,8 +30,11 @@ final class SubscriptionManager: NSObject {
         // V2/StoreKit 2対応のシンプル構成
         // entitlementVerificationMode: .informational は推奨設定（検証結果を情報として提供）
         // 言語設定は自動検出されるため明示的な設定は不要
+        // RevenueCat 5.78.0 owns finishing; see docs/gates/unfinished-transaction-decision-2026-11-16.md.
+        // Switching to .myApp is forbidden without a finishing implementation + storeKitVersion decision.
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
+                .with(purchasesAreCompletedBy: .revenueCat, storeKitVersion: .default)
                 .with(entitlementVerificationMode: .informational)
                 .build()
         )
@@ -60,6 +64,36 @@ final class SubscriptionManager: NSObject {
         }
     }
     
+    // Observation only: RevenueCat remains the sole finisher and CustomerInfo the access authority.
+    func observeUnfinishedTransactions(reason: String) async {
+        guard isConfigured, !isObservingUnfinished else { return }
+        isObservingUnfinished = true
+        defer { isObservingUnfinished = false }
+
+        var count = 0
+        var unverifiedCount = 0
+        var oldestDwell: TimeInterval = 0
+        for await result in StoreKit.Transaction.unfinished {
+            count += 1
+            switch result {
+            case .verified(let transaction):
+                oldestDwell = max(oldestDwell, max(0, Date().timeIntervalSince(transaction.purchaseDate)))
+            case .unverified(let transaction, _):
+                // Metadata only, never delivery or permission to finish. Age may be untrusted.
+                unverifiedCount += 1
+                oldestDwell = max(oldestDwell, max(0, Date().timeIntervalSince(transaction.purchaseDate)))
+            }
+        }
+        AnalyticsManager.shared.track(.unfinishedTransactionsObserved, properties: [
+            "reason": reason,
+            "unfinished_count": count,
+            "oldest_dwell_seconds": oldestDwell,
+            "unverified_count": unverifiedCount,
+            "finishing_owner": "revenuecat",
+            "finishing_failures_status": "unobservable"
+        ])
+    }
+
     private func listenCustomerInfo() async {
         for await info in Purchases.shared.customerInfoStream {
             await MainActor.run {

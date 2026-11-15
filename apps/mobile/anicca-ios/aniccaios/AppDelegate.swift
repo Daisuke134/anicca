@@ -31,6 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
+        Task { await SubscriptionManager.shared.observeUnfinishedTransactions(reason: "launch") }
         let analyticsUserID = SubscriptionManager.shared.isConfigured ? Purchases.shared.appUserID : nil
         if let analyticsUserID { AnalyticsManager.shared.identify(userId: analyticsUserID) }
 
@@ -57,6 +58,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         AnalyticsManager.shared.resumeCurrentScreenVisit()
+        Task { await SubscriptionManager.shared.observeUnfinishedTransactions(reason: "foreground") }
         // Distinct open days for post-value App Store review prompts.
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
