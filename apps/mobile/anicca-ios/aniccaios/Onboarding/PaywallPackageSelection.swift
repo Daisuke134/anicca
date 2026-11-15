@@ -20,6 +20,22 @@ enum PaywallPackageSelection {
     }
 }
 
+/// Stable display ordering for paywall plan cards (Issue #9356: every plan
+/// on sale is visible on the first screen). Lower rank sorts first; equal
+/// ranks keep the offering's own order.
+enum PaywallPlanOrdering {
+    static func ordered<Candidate>(_ candidates: [Candidate], rank: (Candidate) -> Int) -> [Candidate] {
+        candidates.enumerated()
+            .sorted { lhs, rhs in
+                let leftRank = rank(lhs.element)
+                let rightRank = rank(rhs.element)
+                if leftRank != rightRank { return leftRank < rightRank }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+}
+
 /// Fails closed unless both the App Store region and its refreshed offering are known.
 enum PaywallStorefrontEligibility {
     static func sameStorefront(first: String?, second: String?) -> Bool {

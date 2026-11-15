@@ -189,6 +189,37 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - runFlow: _dismiss-apple-account.yaml
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 07-paywall
+      # Issue #9356: every plan on sale is a card on this first screen —
+      # nothing hides behind an "Other plans" sheet. Annual and monthly are
+      # always on sale; weekly and lifetime are checked when returned.
+      - assertVisible:
+          id: "paywall-plan-annual"
+      - scrollUntilVisible:
+          element:
+            id: "paywall-plan-monthly"
+          direction: DOWN
+      - assertVisible:
+          id: "paywall-plan-monthly"
+      - runFlow:
+          when:
+            visible:
+              id: "paywall-plan-weekly"
+          commands:
+            - assertVisible:
+                id: "paywall-plan-weekly"
+      - runFlow:
+          when:
+            visible:
+              id: "paywall-plan-lifetime"
+          commands:
+            - assertVisible:
+                id: "paywall-plan-lifetime"
+      # Selecting a plan happens in place, on this same screen.
+      - tapOn:
+          id: "paywall-plan-monthly"
+      - assertVisible:
+          id: "paywall-continue"
+      - takeScreenshot: 07b-paywall-monthly-selected
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: paywall-close-button
@@ -213,10 +244,21 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
 - takeScreenshot: 09-feed-home
-# Default home stays on this person's daily word when swiped.
+# Living home: the first card is today's intervention, and the deck
+# behind it moves — swiping up reaches further words, swiping back
+# returns to today's words.
 - swipe:
     start: 50%, 75%
     end: 50%, 25%
+    duration: 450
+- waitForAnimationToEnd
+- copyTextFrom:
+    id: quote-text
+- assertTrue: ${maestro.copiedText !== output.intervention}
+- takeScreenshot: 09b-feed-deck-second
+- swipe:
+    start: 50%, 25%
+    end: 50%, 75%
     duration: 450
 - waitForAnimationToEnd
 - copyTextFrom:
@@ -241,14 +283,6 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     maxRetries: 2
     commands:
       - runFlow: _dismiss-apple-account.yaml
-      # A failed attempt may have left the alternative-plans sheet open.
-      - runFlow:
-          when:
-            visible:
-              id: paywall-other-plans-close
-          commands:
-            - tapOn:
-                id: paywall-other-plans-close
       - runFlow: _wait-for-storekit-screen.yaml
       - extendedWaitUntil:
           visible:
@@ -258,19 +292,17 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 14-premium-from-themes
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-      - runFlow:
-          when:
-            visible:
-              id: paywall-other-plans
-          commands:
-            - tapOn:
-                id: paywall-other-plans
-            - runFlow: _dismiss-apple-account.yaml
-            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-            - takeScreenshot: 14b-alternative-plans
-            - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-            - tapOn:
-                id: paywall-other-plans-close
+      # Issue #9356: on this second paywall appearance too, every plan
+      # is a card on the first screen.
+      - assertVisible:
+          id: "paywall-plan-annual"
+      - scrollUntilVisible:
+          element:
+            id: "paywall-plan-monthly"
+          direction: DOWN
+      - assertVisible:
+          id: "paywall-plan-monthly"
+      - takeScreenshot: 14b-paywall-all-plans
       - tapOn:
           id: paywall-close-button
 # Unsigned StoreKit can show a sandbox sign-in prompt. Do not sign in.

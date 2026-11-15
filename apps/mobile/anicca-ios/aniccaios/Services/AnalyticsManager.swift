@@ -291,6 +291,7 @@ enum AnalyticsEvent: String {
     case firstAffirmationViewed = "first_affirmation_viewed"
     case personalizationApplied = "personalization_applied"
     case affirmationViewed = "affirmation_viewed"
+    case affirmationDisplayEnded = "affirmation_display_ended"
     case affirmationLiked = "affirmation_liked"
     case affirmationUnliked = "affirmation_unliked"
     case affirmationShared = "affirmation_shared"

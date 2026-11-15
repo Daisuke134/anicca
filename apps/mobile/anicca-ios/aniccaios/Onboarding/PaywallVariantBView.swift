@@ -2,7 +2,8 @@ import SwiftUI
 import RevenueCat
 import StoreKit
 
-/// One primary offer, with alternative plans available in a separate sheet.
+/// Every plan on sale is shown as a card on the first screen (Issue #9356);
+/// no plan hides behind an "Other plans" sheet.
 struct PaywallVariantBView: View {
     let variant: String
     let onPurchaseSuccess: (CustomerInfo) -> Void
@@ -16,7 +17,6 @@ struct PaywallVariantBView: View {
     @State private var hasShownRetention = false
     @State private var didAcceptRetention = false
     @State private var showRetention = false
-    @State private var showOtherPlans = false
     @State private var showReloadAfterTimeout = false
     @State private var trackedOfferingLoadOutcomes: Set<String> = []
     @State private var eligibility: [String: IntroEligibility] = [:]
@@ -101,9 +101,6 @@ struct PaywallVariantBView: View {
                 trackOfferingLoadResult(updatedLoad)
             }
         }
-        .sheet(isPresented: $showOtherPlans) {
-            alternativePlans
-        }
         .sheet(isPresented: $showRetention, onDismiss: {
             if !didAcceptRetention {
                 AnalyticsManager.shared.trackScreenViewed(screenID: .paywall, flowID: flowID)
@@ -134,15 +131,7 @@ struct PaywallVariantBView: View {
             if packages.isEmpty {
                 loadingContent
             } else if let package = selectedPackage {
-                offerCard(package: package, isSelected: true)
-                if packages.count > 1 {
-                    Button(String(localized: "paywall_other_plans")) { showOtherPlans = true }
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.Colors.accent)
-                        .frame(minHeight: 44)
-                        .accessibilityIdentifier("paywall-other-plans")
-                        .disabled(isPurchasing)
-                }
+                planCards
                 if let end = trialEndDate {
                     trialTimeline(end: end, package: package)
                 }
@@ -246,41 +235,39 @@ struct PaywallVariantBView: View {
         }
     }
 
-    private var alternativePlans: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    Text(String(localized: "paywall_other_plans"))
-                        .font(.system(.title2, design: .serif))
-                        .accessibilityAddTraits(.isHeader)
-                    ForEach(packages, id: \.identifier) { package in
-                        Button {
-                            selectedPackage = package
-                            AnalyticsManager.shared.track(.productSelected, properties: [
-                                "product_id": package.storeProduct.productIdentifier,
-                                "offering_id": offering?.identifier ?? "unknown",
-                                "source": "paywall",
-                            ])
-                            showOtherPlans = false
-                        } label: {
-                            offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("paywall-plan-\(package.packageType.rawValue)")
-                    }
+    /// All plans on sale, as selectable cards on the first screen.
+    private var planCards: some View {
+        VStack(spacing: 10) {
+            ForEach(orderedPackages, id: \.identifier) { package in
+                Button {
+                    selectedPackage = package
+                    AnalyticsManager.shared.track(.productSelected, properties: [
+                        "product_id": package.storeProduct.productIdentifier,
+                        "offering_id": offering?.identifier ?? "unknown",
+                        "source": "paywall",
+                    ])
+                } label: {
+                    offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
                 }
-                .padding(24)
-            }
-            .background(AppBackground())
-            .foregroundStyle(AppTheme.Colors.label)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(String(localized: "common_close")) { showOtherPlans = false }
-                        .accessibilityIdentifier("paywall-other-plans-close")
-                }
+                .buttonStyle(.plain)
+                .disabled(isPurchasing)
+                .accessibilityIdentifier("paywall-plan-\(package.packageType.rawValue)")
             }
         }
-        .tint(AppTheme.Colors.accent)
+        .accessibilityIdentifier("paywall-plan-cards")
+    }
+
+    /// Longest commitment first: annual, monthly, weekly, then lifetime.
+    private var orderedPackages: [Package] {
+        PaywallPlanOrdering.ordered(packages) { package in
+            switch package.packageType {
+            case .annual: return 0
+            case .monthly: return 1
+            case .weekly: return 2
+            case .lifetime: return 3
+            default: return 4
+            }
+        }
     }
 
     private func offerCard(package: Package, isSelected: Bool) -> some View {
