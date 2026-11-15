@@ -230,6 +230,18 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 08-first-intervention
 - tapOn:
     id: onboarding-intervention-continue
+# The review step closes onboarding, right after the value moment
+# (the first personalized words) — the form that earned 48 reviews,
+# restored 2026-11-15. It is never the first screen: Honne 1.0.7 was
+# rejected under Guideline 5.6.3 for asking at first launch. Under
+# -uiTesting the step's button advances without the system dialog.
+- extendedWaitUntil:
+    visible:
+      id: onboarding-rating-continue
+    timeout: 15000
+- takeScreenshot: 08b-rating-prompt
+- tapOn:
+    id: onboarding-rating-continue
 - extendedWaitUntil:
     visible:
       id: feed-today

@@ -13,6 +13,7 @@ struct OnboardingFlowView: View {
     @State private var didTrackOnboardingStart = false
     @State private var showPaywall = false
     @State private var showFirstIntervention = false
+    @State private var showRatingPrompt = false
 
     var body: some View {
         ZStack {
@@ -73,9 +74,18 @@ struct OnboardingFlowView: View {
         .fullScreenCover(isPresented: $showFirstIntervention) {
             FirstInterventionStepView(next: {
                 showFirstIntervention = false
-                completeFreeOnboarding()
+                showRatingPrompt = true
             })
             .environmentObject(appState)
+        }
+        // The review step closes onboarding: after the value moment
+        // (the first personalized words above), never at first launch.
+        // See RatingPrePromptStepView for the placement reasoning.
+        .fullScreenCover(isPresented: $showRatingPrompt) {
+            RatingPrePromptStepView(next: {
+                showRatingPrompt = false
+                completeFreeOnboarding()
+            })
         }
     }
 
