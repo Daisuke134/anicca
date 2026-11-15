@@ -1,0 +1,32 @@
+{
+  "app": "Anicca codex/app-gates-2, source audit 2026-11-16 (not device/server verification)",
+  "entry": {
+    "entitlement_present": true,
+    "ui_entry_reachable": true
+  },
+  "errors_measurement": {
+    "cancellation_distinguished": true,
+    "signin_outcomes_counted": true
+  },
+  "first_grant": {
+    "name_email_captured_when_present": true,
+    "nil_grant_preserves_stored": true,
+    "tokens_stored_securely": true
+  },
+  "inventory": {
+    "backend_token_flow_recorded": false,
+    "credential_states_defined": true,
+    "signin_surfaces_recorded": true
+  },
+  "lifecycle": {
+    "credential_state_checked_on_launch": true,
+    "revocation_reverts_and_clears": false,
+    "revoked_notification_observed": true
+  },
+  "mechanism": {
+    "authorization_code_transmitted": true,
+    "nonce_hashed_and_sent": true,
+    "scopes_requested": true,
+    "server_verification_evidenced": false
+  }
+}

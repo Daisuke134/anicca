@@ -47,10 +47,12 @@ extension NetworkSessionManager {
         if let exp = credentials.accessTokenExpiresAt, exp.addingTimeInterval(-60) <= Date() {
             try await refreshIfNeeded()
         }
-        if let at = (AppState.shared.authStatus).accessToken {
+        guard case .signedIn(let current) = AppState.shared.authStatus,
+              current.userId == credentials.userId else { throw AuthError.notAuthenticated }
+        if let at = current.jwtAccessToken {
             request.setValue("Bearer \(at)", forHTTPHeaderField: "Authorization")
-        } else if let at = credentials.jwtAccessToken {
-            request.setValue("Bearer \(at)", forHTTPHeaderField: "Authorization")
+        } else {
+            throw AuthError.notAuthenticated
         }
     }
     
@@ -65,6 +67,8 @@ extension NetworkSessionManager {
         let (data, response) = try await session.data(for: req)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        guard KeychainService.load(account: "rt") == rtData,
+              AppState.shared.isSignedIn else { throw AuthError.notAuthenticated }
         let newAT = json["token"] as? String
         let expMs = json["expiresAt"] as? TimeInterval
         let newRT = json["refreshToken"] as? String

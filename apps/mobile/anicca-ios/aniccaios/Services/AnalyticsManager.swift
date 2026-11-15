@@ -352,6 +352,9 @@ final class AnalyticsManager {
 // MARK: - Analytics Events
 
 enum AnalyticsEvent: String {
+    case appleSignInStarted = "apple_sign_in_started"
+    case appleSignInResult = "apple_sign_in_result"
+    case storePurchaseResult = "store_purchase_result"
     case screenViewed = "screen_viewed"
     case screenExited = "screen_exited"
     case firstAffirmationViewed = "first_affirmation_viewed"

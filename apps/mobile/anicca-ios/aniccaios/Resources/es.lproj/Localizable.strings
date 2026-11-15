@@ -2812,3 +2812,7 @@
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"auth_sign_in_failed" = "No se pudo iniciar sesión. Inténtalo de nuevo.";
+"auth_delete_failed" = "No se pudo eliminar tu cuenta. Inténtalo de nuevo.";
+"auth_delete_warning" = "¿Eliminar permanentemente tu cuenta y los datos de la app? Esto no cancela tu suscripción del App Store. Gestiona las suscripciones en Ajustes.";

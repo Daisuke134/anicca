@@ -31,6 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
+        AuthCoordinator.shared.startObservingCredentials()
         let analyticsUserID = SubscriptionManager.shared.isConfigured ? Purchases.shared.appUserID : nil
         if let analyticsUserID { AnalyticsManager.shared.identify(userId: analyticsUserID) }
 

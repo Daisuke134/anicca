@@ -1,0 +1,31 @@
+{
+  "app": "Anicca codex/app-gates-2, source audit 2026-11-16 (not device/server verification)",
+  "entry": {
+    "delegate_registered_at_configure": true,
+    "promoted_callback_present": true,
+    "transaction_updates_observed": true
+  },
+  "inventory": {
+    "asc_config_evidenced": false,
+    "channels_recorded": true,
+    "sdk_version_supports": true
+  },
+  "measurement": {
+    "promotional_offer_path_decided": true,
+    "store_originated_outcomes_counted": false
+  },
+  "offer_codes": {
+    "redemption_sheet_or_link_present": false,
+    "return_triggers_sync": true
+  },
+  "readiness": {
+    "completion_handles_all_outcomes": true,
+    "completion_syncs_server": true,
+    "readiness_checked_before_start": true
+  },
+  "winback": {
+    "store_messages_timing_decided": true,
+    "winback_not_shown_to_entitled": false,
+    "winback_paywall_or_link_path": false
+  }
+}

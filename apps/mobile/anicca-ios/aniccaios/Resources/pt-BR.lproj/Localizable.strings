@@ -1528,3 +1528,7 @@
 "adaptive_prior_attempts_hint" = "Ter experimentado algo não significa que não funcionou. A seguir, você pode indicar o que não combinou com você.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"auth_sign_in_failed" = "Não foi possível entrar. Tente novamente.";
+"auth_delete_failed" = "Não foi possível excluir sua conta. Tente novamente.";
+"auth_delete_warning" = "Excluir permanentemente sua conta e os dados do app? Isso não cancela sua assinatura da App Store. Gerencie as assinaturas nos Ajustes.";

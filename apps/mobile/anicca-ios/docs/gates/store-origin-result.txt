@@ -1,0 +1,8 @@
+app: Anicca codex/app-gates-2, source audit 2026-11-16 (not device/server verification)
+FAIL (5)
+ - SO-0 the App Store Connect side is not evidenced (which offers exist, the in-app purchase key uploaded to RevenueCat, and the Streamlined Purchasing setting are half of every store-originated flow; client code alone cannot show they exist)
+ - SO-3 there is no in-app win-back redemption path (no eligibleWinBackOffers on the paywall and no win-back URL handling; a lapsed subscriber who returns to the app -- the highest-intent return there is -- meets a full-price paywall)
+ - SO-3 nothing stops the win-back sheet being shown to an already-entitled subscriber (RevenueCat recommends checking entitlements before displaying, to avoid selling a second win-back to someone who already has one)
+ - SO-4 there is no offer-code redemption entry (no presentCodeRedemptionSheet and no apps.apple.com/redeem link; a code sent by a campaign, a partner or support is a dead letter -- the user has nowhere in the product to spend it)
+ - SO-5 store-originated purchase outcomes are not counted split by channel (promoted / win-back / offer code / promotional: starts and results; uncounted channels cannot be told apart from broken ones)
+Exit status: 1

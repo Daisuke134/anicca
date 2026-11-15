@@ -280,7 +280,6 @@ final class AppState: ObservableObject {
     
     func updateUserCredentials(_ credentials: UserCredentials) {
         authStatus = .signedIn(credentials)
-        saveUserCredentials(credentials)
         
         // App Groups に userId と deviceId を保存（Notification Service Extension 用）
         let appGroupDefaults = AppGroup.userDefaults
@@ -324,7 +323,7 @@ final class AppState: ObservableObject {
     
     func clearUserCredentials() {
         authStatus = .signedOut
-        defaults.removeObject(forKey: userCredentialsKey)
+        removeStoredCredentials()
         Task { await SubscriptionManager.shared.handleLogout() }
     }
     
@@ -345,7 +344,7 @@ final class AppState: ObservableObject {
         setOnboardingStep(.welcome)
         
         // UserDefaultsからユーザーデータを削除（sensorAccessBaseKeyは削除しない）
-        defaults.removeObject(forKey: userCredentialsKey)
+        removeStoredCredentials()
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
 
@@ -377,7 +376,7 @@ final class AppState: ObservableObject {
         setOnboardingStep(.welcome)
 
         // UserDefaultsからすべてのユーザーデータを削除
-        defaults.removeObject(forKey: userCredentialsKey)
+        removeStoredCredentials()
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
 
@@ -392,20 +391,57 @@ final class AppState: ObservableObject {
         }
     }
     
+    private func removeStoredCredentials() {
+        AuthCoordinator.shared.invalidatePendingSignIn()
+        defaults.removeObject(forKey: userCredentialsKey)
+        KeychainService.delete(account: userCredentialsKey)
+        KeychainService.delete(account: "rt")
+        KeychainService.delete(account: "appleFirstGrant")
+        AppGroup.userDefaults.removeObject(forKey: "userId")
+    }
+
+    func requireAppleReauthentication() {
+        authStatus = .signedOut
+        KeychainService.delete(account: "rt")
+        Task { await SubscriptionManager.shared.handleLogout() }
+    }
+
     private func loadUserCredentials() -> AuthStatus {
-        guard let data = defaults.data(forKey: userCredentialsKey),
-              let credentials = try? JSONDecoder().decode(UserCredentials.self, from: data) else {
+        let data = KeychainService.load(account: userCredentialsKey) ?? defaults.data(forKey: userCredentialsKey)
+        guard let data,
+              var credentials = try? JSONDecoder().decode(UserCredentials.self, from: data) else {
             return .signedOut
         }
-        return .signedIn(credentials)
-    }
-    
-    private func saveUserCredentials(_ credentials: UserCredentials) {
-        if let data = try? JSONEncoder().encode(credentials) {
-            defaults.set(data, forKey: userCredentialsKey)
+        do {
+            if credentials.appleUserId == nil {
+                // Legacy backend IDs cannot be queried as Apple subjects. Keep first-grant
+                // profile data for a matching reauthorization, but discard old session tokens.
+                credentials.jwtAccessToken = nil
+                credentials.accessTokenExpiresAt = nil
+                try persistAuthenticatedCredentials(credentials)
+                KeychainService.delete(account: "rt")
+                return .signedOut
+            }
+            try persistAuthenticatedCredentials(credentials)
+            return .signedIn(credentials)
+        } catch {
+            return .signedOut
         }
     }
-    
+
+    func persistAuthenticatedCredentials(_ credentials: UserCredentials) throws {
+        try KeychainService.save(JSONEncoder().encode(credentials), account: userCredentialsKey)
+        defaults.removeObject(forKey: userCredentialsKey)
+    }
+
+    private func saveUserCredentials(_ credentials: UserCredentials) {
+        do {
+            try persistAuthenticatedCredentials(credentials)
+        } catch {
+            clearUserCredentials()
+        }
+    }
+
     // MARK: - User Profile
     
     func updateUserProfile(_ profile: UserProfile, sync: Bool = true) {
@@ -569,6 +605,8 @@ final class AppState: ObservableObject {
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 return
             }
+            let currentUserId = authStatus.userId ?? resolveDeviceId()
+            guard currentUserId == userId else { return }
             applyRemoteProfilePayload(json)
         } catch {
             // ネットワークがない場合などは無視してローカル状態を継続

@@ -1528,3 +1528,7 @@
 "adaptive_prior_attempts_hint" = "Avoir essayé une méthode ne signifie pas qu’elle ne t’a pas aidé·e. Tu peux ensuite indiquer ce qui ne t’a pas convenu.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+"auth_sign_in_failed" = "Connexion impossible. Veuillez réessayer.";
+"auth_delete_failed" = "Impossible de supprimer le compte. Veuillez réessayer.";
+"auth_delete_warning" = "Supprimer définitivement votre compte et les données de l’app ? Cela ne résilie pas votre abonnement App Store. Gérez vos abonnements dans Réglages.";
