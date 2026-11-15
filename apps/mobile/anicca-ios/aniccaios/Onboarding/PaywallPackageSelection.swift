@@ -120,6 +120,30 @@ enum PaywallOfferingSelection {
     }
 }
 
+/// Which plans the paywall sells (decided 2026-11-15 from primary
+/// sources: RevenueCat — two plans is the most common layout, one plan
+/// highlighted with a savings badge; Adapty — weekly plans drive 55.5%
+/// of subscription revenue and convert install→trial at 9.8% vs 1.8%
+/// for annual, try 2–3 plans and never show five; winner I am runs
+/// three tiers). Exactly three cards: annual first (highlighted as best
+/// value, default selection, 3-day free trial), then weekly, then
+/// lifetime. Monthly is not sold on the paywall — four choices made
+/// people deliberate instead of deciding.
+enum PaywallPlanDisplay {
+    static func isVisible(planName: String) -> Bool {
+        planName == "annual" || planName == "weekly" || planName == "lifetime"
+    }
+
+    static func rank(planName: String) -> Int {
+        switch planName {
+        case "annual": return 0
+        case "weekly": return 1
+        case "lifetime": return 2
+        default: return 3
+        }
+    }
+}
+
 /// Whether the paywall may be presented at all (user rule, 2026-11-15:
 /// a user who already pays never sees a paywall; everyone else does).
 /// This is the single decision point every paywall entry uses, mirroring

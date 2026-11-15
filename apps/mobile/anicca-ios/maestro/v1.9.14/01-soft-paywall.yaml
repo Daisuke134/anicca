@@ -193,38 +193,27 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - runFlow: _dismiss-apple-account.yaml
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 07-paywall
-      # Issue #9356: every plan on sale is a card on this first screen —
-      # nothing hides behind an "Other plans" sheet. Annual and monthly are
-      # always on sale; weekly and lifetime are checked when returned.
+      # Issue #9356 as decided 2026-11-15: exactly three plans, each a
+      # card on this first screen — annual highlighted as best value,
+      # weekly, lifetime. Nothing hides behind an "Other plans" sheet,
+      # and monthly is not sold on the paywall at all.
       - assertVisible:
           id: "paywall-plan-annual"
-      - scrollUntilVisible:
-          element:
-            id: "paywall-plan-monthly"
-          direction: DOWN
       - assertVisible:
+          id: "paywall-plan-badge-best-value"
+      - assertVisible:
+          id: "paywall-plan-weekly"
+      - assertVisible:
+          id: "paywall-plan-lifetime"
+      - assertNotVisible:
           id: "paywall-plan-monthly"
-      - runFlow:
-          when:
-            visible:
-              id: "paywall-plan-weekly"
-          commands:
-            - assertVisible:
-                id: "paywall-plan-weekly"
-      - runFlow:
-          when:
-            visible:
-              id: "paywall-plan-lifetime"
-          commands:
-            - assertVisible:
-                id: "paywall-plan-lifetime"
       # Selecting a plan happens in place, on this same screen: the
-      # purchase CTA stays visible and switches to the monthly terms.
+      # purchase CTA stays visible and switches to the weekly terms.
       - tapOn:
-          id: "paywall-plan-monthly"
+          id: "paywall-plan-weekly"
       - assertVisible:
           id: "paywall-plan-cta"
-      - takeScreenshot: 07b-paywall-monthly-selected
+      - takeScreenshot: 07b-paywall-weekly-selected
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - tapOn:
           id: paywall-close-button
@@ -304,15 +293,15 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 14-premium-from-themes
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-      # Issue #9356: on this second paywall appearance too, every plan
-      # is a card on the first screen.
+      # Issue #9356: on this second paywall appearance too, the three
+      # plans are cards on the first screen and monthly is absent.
       - assertVisible:
           id: "paywall-plan-annual"
-      - scrollUntilVisible:
-          element:
-            id: "paywall-plan-monthly"
-          direction: DOWN
       - assertVisible:
+          id: "paywall-plan-weekly"
+      - assertVisible:
+          id: "paywall-plan-lifetime"
+      - assertNotVisible:
           id: "paywall-plan-monthly"
       - takeScreenshot: 14b-paywall-all-plans
       - tapOn:

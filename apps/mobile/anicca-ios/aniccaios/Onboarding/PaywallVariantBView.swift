@@ -235,7 +235,7 @@ struct PaywallVariantBView: View {
         }
     }
 
-    /// All plans on sale, as selectable cards on the first screen.
+    /// The three plans the paywall sells, as selectable cards on the first screen.
     private var planCards: some View {
         VStack(spacing: 10) {
             ForEach(orderedPackages, id: \.identifier) { package in
@@ -279,22 +279,32 @@ struct PaywallVariantBView: View {
         }
     }
 
-    /// Longest commitment first: annual, monthly, weekly, then lifetime.
+    /// The three plans the paywall sells, in display order: annual
+    /// (highlighted, default), weekly, lifetime. Monthly is filtered out
+    /// here — see PaywallPlanDisplay for the primary-source reasoning.
     private var orderedPackages: [Package] {
-        PaywallPlanOrdering.ordered(packages) { package in
-            switch package.packageType {
-            case .annual: return 0
-            case .monthly: return 1
-            case .weekly: return 2
-            case .lifetime: return 3
-            default: return 4
-            }
+        let visible = packages.filter {
+            PaywallPlanDisplay.isVisible(planName: Self.planIdentifierName(for: $0.packageType))
+        }
+        return PaywallPlanOrdering.ordered(visible) {
+            PaywallPlanDisplay.rank(planName: Self.planIdentifierName(for: $0.packageType))
         }
     }
 
     private func offerCard(package: Package, isSelected: Bool) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
+                if package.packageType == .annual {
+                    // The one highlighted plan (RevenueCat best practice:
+                    // highlight a single plan with its badge).
+                    Text(String(localized: "paywall_plan_yearly_badge"))
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(AppTheme.Colors.accent, in: Capsule())
+                        .accessibilityIdentifier("paywall-plan-badge-best-value")
+                }
                 Text(localizedPlanTitle(for: package))
                     .font(.subheadline)
                 Text(billedAmount(for: package))

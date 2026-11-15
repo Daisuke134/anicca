@@ -43,6 +43,21 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertEqual(PaywallVariantBView.planIdentifierName(for: .lifetime), "lifetime")
     }
 
+    // Decided 2026-11-15 from primary sources (RevenueCat, Adapty,
+    // winner I am's three tiers): the paywall sells exactly three
+    // plans — annual highlighted first, then weekly, then lifetime.
+    // Monthly is not sold on the paywall.
+    func testPaywallShowsExactlyThreePlans() {
+        XCTAssertTrue(PaywallPlanDisplay.isVisible(planName: "annual"))
+        XCTAssertTrue(PaywallPlanDisplay.isVisible(planName: "weekly"))
+        XCTAssertTrue(PaywallPlanDisplay.isVisible(planName: "lifetime"))
+        XCTAssertFalse(PaywallPlanDisplay.isVisible(planName: "monthly"))
+        XCTAssertFalse(PaywallPlanDisplay.isVisible(planName: "six-month"))
+        XCTAssertFalse(PaywallPlanDisplay.isVisible(planName: "custom"))
+        XCTAssertLessThan(PaywallPlanDisplay.rank(planName: "annual"), PaywallPlanDisplay.rank(planName: "weekly"))
+        XCTAssertLessThan(PaywallPlanDisplay.rank(planName: "weekly"), PaywallPlanDisplay.rank(planName: "lifetime"))
+    }
+
     // User rule (2026-11-15): a user who already pays never sees a
     // paywall; everyone else does. The live refresh decides when it
     // succeeds; the cached state is only the fallback for a failed one.
