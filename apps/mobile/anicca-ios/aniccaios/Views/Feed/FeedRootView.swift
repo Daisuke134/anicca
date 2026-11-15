@@ -61,8 +61,13 @@ final class HomeDeckModel: ObservableObject {
 /// make later, not a design constant.
 enum HomeAutoAdvance {
     static let interval: TimeInterval = 8
+    static let recordingInterval: TimeInterval = 3
 
-    /// Auto-advance is a behavior for people, not for UI tests: Maestro
+    static var isRecordingMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("-aniccaRecordingMode")
+    }
+
+    /// Auto-advance is disabled for UI tests unless recording is requested. Maestro
     /// steps can take longer than the idle interval, which moved the deck
     /// mid-assertion in build-830 E2E run 43678244497 (by the time the
     /// flow copied the home quote, the deck had advanced past the
@@ -82,10 +87,11 @@ enum HomeAutoAdvance {
         cardCount: Int,
         anySheetPresented: Bool,
         interval: TimeInterval = HomeAutoAdvance.interval,
-        isUITesting: Bool = HomeAutoAdvance.isDisabledForUITesting
+        isUITesting: Bool = HomeAutoAdvance.isDisabledForUITesting,
+        isRecordingMode: Bool = HomeAutoAdvance.isRecordingMode
     ) -> Bool {
-        guard !isUITesting, isSceneActive, cardCount > 1, !anySheetPresented else { return false }
-        return now.timeIntervalSince(lastInteractionAt) >= interval
+        guard (!isUITesting || isRecordingMode), isSceneActive, cardCount > 1, !anySheetPresented else { return false }
+        return now.timeIntervalSince(lastInteractionAt) >= (isRecordingMode ? recordingInterval : interval)
     }
 
     static func nextIndex(current: Int, count: Int) -> Int {
@@ -130,6 +136,11 @@ struct FeedRootView: View {
 
     private var anySheetPresented: Bool {
         showSettings || showSaved || showReminders || showThemes
+    }
+
+    private var displayedWordID: String? {
+        guard deckModel.cards.indices.contains(currentIndex) else { return nil }
+        return deckModel.cards[currentIndex].id
     }
 
     var body: some View {
@@ -178,14 +189,16 @@ struct FeedRootView: View {
                 .padding(.bottom, 12)
             }
             .background {
-                // The background itself is alive: a slow drift under the
-                // words, free with SwiftUI alone.
+                // Keep the theme visible beneath the transparent Rive artwork.
                 themeStore.image.resizable().scaledToFill()
                     .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
                     .scaleEffect(backgroundDrift ? 1.09 : 1.02)
                     .offset(x: backgroundDrift ? -12 : 12)
                     .animation(.easeInOut(duration: 26).repeatForever(autoreverses: true), value: backgroundDrift)
                     .clipped()
+                    .overlay {
+                        LivingRiveBackground(wordID: displayedWordID)
+                    }
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
             }
