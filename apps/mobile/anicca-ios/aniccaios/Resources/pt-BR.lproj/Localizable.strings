@@ -1528,3 +1528,7 @@
 "adaptive_prior_attempts_hint" = "Ter experimentado algo não significa que não funcionou. A seguir, você pode indicar o que não combinou com você.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+/* Pending purchase: informational, not an error. */
+"purchase_pending_title" = "Pagamento pendente";
+"purchase_pending_message" = "Sua compra aguarda confirmação. O acesso será liberado automaticamente após a confirmação. Pedir para Comprar exige a aprovação de um dos pais ou responsável. Seu banco ou provedor de pagamento pode exigir autenticação ou pagamento. Você não precisa comprar novamente.";

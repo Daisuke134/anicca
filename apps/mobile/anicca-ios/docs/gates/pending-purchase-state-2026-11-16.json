@@ -1,0 +1,41 @@
+{
+  "app": "Anicca iOS Q5 PP code-side state 2026-11-16; static evidence only",
+  "classification": {
+    "pending_distinguished_before_generic_failure": true,
+    "pending_not_tracked_as_failed": true,
+    "pending_not_treated_as_cancelled": true
+  },
+  "grant": {
+    "no_entitlement_granted_on_pending": true,
+    "no_retry_or_repurchasing_encouragement": true
+  },
+  "inventory": {
+    "cannot_cancel_and_late_resolution_recorded": true,
+    "causes_enumerated": true,
+    "pending_is_distinct_outcome": true
+  },
+  "measurement": {
+    "pending_resolution_counted": true,
+    "pending_tracked_as_distinct_result": true
+  },
+  "message": {
+    "pending_message_localized": true,
+    "pending_message_says_unlocks_when_confirmed": true,
+    "pending_shows_info_not_raw_error": true
+  },
+  "resolution": {
+    "customerinfo_listener_observes_completion": true,
+    "foreground_recheck_clears_or_resolves": false,
+    "pending_state_persists_or_rederived": true
+  },
+  "evidence_notes": {
+    "scope": "Swift source inspection and deterministic Python wiring, not native execution or Sandbox simulation.",
+    "classification": "Both purchase sites branch paymentPendingError before generic failure, persist marker and track purchase_result result=pending.",
+    "message": "Neutral inline pending message and title in all six existing locales; automatic unlock and conditional approver/payment next steps.",
+    "grant": "Same-product CTA disabled and handler guarded; pending never invokes entitlement or success callback.",
+    "resolution": "UserDefaults Codable record plus Published observation. Configure/scene active/record recheck via fetchCurrent; delegate/stream/refresh compare original user and provider purchase baseline. Missing purchase evidence never clears.",
+    "remaining_fail": "PP-4 denial without callback cannot be distinguished from still pending. Positive foreground resolution works; denied markers may remain indefinitely. Full denial recovery gate deliberately false.",
+    "measurement": "pending_purchase_resolved confirmed event with product, original flow, elapsed seconds; no revenue event. Client persistence/analytics not transactional. /open columns not changed.",
+    "untested": "No Xcode/Swift compiler; no Sandbox Ask to Buy simulation or production receipt readback."
+  }
+}

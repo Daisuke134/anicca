@@ -12,6 +12,7 @@ struct PaywallVariantBView: View {
 
     @EnvironmentObject private var appState: AppState
     @State private var selectedPackage: Package?
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var hasShownRetention = false
@@ -63,6 +64,11 @@ struct PaywallVariantBView: View {
     private var trialEndDate: Date? {
         guard hasTrialEligibility, let period = freeTrialDiscount?.subscriptionPeriod else { return nil }
         return Calendar.current.date(byAdding: dateComponents(for: period), to: Date())
+    }
+
+    private var isPendingPurchase: Bool {
+        guard let package = selectedPackage else { return false }
+        return subscriptionManager.isPurchasePending(productID: package.storeProduct.productIdentifier)
     }
 
     var body: some View {
@@ -206,6 +212,12 @@ struct PaywallVariantBView: View {
 
     private var ctaSection: some View {
         VStack(spacing: 8) {
+            if isPendingPurchase {
+                Text(String(localized: "purchase_pending_message"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let errorMessage {
                 Text(errorMessage)
                     .font(.caption)
@@ -214,7 +226,9 @@ struct PaywallVariantBView: View {
             }
             Button { purchase() } label: {
                 Group {
-                    if isPurchasing {
+                    if isPendingPurchase {
+                        Text(String(localized: "purchase_pending_title"))
+                    } else if isPurchasing {
                         ProgressView().tint(.white)
                     } else {
                         Text(String(localized: selectedPackage?.packageType == .lifetime
@@ -231,6 +245,7 @@ struct PaywallVariantBView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
             .disabled(selectedPackage == nil || isPurchasing)
+            .disabled(isPendingPurchase)
             .accessibilityIdentifier("paywall-plan-cta")
         }
     }
@@ -507,41 +522,45 @@ struct PaywallVariantBView: View {
 
     private func purchase() {
         guard let package = selectedPackage else { return }
+        guard !isPurchasing, !isPendingPurchase else { return }
+        let purchaseStartedAt = Date()
         let isLifetimePackage = package.packageType == .lifetime
         let purchaseStorefrontRevision = appState.storefrontRevision
         isPurchasing = true
         errorMessage = nil
 
         Task { @MainActor in
-            let currentStorefront = isLifetimePackage ? await Storefront.current : nil
-            let currentPackages = appState.cachedOffering?.availablePackages ?? []
-            let storefrontIsCurrent = !isLifetimePackage || (
-                PaywallOfferingSelection.isUnchangedStorefrontRevision(
-                    startingRevision: purchaseStorefrontRevision,
-                    currentRevision: appState.storefrontRevision
-                ) && PaywallStorefrontEligibility.sameStorefront(
-                    first: currentStorefront?.countryCode,
-                    second: appState.currentStorefrontCountryCode
-                )
-            )
-            let canPurchase = storefrontIsCurrent && PaywallStorefrontEligibility.allowsPurchase(
-                packageIsLifetime: isLifetimePackage,
-                packageIsCurrent: PaywallPackageSelection.containsCurrentInstance(package, in: currentPackages),
-                countryCode: currentStorefront?.countryCode,
-                offeringCountryCode: appState.cachedOfferingStorefrontCountryCode
-            )
-            guard canPurchase else {
-                isPurchasing = false
-                if isLifetimePackage {
-                    appState.recordStorefrontCountryCode(currentStorefront?.countryCode)
-                }
-                synchronizePackageSelection()
-                await refreshStorefrontEligibility()
-                return
-            }
-
+            var purchaseBaseline: CustomerInfo?
             do {
                 AnalyticsManager.shared.trackPurchaseStarted(package: package, offeringID: offering?.identifier, flowID: flowID)
+                purchaseBaseline = try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)
+                let currentStorefront = isLifetimePackage ? await Storefront.current : nil
+                let currentPackages = appState.cachedOffering?.availablePackages ?? []
+                let storefrontIsCurrent = !isLifetimePackage || (
+                    PaywallOfferingSelection.isUnchangedStorefrontRevision(
+                        startingRevision: purchaseStorefrontRevision,
+                        currentRevision: appState.storefrontRevision
+                    ) && PaywallStorefrontEligibility.sameStorefront(
+                        first: currentStorefront?.countryCode,
+                        second: appState.currentStorefrontCountryCode
+                    )
+                )
+                let canPurchase = storefrontIsCurrent && PaywallStorefrontEligibility.allowsPurchase(
+                    packageIsLifetime: isLifetimePackage,
+                    packageIsCurrent: PaywallPackageSelection.containsCurrentInstance(package, in: currentPackages),
+                    countryCode: currentStorefront?.countryCode,
+                    offeringCountryCode: appState.cachedOfferingStorefrontCountryCode
+                )
+                guard canPurchase else {
+                    isPurchasing = false
+                    if isLifetimePackage {
+                        appState.recordStorefrontCountryCode(currentStorefront?.countryCode)
+                    }
+                    synchronizePackageSelection()
+                    await refreshStorefrontEligibility()
+                    return
+                }
+
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
                     AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
@@ -557,7 +576,13 @@ struct PaywallVariantBView: View {
                 }
             } catch {
                 isPurchasing = false
-                if let rcError = error as? RevenueCat.ErrorCode,
+                if let rcError = error as? RevenueCat.ErrorCode, rcError == .paymentPendingError {
+                    errorMessage = nil
+                    subscriptionManager.recordPendingPurchase(
+                        productID: package.storeProduct.productIdentifier,
+                        startedAt: purchaseStartedAt, flowID: flowID, baseline: purchaseBaseline
+                    )
+                } else if let rcError = error as? RevenueCat.ErrorCode,
                    rcError == .purchaseCancelledError {
                     AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: flowID)
                     if !hasShownRetention {

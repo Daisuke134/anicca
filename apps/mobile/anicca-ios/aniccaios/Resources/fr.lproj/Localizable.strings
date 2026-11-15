@@ -1528,3 +1528,7 @@
 "adaptive_prior_attempts_hint" = "Avoir essayé une méthode ne signifie pas qu’elle ne t’a pas aidé·e. Tu peux ensuite indiquer ce qui ne t’a pas convenu.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+/* Pending purchase: informational, not an error. */
+"purchase_pending_title" = "Paiement en attente";
+"purchase_pending_message" = "Ton achat attend une confirmation. L’accès sera activé automatiquement après confirmation. Demander l’autorisation d’achat nécessite l’accord de ton parent ou responsable légal. Ta banque ou ton prestataire de paiement peut demander une authentification ou un paiement. Tu n’as pas besoin de racheter.";

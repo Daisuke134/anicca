@@ -8,9 +8,15 @@ struct RetentionOfferSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var retentionPackage: Package?
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var loadFailed = false
+
+    private var isPendingPurchase: Bool {
+        guard let package = retentionPackage else { return false }
+        return subscriptionManager.isPurchasePending(productID: package.storeProduct.productIdentifier)
+    }
 
     var body: some View {
         NavigationStack {
@@ -60,9 +66,15 @@ struct RetentionOfferSheet: View {
                     Label(String(localized: "retention_bullet_features"), systemImage: "checkmark.circle.fill")
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.Colors.accent)
+                    if isPendingPurchase {
+                        Text(String(localized: "purchase_pending_message"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     PrimaryButton(
-                        title: String(localized: "retention_cta_accept"),
-                        isEnabled: retentionPackage != nil,
+                        title: isPendingPurchase ? String(localized: "purchase_pending_title") : String(localized: "retention_cta_accept"),
+                        isEnabled: retentionPackage != nil && !isPendingPurchase && !isPurchasing,
                         isLoading: isPurchasing
                     ) {
                         Task { await acceptOffer() }
@@ -119,10 +131,15 @@ struct RetentionOfferSheet: View {
     @MainActor
     private func acceptOffer() async {
         guard let pkg = retentionPackage else { return }
+        guard !isPurchasing, !isPendingPurchase else { return }
+        let purchaseStartedAt = Date()
         isPurchasing = true
+        errorMessage = nil
         defer { isPurchasing = false }
+        var purchaseBaseline: CustomerInfo?
         do {
             AnalyticsManager.shared.trackPurchaseStarted(package: pkg, offeringID: "anicca_retention", flowID: flowID)
+            purchaseBaseline = try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)
             let result = try await Purchases.shared.purchase(package: pkg)
             if !result.userCancelled {
                 AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
@@ -132,7 +149,13 @@ struct RetentionOfferSheet: View {
                 AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             }
         } catch {
-            if let rcError = error as? RevenueCat.ErrorCode, rcError == .purchaseCancelledError {
+            if let rcError = error as? RevenueCat.ErrorCode, rcError == .paymentPendingError {
+                errorMessage = nil
+                subscriptionManager.recordPendingPurchase(
+                    productID: pkg.storeProduct.productIdentifier,
+                    startedAt: purchaseStartedAt, flowID: flowID, baseline: purchaseBaseline
+                )
+            } else if let rcError = error as? RevenueCat.ErrorCode, rcError == .purchaseCancelledError {
                 AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             } else {
                 AnalyticsManager.shared.trackPurchaseResult(
@@ -141,8 +164,8 @@ struct RetentionOfferSheet: View {
                     flowID: flowID,
                     errorCode: String((error as NSError).code)
                 )
+                errorMessage = error.localizedDescription
             }
-            errorMessage = error.localizedDescription
         }
     }
 }

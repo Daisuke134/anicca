@@ -2812,3 +2812,7 @@
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+/* Pending purchase: informational, not an error. */
+"purchase_pending_title" = "Pago pendiente";
+"purchase_pending_message" = "Tu compra está pendiente de confirmación. El acceso se activará automáticamente cuando se confirme. Solicitar la compra requiere la aprobación de tu madre, padre o tutor. Tu banco o proveedor de pagos puede requerir autenticación o el pago. No necesitas volver a comprar.";

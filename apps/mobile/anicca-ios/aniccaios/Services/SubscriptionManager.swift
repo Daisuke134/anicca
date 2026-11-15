@@ -1,18 +1,85 @@
 import RevenueCat
 import Foundation
+import Combine
 import AdSupport
 import StoreKit
 
 @MainActor
-final class SubscriptionManager: NSObject {
+final class SubscriptionManager: NSObject, ObservableObject {
     static let shared = SubscriptionManager()
     private static let aniccaFallbackOfferingIdentifier = "anicca_variant_b"
     private var offerings: Offerings?
     private var offeringsRefreshGeneration = 0
     private(set) var isConfigured = false
 
+    struct PendingPurchase: Codable {
+        let productID: String
+        let startedAt: Date
+        let flowID: String
+        let originalAppUserID: String?
+        let previousPurchaseDate: Date?
+    }
+
+    private static let pendingKey = "anicca.purchases.pending.v1"
+    @Published private(set) var pendingPurchases: [String: PendingPurchase] = [:]
+
     private override init() {
         super.init()
+        if let data = UserDefaults.standard.data(forKey: Self.pendingKey),
+           let saved = try? JSONDecoder().decode([String: PendingPurchase].self, from: data) {
+            pendingPurchases = saved
+        }
+    }
+
+    func isPurchasePending(productID: String) -> Bool {
+        pendingPurchases[productID] != nil
+    }
+
+    private func persistPendingPurchases() {
+        guard let data = try? JSONEncoder().encode(pendingPurchases) else { return }
+        UserDefaults.standard.set(data, forKey: Self.pendingKey)
+    }
+
+    func recordPendingPurchase(productID: String, startedAt: Date, flowID: String, baseline: CustomerInfo?) {
+        guard pendingPurchases[productID] == nil else { return }
+        pendingPurchases[productID] = PendingPurchase(
+            productID: productID, startedAt: startedAt, flowID: flowID,
+            originalAppUserID: baseline?.originalAppUserId,
+            previousPurchaseDate: baseline?.purchaseDate(forProductIdentifier: productID)
+        )
+        persistPendingPurchases()
+        AnalyticsManager.shared.trackPurchaseResult("pending", productID: productID, flowID: flowID)
+        // Completion can race the throwing purchase call and its delegate update.
+        Task { await self.recheckPendingPurchases() }
+    }
+
+    private func reconcilePendingPurchases(_ info: CustomerInfo) {
+        let confirmed = pendingPurchases.values.filter { pending in
+            guard info.originalAppUserId == pending.originalAppUserID,
+                  let purchaseDate = info.purchaseDate(forProductIdentifier: pending.productID) else { return false }
+            if let previousPurchaseDate = pending.previousPurchaseDate {
+                return purchaseDate > previousPurchaseDate
+            }
+            return true
+        }
+        guard !confirmed.isEmpty else { return }
+        for pending in confirmed {
+            pendingPurchases.removeValue(forKey: pending.productID)
+        }
+        persistPendingPurchases()
+        for pending in confirmed {
+            AnalyticsManager.shared.trackPendingPurchaseResolved(
+                productID: pending.productID, flowID: pending.flowID,
+                pendingSeconds: max(0, Date().timeIntervalSince(pending.startedAt))
+            )
+        }
+        // No entitlement is granted here. CustomerInfo alone drives AppState.
+        // Missing purchase evidence is NOT a denial; retain the duplicate guard.
+    }
+
+    func recheckPendingPurchases() async {
+        guard !pendingPurchases.isEmpty else { return }
+        _ = await refreshCustomerInfo()
     }
 
     func configure() {
@@ -50,6 +117,7 @@ final class SubscriptionManager: NSObject {
         }
         
         isConfigured = true
+        Task { await self.recheckPendingPurchases() }
 
         // 起動直後にオファリング取得を開始（並列実行で高速化）
         Task {
@@ -63,6 +131,7 @@ final class SubscriptionManager: NSObject {
     private func listenCustomerInfo() async {
         for await info in Purchases.shared.customerInfoStream {
             await MainActor.run {
+                self.reconcilePendingPurchases(info)
                 var subscription = SubscriptionInfo(info: info)
                 
                 // 重要: RevenueCatの情報を優先して即座に更新
@@ -204,6 +273,7 @@ final class SubscriptionManager: NSObject {
         guard isConfigured else { return nil }
         do {
             let customerInfo = try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)
+            reconcilePendingPurchases(customerInfo)
             let subscription = SubscriptionInfo(info: customerInfo)
             AppState.shared.updateSubscriptionInfo(subscription)
             return subscription.isEntitled
@@ -267,6 +337,7 @@ extension SubscriptionManager: PurchasesDelegate {
         print("[RevenueCat] Delegate received update. Active entitlements: \(customerInfo.entitlements.active.keys)")
         
         Task { @MainActor in
+            reconcilePendingPurchases(customerInfo)
             let subscription = SubscriptionInfo(info: customerInfo)
             
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）

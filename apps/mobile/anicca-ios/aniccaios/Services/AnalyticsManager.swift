@@ -283,6 +283,15 @@ final class AnalyticsManager {
         track(.purchaseResult, properties: properties)
     }
 
+    func trackPendingPurchaseResolved(productID: String, flowID: String, pendingSeconds: TimeInterval) {
+        track(.pendingPurchaseResolved, properties: [
+            "product_id": productID,
+            "flow_id": flowID,
+            "pending_seconds": pendingSeconds,
+            "result": "confirmed",
+        ])
+    }
+
     func trackRestoreStarted(source: String, flowID: String) {
         track(.restoreStarted, properties: ["source": source, "flow_id": flowID])
     }
@@ -371,6 +380,7 @@ enum AnalyticsEvent: String {
     case nudgeDecisionMade = "nudge_decision_made"
     case purchaseStarted = "purchase_started"
     case purchaseResult = "purchase_result"
+    case pendingPurchaseResolved = "pending_purchase_resolved"
     case restoreStarted = "restore_started"
     case restoreResult = "restore_result"
     case experimentExposure = "experiment_exposure"
