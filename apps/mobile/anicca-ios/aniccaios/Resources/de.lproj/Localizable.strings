@@ -560,7 +560,10 @@
 "legal_terms_of_use" = "Terms of Use (EULA)";
 "settings_delete_account" = "Delete Account";
 "settings_delete_account_confirm" = "Delete";
-"settings_delete_account_message" = "This action cannot be undone. All your data, including purchase history and usage data, will be permanently deleted.";
+"settings_delete_account_message" = "Dein Anicca-Konto und deine App-Daten werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden. Aktive App-Store-Abonnements werden separat verwaltet und nicht gekündigt.";
+"settings_delete_account_progress" = "Account wird gelöscht …";
+"settings_delete_account_error_title" = "Account konnte nicht gelöscht werden";
+"settings_delete_account_error_message" = "Dein Account konnte nicht gelöscht werden. Prüfe deine Verbindung und versuche es erneut.";
 "common_error" = "Fehler";
 "common_ok" = "OK";
 
@@ -1526,3 +1529,5 @@
 "adaptive_quiet_conflict" = "In deinen Ruhezeiten werden keine Erinnerungen gesendet. Du kannst andere Uhrzeiten wählen.";
 "adaptive_no_available_times" = "Deine Ruhezeiten decken den ganzen Tag ab. Es werden keine Erinnerungen geplant.";
 "adaptive_prior_attempts_hint" = "Dass du etwas ausprobiert hast, bedeutet nicht, dass es dir nicht geholfen hat. Im nächsten Schritt kannst du angeben, was nicht zu dir gepasst hat.";
+"feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_picked_from_answers" = "Picked for you, from your answers";

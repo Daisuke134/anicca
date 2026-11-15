@@ -47,6 +47,10 @@ enum AppConfig {
     static var profileSyncURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/profile")
     }
+
+    static var accountDeletionURL: URL {
+        proxyBaseURL.appendingPathComponent("mobile/account")
+    }
     
     static var revenueCatAPIKey: String { infoValue(for: revenueCatAPIKeyKey) }
     static var revenueCatEntitlementId: String { infoValue(for: revenueCatEntitlementKey) }

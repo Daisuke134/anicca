@@ -20,6 +20,22 @@ enum PaywallPackageSelection {
     }
 }
 
+/// Stable display ordering for paywall plan cards (Issue #9356: every plan
+/// on sale is visible on the first screen). Lower rank sorts first; equal
+/// ranks keep the offering's own order.
+enum PaywallPlanOrdering {
+    static func ordered<Candidate>(_ candidates: [Candidate], rank: (Candidate) -> Int) -> [Candidate] {
+        candidates.enumerated()
+            .sorted { lhs, rhs in
+                let leftRank = rank(lhs.element)
+                let rightRank = rank(rhs.element)
+                if leftRank != rightRank { return leftRank < rightRank }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+}
+
 /// Fails closed unless both the App Store region and its refreshed offering are known.
 enum PaywallStorefrontEligibility {
     static func sameStorefront(first: String?, second: String?) -> Bool {
@@ -101,6 +117,46 @@ enum PaywallOfferingSelection {
     static func isUsableAnicca(productIdentifiers: [String], hasAnnualOrMonthlyPackage: Bool) -> Bool {
         guard hasAnnualOrMonthlyPackage, !productIdentifiers.isEmpty else { return false }
         return productIdentifiers.allSatisfy { $0.hasPrefix("ai.anicca.app.ios.") }
+    }
+}
+
+/// Which plans the paywall sells (decided 2026-11-15 from primary
+/// sources: RevenueCat — two plans is the most common layout, one plan
+/// highlighted with a savings badge; Adapty — weekly plans drive 55.5%
+/// of subscription revenue and convert install→trial at 9.8% vs 1.8%
+/// for annual, try 2–3 plans and never show five; winner I am runs
+/// three tiers). Exactly three cards: annual first (highlighted as best
+/// value, default selection, 3-day free trial), then weekly, then
+/// lifetime. Monthly is not sold on the paywall — four choices made
+/// people deliberate instead of deciding.
+enum PaywallPlanDisplay {
+    static func isVisible(planName: String) -> Bool {
+        planName == "annual" || planName == "weekly" || planName == "lifetime"
+    }
+
+    static func rank(planName: String) -> Int {
+        switch planName {
+        case "annual": return 0
+        case "weekly": return 1
+        case "lifetime": return 2
+        default: return 3
+        }
+    }
+}
+
+/// Whether the paywall may be presented at all (user rule, 2026-11-15:
+/// a user who already pays never sees a paywall; everyone else does).
+/// This is the single decision point every paywall entry uses, mirroring
+/// the documented defaults of Superwall and RevenueCat: read the
+/// entitlement before presenting, and present only to non-subscribers.
+/// When the cached state may be stale, a live refresh decides; a failed
+/// refresh falls back to the cached state rather than guessing.
+enum PaywallPresentationPolicy {
+    static func shouldPresent(isEntitled: Bool) -> Bool { !isEntitled }
+
+    static func shouldPresent(refreshedIsEntitled: Bool?, cachedIsEntitled: Bool) -> Bool {
+        if let refreshedIsEntitled { return shouldPresent(isEntitled: refreshedIsEntitled) }
+        return shouldPresent(isEntitled: cachedIsEntitled)
     }
 }
 

@@ -11,8 +11,12 @@ struct SettingsSheet: View {
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var appState = AppState.shared
 
     @State private var showSignOutConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var accountDeletionError: String?
     @State private var showPurchasePlans = false
 
     var body: some View {
@@ -55,12 +59,18 @@ struct SettingsSheet: View {
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
 
             Section {
-                Button {
-                    showPurchasePlans = true
-                } label: {
-                    Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                // Subscribers never see a paywall entry (user rule,
+                // 2026-11-15): the subscribe button exists only while the
+                // entitlement is inactive. Managing an existing plan stays
+                // available below via the Customer Center.
+                if appState.subscriptionInfo.shouldShowPaywall {
+                    Button {
+                        showPurchasePlans = true
+                    } label: {
+                        Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                    }
+                    .accessibilityIdentifier("settings-subscribe")
                 }
-                .accessibilityIdentifier("settings-subscribe")
 
                 NavigationLink {
                     RevenueCatUI.CustomerCenterView()
@@ -79,6 +89,14 @@ struct SettingsSheet: View {
                 } label: {
                     Label(String(localized: "settings_sign_out"), systemImage: "rectangle.portrait.and.arrow.right")
                 }
+
+                Button(role: .destructive) {
+                    showDeleteAccountConfirmation = true
+                } label: {
+                    Label(String(localized: "settings_delete_account"), systemImage: "person.crop.circle.badge.minus")
+                }
+                .disabled(isDeletingAccount)
+                .accessibilityIdentifier("settings-delete-account")
             }
             .listRowBackground(AppTheme.Colors.cardBackground.opacity(0.8))
         }
@@ -115,7 +133,73 @@ struct SettingsSheet: View {
             }
             Button(String(localized: "common_cancel"), role: .cancel) {}
         }
+        .alert(String(localized: "settings_delete_account"), isPresented: $showDeleteAccountConfirmation) {
+            Button(String(localized: "common_cancel"), role: .cancel) {}
+            Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
+                deleteAccount()
+            }
+        } message: {
+            Text(String(localized: "settings_delete_account_message"))
+        }
+        .alert(String(localized: "settings_delete_account_error_title"), isPresented: Binding(
+            get: { accountDeletionError != nil },
+            set: { if !$0 { accountDeletionError = nil } }
+        )) {
+            Button(String(localized: "common_ok")) { accountDeletionError = nil }
+        } message: {
+            Text(accountDeletionError ?? "")
+        }
+        .overlay {
+            if isDeletingAccount {
+                ZStack {
+                    Color.black.opacity(0.25).ignoresSafeArea()
+                    ProgressView(String(localized: "settings_delete_account_progress"))
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .accessibilityIdentifier("settings-delete-account-progress")
+            }
+        }
     }
+
+    private func deleteAccount() {
+        guard !isDeletingAccount else { return }
+        Task {
+            isDeletingAccount = true
+            defer { isDeletingAccount = false }
+
+            do {
+                guard case .signedIn(let credentials) = AppState.shared.authStatus else {
+                    throw AccountDeletionError.notSignedIn
+                }
+
+                var request = URLRequest(url: AppConfig.accountDeletionURL)
+                request.httpMethod = "DELETE"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+                request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+                try await NetworkSessionManager.shared.setAuthHeaders(for: &request)
+
+                let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
+                guard let response = response as? HTTPURLResponse else {
+                    throw AccountDeletionError.invalidResponse
+                }
+                guard response.statusCode == 204 || response.statusCode == 200 else {
+                    throw AniccaAPIError.from(statusCode: response.statusCode, data: data)
+                }
+
+                AppState.shared.signOutAndWipe()
+                dismiss()
+            } catch {
+                accountDeletionError = String(localized: "settings_delete_account_error_message")
+            }
+        }
+    }
+}
+
+private enum AccountDeletionError: Error {
+    case notSignedIn
+    case invalidResponse
 }
 
 /// 8 theme grid. Tap = select + persist + dismiss.
