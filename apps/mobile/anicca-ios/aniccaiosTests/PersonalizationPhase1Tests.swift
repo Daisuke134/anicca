@@ -527,6 +527,12 @@ extension PersonalizationPhase1Tests {
         XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
             now: t0.addingTimeInterval(60), lastInteractionAt: t0,
             isSceneActive: true, cardCount: 3, anySheetPresented: true))
+        // UI tests: never advance, however long the flow takes between
+        // steps (build-830 E2E run 43678244497 raced the 8s interval).
+        XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+            now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+            isSceneActive: true, cardCount: 3, anySheetPresented: false,
+            isUITesting: true))
     }
 
     func test_autoAdvance_nextIndexWraps() {

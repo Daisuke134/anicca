@@ -49,15 +49,29 @@ final class HomeDeckModel: ObservableObject {
 enum HomeAutoAdvance {
     static let interval: TimeInterval = 8
 
+    /// Auto-advance is a behavior for people, not for UI tests: Maestro
+    /// steps can take longer than the idle interval, which moved the deck
+    /// mid-assertion in build-830 E2E run 43678244497 (by the time the
+    /// flow copied the home quote, the deck had advanced past the
+    /// onboarding intervention it is compared against). `-uiTesting` is
+    /// the codebase's existing Maestro launch-argument convention
+    /// (AppState.resolveDeviceId). Deliberately not the `UITESTING`
+    /// argument: SubscriptionManager skips RevenueCat setup under that
+    /// one, and the paywall needs real products.
+    static var isDisabledForUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("-uiTesting")
+    }
+
     static func shouldAdvance(
         now: Date,
         lastInteractionAt: Date,
         isSceneActive: Bool,
         cardCount: Int,
         anySheetPresented: Bool,
-        interval: TimeInterval = HomeAutoAdvance.interval
+        interval: TimeInterval = HomeAutoAdvance.interval,
+        isUITesting: Bool = HomeAutoAdvance.isDisabledForUITesting
     ) -> Bool {
-        guard isSceneActive, cardCount > 1, !anySheetPresented else { return false }
+        guard !isUITesting, isSceneActive, cardCount > 1, !anySheetPresented else { return false }
         return now.timeIntervalSince(lastInteractionAt) >= interval
     }
 

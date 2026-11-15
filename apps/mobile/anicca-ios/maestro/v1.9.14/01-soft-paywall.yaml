@@ -7,6 +7,10 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
+      # Living-home auto-advance off under test (FeedRootView
+      # HomeAutoAdvance): flow steps can exceed the 8s idle interval.
+      # Not UITESTING — that would skip RevenueCat setup.
+      "-uiTesting": ""
 - retry:
     maxRetries: 2
     commands:
@@ -322,7 +326,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - assertTrue: ${maestro.copiedText === output.intervention}
 - takeScreenshot: 12-feed-sand-theme
 - stopApp
-- launchApp
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+      "-uiTesting": ""
 - retry:
     maxRetries: 2
     commands:
