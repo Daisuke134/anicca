@@ -8,6 +8,9 @@ struct QuoteCardView: View {
     let quote: Quote
     let pageWidth: CGFloat
     var deliveryId: String? = nil
+    /// Why this word was chosen, when the surface knows (the living home
+    /// passes it; other surfaces leave it nil and stay unchanged).
+    var selectionCaption: String? = nil
 
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
@@ -20,6 +23,16 @@ struct QuoteCardView: View {
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
+
+            if let selectionCaption {
+                Text(selectionCaption)
+                    .font(.footnote)
+                    .foregroundStyle(themeStore.selected.foregroundColor.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: max(120, pageWidth - 64))
+                    .accessibilityIdentifier("quote-selection-caption")
+            }
 
             Text(quote.text)
                 .font(.system(size: quoteFontSize, weight: .regular, design: .serif))

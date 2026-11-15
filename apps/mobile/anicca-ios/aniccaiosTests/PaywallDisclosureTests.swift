@@ -42,4 +42,33 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertEqual(PaywallVariantBView.planIdentifierName(for: .weekly), "weekly")
         XCTAssertEqual(PaywallVariantBView.planIdentifierName(for: .lifetime), "lifetime")
     }
+
+    // User rule (2026-11-15): a user who already pays never sees a
+    // paywall; everyone else does. The live refresh decides when it
+    // succeeds; the cached state is only the fallback for a failed one.
+    func testPaywallPresentationPolicyHidesPaywallFromSubscribers() {
+        XCTAssertFalse(PaywallPresentationPolicy.shouldPresent(isEntitled: true))
+        XCTAssertTrue(PaywallPresentationPolicy.shouldPresent(isEntitled: false))
+    }
+
+    func testPaywallPresentationPolicyPrefersTheLiveRefresh() {
+        XCTAssertFalse(PaywallPresentationPolicy.shouldPresent(refreshedIsEntitled: true, cachedIsEntitled: false))
+        XCTAssertTrue(PaywallPresentationPolicy.shouldPresent(refreshedIsEntitled: false, cachedIsEntitled: true))
+    }
+
+    func testPaywallPresentationPolicyFallsBackToCacheWhenRefreshFails() {
+        XCTAssertFalse(PaywallPresentationPolicy.shouldPresent(refreshedIsEntitled: nil, cachedIsEntitled: true))
+        XCTAssertTrue(PaywallPresentationPolicy.shouldPresent(refreshedIsEntitled: nil, cachedIsEntitled: false))
+    }
+
+    // The home card states why the word is there (user rule, 2026-11-15:
+    // the simulation's effect must be visible). The chosen intervention
+    // and notification deliveries say they were chosen from the person's
+    // answers; further deck words say they were picked the same way.
+    func testHomeDeckCaptionKeysByOrigin() {
+        let quote = Quote(id: "q1", text: "x")
+        XCTAssertEqual(HomeDeckCard(quote: quote, origin: .selectedIntervention, deliveryId: nil).selectionCaptionKey, "feed_chosen_from_answers")
+        XCTAssertEqual(HomeDeckCard(quote: quote, origin: .notification, deliveryId: nil).selectionCaptionKey, "feed_chosen_from_answers")
+        XCTAssertEqual(HomeDeckCard(quote: quote, origin: .exploration, deliveryId: nil).selectionCaptionKey, "feed_picked_from_answers")
+    }
 }

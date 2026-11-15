@@ -120,6 +120,22 @@ enum PaywallOfferingSelection {
     }
 }
 
+/// Whether the paywall may be presented at all (user rule, 2026-11-15:
+/// a user who already pays never sees a paywall; everyone else does).
+/// This is the single decision point every paywall entry uses, mirroring
+/// the documented defaults of Superwall and RevenueCat: read the
+/// entitlement before presenting, and present only to non-subscribers.
+/// When the cached state may be stale, a live refresh decides; a failed
+/// refresh falls back to the cached state rather than guessing.
+enum PaywallPresentationPolicy {
+    static func shouldPresent(isEntitled: Bool) -> Bool { !isEntitled }
+
+    static func shouldPresent(refreshedIsEntitled: Bool?, cachedIsEntitled: Bool) -> Bool {
+        if let refreshedIsEntitled { return shouldPresent(isEntitled: refreshedIsEntitled) }
+        return shouldPresent(isEntitled: cachedIsEntitled)
+    }
+}
+
 /// Unknown eligibility may describe the offer conditionally, but must not promise a free purchase.
 enum PaywallTrialPresentation: Equatable {
     case none

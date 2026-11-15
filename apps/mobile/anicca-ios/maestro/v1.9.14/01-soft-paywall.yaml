@@ -248,6 +248,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText === output.intervention}
+# The card states why this word is here — chosen from the person's own
+# onboarding answers — so the personalization is visible in the
+# experience, not only in the logs (user rule, 2026-11-15).
+- assertVisible:
+    id: quote-selection-caption
 - takeScreenshot: 09-feed-home
 # Living home: the first card is today's intervention, and the deck
 # behind it moves — swiping up reaches further words, swiping back
@@ -260,6 +265,8 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - copyTextFrom:
     id: quote-text
 - assertTrue: ${maestro.copiedText !== output.intervention}
+- assertVisible:
+    id: quote-selection-caption
 - takeScreenshot: 09b-feed-deck-second
 - swipe:
     start: 50%, 25%

@@ -2908,3 +2908,5 @@
 "adaptive_quiet_conflict" = "静かな時間に重なる通知は届きません。別の時刻を選べます。";
 "adaptive_no_available_times" = "静かな時間が一日全体にわたるため、通知は設定しません。";
 "adaptive_prior_attempts_hint" = "試した経験だけで、合わなかったとは判断しません。次に、合わなかったものを選べます。";
+"feed_chosen_from_answers" = "あなたの答えから、あなたのために選ばれました";
+"feed_picked_from_answers" = "あなたのテーマに合わせて選ばれました";

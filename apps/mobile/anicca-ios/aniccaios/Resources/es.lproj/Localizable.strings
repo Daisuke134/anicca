@@ -2810,3 +2810,5 @@
 "adaptive_quiet_conflict" = "No recibirás recordatorios durante tus horas de silencio. Puedes elegir otra hora.";
 "adaptive_no_available_times" = "Tus horas de silencio abarcan todo el día, así que no se programarán recordatorios.";
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
+"feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_picked_from_answers" = "Picked for you, from your answers";

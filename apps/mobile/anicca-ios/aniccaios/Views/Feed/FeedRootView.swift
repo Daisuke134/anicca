@@ -30,6 +30,19 @@ struct HomeDeckCard: Identifiable {
     var deliveryId: String?
 
     var id: String { quote.id }
+
+    /// Why this word is on screen, shown on the card itself so the
+    /// personalization is felt, not just logged (user rule, 2026-11-15:
+    /// the simulation's effect must be visible in the experience). Every
+    /// deck card comes out of the same ranked, profile-based selection —
+    /// the first card is the intervention chosen for this person, the
+    /// rest are further words from that same ranking.
+    var selectionCaptionKey: String {
+        switch origin {
+        case .selectedIntervention, .notification: return "feed_chosen_from_answers"
+        case .exploration: return "feed_picked_from_answers"
+        }
+    }
 }
 
 /// The deck behind the living home. Published so a card already on screen
@@ -491,7 +504,8 @@ private struct HomeDeckPage: View {
             QuoteCardView(
                 quote: model.cards[index].quote,
                 pageWidth: pageWidth,
-                deliveryId: model.cards[index].deliveryId
+                deliveryId: model.cards[index].deliveryId,
+                selectionCaption: NSLocalizedString(model.cards[index].selectionCaptionKey, comment: "Why this word was chosen for this person")
             )
         }
     }

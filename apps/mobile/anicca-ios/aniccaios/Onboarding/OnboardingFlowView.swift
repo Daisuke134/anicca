@@ -144,7 +144,7 @@ struct OnboardingFlowView: View {
             appState.markOnboardingQuestionsCompleted()
             AnalyticsManager.shared.track(.onboardingCompleted)
             AnalyticsManager.shared.updateSKANConversionValue(1)
-            showPaywall = true
+            presentPaywallOnlyIfNotSubscribed()
             return
         }
 
@@ -154,6 +154,25 @@ struct OnboardingFlowView: View {
             AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.onboarding(next).rawValue)
             step = next
             appState.setOnboardingStep(step)
+        }
+    }
+
+    /// The paywall is for non-subscribers only (user rule, 2026-11-15):
+    /// a user whose entitlement is already active goes straight to the
+    /// first intervention and never sees a purchase screen. The
+    /// entitlement is refreshed live first, so a subscription started on
+    /// another device is honored; the decision itself lives in
+    /// PaywallPresentationPolicy so every entry point agrees.
+    private func presentPaywallOnlyIfNotSubscribed() {
+        Task {
+            let refreshed = await SubscriptionManager.shared.refreshCustomerInfo()
+            if PaywallPresentationPolicy.shouldPresent(
+                refreshedIsEntitled: refreshed,
+                cachedIsEntitled: appState.subscriptionInfo.isEntitled) {
+                showPaywall = true
+            } else {
+                showFirstIntervention = true
+            }
         }
     }
 
