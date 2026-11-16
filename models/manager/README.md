@@ -30,8 +30,12 @@ uses catalog/rule logic. That product wiring is a separate integration.
 
 **v1 (2026-11-16)** starts immediately under the founder decision. The
 MG-06 pre-training prerequisite was withdrawn. Historical confidence-interval
-checks are retained as diagnostics, not permission to start training. See
-[`v1/`](v1/README.md) for measured training/evaluation and handoff status.
+checks are retained as diagnostics, not permission to start training.
+Training and the frozen evaluation are complete: v1 (2,000 rows) scored
+Qini 0.0026 against base 0.0739, random p95 0.0715 and T-learner 0.1017,
+so it does not displace the prior — **the population prior remains the
+serving Manager**. See [`v1/`](v1/README.md) for measured
+training/evaluation and handoff status.
 
 - **v0 (2026-11-14)** — the first post-training run that actually
   executes end to end: a small open-weight model post-trained on

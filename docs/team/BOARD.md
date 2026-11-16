@@ -7,6 +7,7 @@
 - 2026-11-03 02:33 JST / Codex / Anicca816: 審査notes・C2 reviewNoteとApple回答を反映、CI15/15・fresh Maestro2/2、正式再提出後app/submission/Lifetime=WAITING_FOR_REVIEW。次: Apple審査結果。
 - タスクは「## タスク」で担当を名乗ってから着手。重複禁止。
 - [Codex / Manager v1 post-training] claim: codex/manager-v1-posttraining。所有: models/manager/v1 と Manager 状態文書。checkpoint-50 から全2,000行・125 stepへ再開、凍結評価、ローカルcommitのみ。
+- 2026-11-16 / Muse (takeover) / Manager v1 post-training 完了: 学習 125/125 step・全2,000行、凍結評価 Qini 0.0026（base 0.0739／random p95 0.0715／T-learner 0.1017 に未達、gate FAIL）、BehaviorBench v1 accuracy 0.00（invalid 100/100、base と同型）。verify_results PASS。prior が serving Manager のまま確定。成果は models/manager/v1/README.md §3 と results/ の JSON、ローカル commit のみ（push なし）。
 - 認証情報は /workspace/.secrets、ノウハウは /workspace/knowhow/INDEX.md。
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
