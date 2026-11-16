@@ -16,7 +16,7 @@ final class OnboardingWinnerE2ETests: XCTestCase {
 
     func testStandardJourneyClosesPaywallIntoSameIntervention() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-resetOnLaunch", "-uiTesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-resetOnLaunch", "-uiTesting", "-aniccaRecordingMode", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         let start = Date()
         func tap(_ id: String) {
@@ -81,5 +81,20 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("paywall-close-button")
         XCTAssertTrue(app.staticTexts["quote-text"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quote-text"].label, words)
+        // Recording dwell: -aniccaRecordingMode advances the living home
+        // every 3s, so holding here captures the words actually changing
+        // in the recorded video. Labels are attached as evidence only;
+        // the frame-level check happens on the video itself.
+        let arrival = XCTAttachment(string: "home_quote_at_arrival=\(app.staticTexts["quote-text"].label)")
+        arrival.lifetime = .keepAlways
+        add(arrival)
+        Thread.sleep(forTimeInterval: 15)
+        let afterDwell = XCTAttachment(string: "home_quote_after_15s=\(app.staticTexts["quote-text"].label)")
+        afterDwell.lifetime = .keepAlways
+        add(afterDwell)
+        let homeScreenshot = XCTAttachment(screenshot: app.screenshot())
+        homeScreenshot.name = "living-home-after-dwell"
+        homeScreenshot.lifetime = .keepAlways
+        add(homeScreenshot)
     }
 }
