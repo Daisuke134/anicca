@@ -11,7 +11,7 @@ private final class LivingRiveAnimation: ObservableObject {
     let viewModel: RiveViewModel?
 
     init() {
-        // The empty placeholder must never reach Rive's force-trying convenience init.
+        // Missing/empty resources must never reach Rive's force-trying convenience init.
         guard let url = Bundle.main.url(forResource: Self.assetName, withExtension: "riv"),
               let data = try? Data(contentsOf: url), !data.isEmpty else {
             viewModel = nil
