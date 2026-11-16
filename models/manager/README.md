@@ -18,6 +18,21 @@ measure → learn**.
 
 ## Status
 
+**The current serving Manager is the population prior.** It remains the
+chooser until the v1 handoff lands and the serving integration is switched
+explicitly. The prior arm is implemented in
+[`v0/eval_uplift.py`](v0/eval_uplift.py) as a constant uplift score
+(`np.zeros`); it provides no personalized ranking. This is the current
+model designation, not evidence that iOS notifications already call it.
+No runtime model selector for these checkpoints exists under
+`models/manager/`; the intervention spec records that app delivery still
+uses catalog/rule logic. That product wiring is a separate integration.
+
+**v1 (2026-11-16)** starts immediately under the founder decision. The
+MG-06 pre-training prerequisite was withdrawn. Historical confidence-interval
+checks are retained as diagnostics, not permission to start training. See
+[`v1/`](v1/README.md) for measured training/evaluation and handoff status.
+
 - **v0 (2026-11-14)** — the first post-training run that actually
   executes end to end: a small open-weight model post-trained on
   randomized intervention data (Hillstrom), scored with the MG-06

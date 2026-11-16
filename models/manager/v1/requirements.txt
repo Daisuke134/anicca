@@ -1,0 +1,10 @@
+torch==2.15.0+cpu
+transformers==5.23.0
+trl==1.18.0
+peft==0.21.3
+datasets==5.2.0
+scikit-learn==1.9.1
+scikit-uplift==0.5.1
+numpy==2.5.4
+pandas==3.1.1
+huggingface-hub==2.4.0
