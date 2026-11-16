@@ -1,8 +1,12 @@
 import SwiftUI
+import Combine
 import RiveRuntime
 
 /// The bundled artwork loops Ambient and briefly plays a transition on WordChanged.
 private final class LivingRiveAnimation: ObservableObject {
+    // No @Published properties exist (viewModel is fixed at init), so the
+    // publisher must be provided explicitly for ObservableObject conformance.
+    let objectWillChange = ObservableObjectPublisher()
     static let assetName = "living_home"
     static let artboardName = "LivingHome"
     static let stateMachineName = "Living"
