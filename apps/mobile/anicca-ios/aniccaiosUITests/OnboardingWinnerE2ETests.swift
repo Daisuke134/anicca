@@ -16,7 +16,11 @@ final class OnboardingWinnerE2ETests: XCTestCase {
 
     func testStandardJourneyClosesPaywallIntoSameIntervention() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-resetOnLaunch", "-uiTesting", "-aniccaRecordingMode", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // No -aniccaRecordingMode here: with auto-advance on, the deck moves
+        // past the first card before the closing assertion can read it on a
+        // slow CI runner (the same race build-830's Maestro run hit). The
+        // recording-mode home capture lives in the second test below.
+        app.launchArguments = ["-resetOnLaunch", "-uiTesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         let start = Date()
         func tap(_ id: String) {
@@ -81,11 +85,21 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("paywall-close-button")
         XCTAssertTrue(app.staticTexts["quote-text"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quote-text"].label, words)
-        // Recording dwell: -aniccaRecordingMode advances the living home
-        // every 3s, so holding here captures the words actually changing
-        // in the recorded video. Labels are attached as evidence only;
-        // the frame-level check happens on the video itself.
-        let arrival = XCTAttachment(string: "home_quote_at_arrival=\(app.staticTexts["quote-text"].label)")
+    }
+
+    /// Second launch in the same recording: onboarding is already complete,
+    /// so the app lands directly on the living home. With
+    /// -aniccaRecordingMode the deck auto-advances every 3s; dwelling here
+    /// is what captures the words actually changing in the recorded video.
+    /// Labels are attached as evidence only — the frame-level check happens
+    /// on the video itself. Named to sort after the journey test.
+    func testZRecordingHomeAutoAdvance() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting", "-aniccaRecordingMode", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        let quote = app.staticTexts["quote-text"]
+        XCTAssertTrue(quote.waitForExistence(timeout: 30))
+        let arrival = XCTAttachment(string: "home_quote_at_arrival=\(quote.label)")
         arrival.lifetime = .keepAlways
         add(arrival)
         Thread.sleep(forTimeInterval: 15)
