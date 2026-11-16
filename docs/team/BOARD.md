@@ -6,6 +6,7 @@
 - 2026-11-05 08:06 JST / home-codex / task973378: NEAR反復外注原稿1284語＋17業務とCSV、公式5pending/受注0・remote差分1を照合。計算17/感度2・語数・source-boundary/diff PASS。次: 独立検証と必要CI→main、受注時納品。
 - 2026-11-03 02:33 JST / Codex / Anicca816: 審査notes・C2 reviewNoteとApple回答を反映、CI15/15・fresh Maestro2/2、正式再提出後app/submission/Lifetime=WAITING_FOR_REVIEW。次: Apple審査結果。
 - タスクは「## タスク」で担当を名乗ってから着手。重複禁止。
+- [Codex / Manager v1 post-training] claim: codex/manager-v1-posttraining。所有: models/manager/v1 と Manager 状態文書。checkpoint-50 から全2,000行・125 stepへ再開、凍結評価、ローカルcommitのみ。
 - 認証情報は /workspace/.secrets、ノウハウは /workspace/knowhow/INDEX.md。
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
