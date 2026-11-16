@@ -69,9 +69,12 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("onboarding-first-continue")
         tap("onboarding-reminder-continue")
         tap("onboarding-notifications-skip")
+        // All three plans wait: the cards render staggered as products
+        // resolve, and an instant .exists check raced the Lifetime card
+        // in run 43974753572 (failure at the lifetime assertion).
         XCTAssertTrue(app.buttons["paywall-plan-annual"].waitForExistence(timeout: 30))
-        XCTAssertTrue(app.buttons["paywall-plan-weekly"].exists)
-        XCTAssertTrue(app.buttons["paywall-plan-lifetime"].exists)
+        XCTAssertTrue(app.buttons["paywall-plan-weekly"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["paywall-plan-lifetime"].waitForExistence(timeout: 30))
         XCTAssertFalse(app.buttons["paywall-plan-monthly"].exists)
         XCTAssertTrue(app.staticTexts["paywall-monthly-equivalent"].label.contains("5.00"))
         XCTAssertTrue(app.otherElements["paywall-trial-timeline"].exists || app.staticTexts["paywall-trial-timeline"].exists)
@@ -97,8 +100,16 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTesting", "-aniccaRecordingMode", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
+        // If a previous journey stopped mid-onboarding, the app resumes
+        // at the paywall instead of the home screen (seen in run
+        // 43974753572, where this test then waited in vain for the home).
+        // Close a resumed paywall first so the dwell always starts at home.
+        let resumedClose = app.buttons["paywall-close-button"]
+        if resumedClose.waitForExistence(timeout: 10) {
+            resumedClose.tap()
+        }
         let quote = app.staticTexts["quote-text"]
-        XCTAssertTrue(quote.waitForExistence(timeout: 30))
+        XCTAssertTrue(quote.waitForExistence(timeout: 60))
         let arrival = XCTAttachment(string: "home_quote_at_arrival=\(quote.label)")
         arrival.lifetime = .keepAlways
         add(arrival)
