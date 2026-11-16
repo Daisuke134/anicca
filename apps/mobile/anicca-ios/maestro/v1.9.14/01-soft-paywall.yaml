@@ -30,6 +30,10 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 01-q1-goal
 - tapOn:
     id: onboarding-goal-continue
+- tapOn:
+    id: onboarding-focus_categories-anxiety
+- tapOn:
+    id: onboarding-focus_categories-continue
 - assertVisible:
     id: onboarding-name-field
 - takeScreenshot: 01b-name
@@ -47,7 +51,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 01d-mood-baseline
 - tapOn:
     id: onboarding-mood_baseline-continue
-# Select sleep before anxiety; the displayed module order is still fixed.
+# The first selected pain module is shown first.
 - scrollUntilVisible:
     element:
       id: onboarding-struggle-sleep
@@ -70,13 +74,6 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - assertNotVisible:
     id: onboarding-avoidance_task-title
 - assertVisible:
-    id: onboarding-anxiety_target-title
-- tapOn:
-    id: onboarding-anxiety_target-health
-- takeScreenshot: 02b-anxiety-target
-- tapOn:
-    id: onboarding-anxiety_target-continue
-- assertVisible:
     id: onboarding-sleep_reason-title
 - tapOn:
     id: onboarding-sleep_reason-screens
@@ -98,6 +95,13 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - tapOn:
     id: onboarding-wake_time-continue
 - assertVisible:
+    id: onboarding-anxiety_target-title
+- tapOn:
+    id: onboarding-anxiety_target-health
+- takeScreenshot: 02b-anxiety-target
+- tapOn:
+    id: onboarding-anxiety_target-continue
+- assertVisible:
     id: onboarding-depth-daily
 - tapOn:
     id: onboarding-depth-daily
@@ -111,6 +115,8 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 03b-belief-themes
 - tapOn:
     id: onboarding-belief_themes-continue
+- tapOn:
+    id: onboarding-micro-save
 - assertVisible:
     id: onboarding-tone-title
 - tapOn:
@@ -162,6 +168,15 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - takeScreenshot: 03i-quiet-hours
 - tapOn:
     id: onboarding-quiet_hours-continue
+- tapOn:
+    id: theme-sandWave
+- tapOn:
+    id: onboarding-theme-continue
+- tapOn:
+    id: onboarding-icon-continue
+- takeScreenshot: 03j-widget-preview
+- tapOn:
+    id: onboarding-widget-later
 - extendedWaitUntil:
     visible:
       id: onboarding-first-affirmation
@@ -221,34 +236,11 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: onboarding-first-intervention
-    timeout: 15000
-- waitForAnimationToEnd
-- copyTextFrom:
-    id: onboarding-first-intervention
-- evalScript: ${output.intervention = maestro.copiedText}
-- takeScreenshot: 08-first-intervention
-- tapOn:
-    id: onboarding-intervention-continue
-# The review step closes onboarding, right after the value moment
-# (the first personalized words) — the form that earned 48 reviews,
-# restored 2026-11-15. It is never the first screen: Honne 1.0.7 was
-# rejected under Guideline 5.6.3 for asking at first launch. Under
-# -uiTesting the step's button advances without the system dialog.
-- extendedWaitUntil:
-    visible:
-      id: onboarding-rating-continue
-    timeout: 15000
-- takeScreenshot: 08b-rating-prompt
-- tapOn:
-    id: onboarding-rating-continue
-- extendedWaitUntil:
-    visible:
       id: feed-today
     timeout: 15000
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText === output.intervention}
+- assertTrue: ${maestro.copiedText === output.savedAffirmation}
 # The card states why this word is here — chosen from the person's own
 # onboarding answers — so the personalization is visible in the
 # experience, not only in the logs (user rule, 2026-11-15).
@@ -265,7 +257,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - waitForAnimationToEnd
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText !== output.intervention}
+- assertTrue: ${maestro.copiedText !== output.savedAffirmation}
 - assertVisible:
     id: quote-selection-caption
 - takeScreenshot: 09b-feed-deck-second
@@ -276,7 +268,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
 - waitForAnimationToEnd
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText === output.intervention}
+- assertTrue: ${maestro.copiedText === output.savedAffirmation}
 # Since the Round 11 carryover, the home word is the preview word, already
 # kept by the preview save above — tapping quote-like here would unlike it.
 # The Liked sheet must therefore already contain the saved affirmation.
@@ -331,7 +323,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
     id: feed-today
 - copyTextFrom:
     id: quote-text
-- assertTrue: ${maestro.copiedText === output.intervention}
+- assertTrue: ${maestro.copiedText === output.savedAffirmation}
 - takeScreenshot: 12-feed-sand-theme
 - stopApp
 - launchApp:
@@ -366,7 +358,7 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
           id: paywall-plan-cta
       - copyTextFrom:
           id: quote-text
-      - assertTrue: ${maestro.copiedText === output.intervention}
+      - assertTrue: ${maestro.copiedText === output.savedAffirmation}
       - runFlow: _dismiss-apple-account.yaml
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 13-feed-after-relaunch

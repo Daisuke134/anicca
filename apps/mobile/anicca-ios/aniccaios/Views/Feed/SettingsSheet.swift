@@ -127,6 +127,7 @@ struct SettingsSheet: View {
 
 /// 8 theme grid. Tap = select + persist + dismiss.
 struct ThemePickerView: View {
+    var onboarding = false
     var onPremiumActivated: (() -> Void)? = nil
     @EnvironmentObject var themeStore: ThemeStore
     @Environment(\.dismiss) private var dismiss
@@ -137,7 +138,7 @@ struct ThemePickerView: View {
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
     private var orderedThemes: [ThemeID] {
-        [themeStore.selected] + ThemeID.allCases.filter { $0 != themeStore.selected }
+        onboarding ? ThemeID.allCases.filter(\.isFree) : [themeStore.selected] + ThemeID.allCases.filter { $0 != themeStore.selected }
     }
 
     var body: some View {
@@ -147,7 +148,7 @@ struct ThemePickerView: View {
                     Button {
                         if theme.isAvailable(isEntitled: appState.subscriptionInfo.isEntitled) {
                             themeStore.select(theme)
-                            dismiss()
+                            if !onboarding { dismiss() }
                         } else {
                             pendingTheme = theme
                             showThemePaywall = true

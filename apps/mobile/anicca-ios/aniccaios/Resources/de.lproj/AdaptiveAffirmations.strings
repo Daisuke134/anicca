@@ -48,3 +48,14 @@
 "presence_supportive" = "Ich kann etwas Wichtiges auswählen und ihm für die nächste Minute meine Aufmerksamkeit schenken.";
 "self_love_supportive" = "Mit einer freundlichen Entscheidung kann ich heute üben, auf meiner eigenen Seite zu stehen.";
 "gratitude_gentle" = "Ich darf eine kleine Sache wertschätzen, ohne dass sich der ganze Tag gut anfühlen muss.";
+
+// Onboarding winner prior vocabulary
+"courage_gentle" = "Ich darf Angst haben und trotzdem einen Schritt tun, der gut zu mir ist.";
+"letting_go_gentle" = "Ich darf ein Bedauern ablegen, ohne so zu tun, als hätte es nie etwas bedeutet.";
+"letting_go_direct" = "Die Vergangenheit braucht keine weitere Strafe von mir.";
+"letting_go_poetic" = "Ich darf loslassen, was dieser Tag nicht ändern kann.";
+"letting_go_practical" = "Ich darf benennen, was vorbei ist, und eine Hand für heute frei lassen.";
+"relationships_gentle" = "Ich darf für jemanden da sein und trotzdem Raum für mich lassen.";
+"relationships_direct" = "Meine Bedürfnisse gehören auch in dieses Gespräch.";
+"relationships_poetic" = "Verbindung kann Raum für deine Stimme und meine haben.";
+"relationships_practical" = "Ich darf um eine Sache bitten, die ich brauche, ohne mich dafür zu entschuldigen.";

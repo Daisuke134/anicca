@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F63CE0022F14A00100000002 /* Anicca.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F63CE0012F14A00100000001; };
+		F62CE0022F14A00100000002 /* OnboardingWinnerE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */; };
+		F61CE0022F14A00100000002 /* OnboardingWinnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F61CE0012F14A00100000001 /* OnboardingWinnerTests.swift */; };
 		F61A00000000000000000001 /* RiveRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = F61A00000000000000000002 /* RiveRuntime */; };
 		E54CE0022F14A00100000002 /* ManagerBenchCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54CE0012F14A00100000001 /* ManagerBenchCaseTests.swift */; };
 		E44CE0022F14A00100000002 /* SyntheticUserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44CE0012F14A00100000001 /* SyntheticUserTests.swift */; };
@@ -88,6 +91,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F63CE0012F14A00100000001 /* Anicca.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../aniccaios/Anicca.storekit; sourceTree = "<group>"; };
+		F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWinnerE2ETests.swift; sourceTree = "<group>"; };
+		F61CE0012F14A00100000001 /* OnboardingWinnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWinnerTests.swift; sourceTree = "<group>"; };
 		E54CE0012F14A00100000001 /* ManagerBenchCaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManagerBenchCaseTests.swift; sourceTree = "<group>"; };
 		E44CE0012F14A00100000001 /* SyntheticUserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SyntheticUserTests.swift; sourceTree = "<group>"; };
 		E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingV2Tests.swift; sourceTree = "<group>"; };
@@ -226,7 +232,9 @@
 			isa = PBXGroup;
 			children = (
 				E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */,
+				F63CE0012F14A00100000001 /* Anicca.storekit */,
 				AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */,
+				F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */,
 			);
 			path = aniccaiosUITests;
 			sourceTree = "<group>";
@@ -299,6 +307,7 @@
 				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
 				D14CE0012F14A00100000001 /* PersonalizationPhase1Tests.swift */,
 				E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */,
+				F61CE0012F14A00100000001 /* OnboardingWinnerTests.swift */,
 				E44CE0012F14A00100000001 /* SyntheticUserTests.swift */,
 				E54CE0012F14A00100000001 /* ManagerBenchCaseTests.swift */,
 				E24CE0012F14A00100000001 /* PaywallDisclosureTests.swift */,
@@ -484,6 +493,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F63CE0022F14A00100000002 /* Anicca.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -546,6 +556,7 @@
 			files = (
 				E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */,
 				BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */,
+				F62CE0022F14A00100000002 /* OnboardingWinnerE2ETests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -585,6 +596,7 @@
 				09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */,
 				D14CE0022F14A00100000002 /* PersonalizationPhase1Tests.swift in Sources */,
 				E34CE0022F14A00100000002 /* OnboardingV2Tests.swift in Sources */,
+				F61CE0022F14A00100000002 /* OnboardingWinnerTests.swift in Sources */,
 				E44CE0022F14A00100000002 /* SyntheticUserTests.swift in Sources */,
 				E54CE0022F14A00100000002 /* ManagerBenchCaseTests.swift in Sources */,
 				E24CE0022F14A00100000002 /* PaywallDisclosureTests.swift in Sources */,
@@ -946,6 +958,7 @@
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconOcean AppIconRose AppIconNight";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -997,6 +1010,7 @@
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconOcean AppIconRose AppIconNight";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -1115,6 +1129,7 @@
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconOcean AppIconRose AppIconNight";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -1226,6 +1241,7 @@
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconOcean AppIconRose AppIconNight";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";

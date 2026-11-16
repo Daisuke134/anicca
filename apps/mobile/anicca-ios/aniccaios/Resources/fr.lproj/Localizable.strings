@@ -1528,3 +1528,28 @@
 "adaptive_prior_attempts_hint" = "Avoir essayé une méthode ne signifie pas qu’elle ne t’a pas aidé·e. Tu peux ensuite indiquer ce qui ne t’a pas convenu.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+// Onboarding winner: ownership and first value
+"adaptive_focus_categories_title" = "Où aimerais-tu avoir plus d'espace pour grandir ?";
+"adaptive_focus_categories_anxiety" = "Un esprit plus calme";
+"adaptive_focus_categories_self_love" = "Amour de soi";
+"adaptive_focus_categories_personal_growth" = "Épanouissement personnel";
+"adaptive_focus_categories_body" = "Me sentir chez moi dans mon corps";
+"adaptive_focus_categories_work" = "Travail";
+"adaptive_focus_categories_relationships" = "Relations";
+"adaptive_focus_categories_gratitude" = "Gratitude";
+"winner_micro_title" = "Un petit rappel, rien que pour toi";
+"winner_theme_title" = "Fais de cet espace le tien";
+"winner_icon_title" = "Choisis ton petit rappel";
+"winner_icon_AppIcon" = "Original";
+"winner_icon_AppIconOcean" = "Océan";
+"winner_icon_AppIconRose" = "Rose";
+"winner_icon_AppIconNight" = "Nuit";
+"winner_icon_error" = "L'icône n'a pas pu être modifiée. Réessaie, ou garde ton icône actuelle.";
+"winner_widget_title" = "Garde tes mots à portée de main";
+"winner_widget_lock" = "Écran verrouillé";
+"winner_widget_home" = "Écran d'accueil";
+"winner_widget_words" = "Il y a de la place pour toi ici.";
+"winner_widget_instructions" = "Écran d'accueil : touche longuement un espace vide, choisis Modifier, puis Ajouter un widget. Cherche Anicca.\n\nÉcran verrouillé : touche longuement l'écran, choisis Personnaliser, puis Ajouter des widgets et Anicca.";
+"winner_widget_add" = "Je l'ajouterai après la configuration";
+"winner_widget_later" = "Peut-être plus tard";

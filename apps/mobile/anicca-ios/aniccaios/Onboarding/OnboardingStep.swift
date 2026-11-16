@@ -29,6 +29,12 @@ enum OnboardingStep: Int, CaseIterable, Codable {
     case bedtime = 24
     case wakeTime = 25
     case priorHelpfulness = 26
+    case focusCategories = 27
+    case microPreview = 28
+    case themeChoice = 29
+    case iconChoice = 30
+    case widgetPreview = 31
+    case paywall = 32
 }
 
 enum PaywallStep: Int, CaseIterable, Codable {
@@ -47,18 +53,20 @@ extension OnboardingStep {
             ("self_doubt", [.selfCriticism]), ("procrastination", [.avoidanceTask]),
             ("sleep", [.sleepReason, .bedtime, .wakeTime])
         ]
-        return modules.filter { painPointIds.contains($0.0) }.prefix(2).flatMap { $0.1 }
+        var seen = Set<String>()
+        return painPointIds.filter { seen.insert($0).inserted }
+            .compactMap { id in modules.first { $0.0 == id } }.prefix(2).flatMap { $0.1 }
     }
 
     static func journey(painPointIds: [String], priorAttempts: [String] = []) -> [OnboardingStep] {
         let experienceFollowUp: [OnboardingStep] = priorAttempts.contains(where: {
             ["meditation", "journaling", "therapy", "books"].contains($0)
         }) ? [.priorHelpfulness] : []
-        return [.welcome, .goal, .name, .birthContext, .moodBaseline, .painPoints]
+        return [.welcome, .goal, .focusCategories, .name, .birthContext, .moodBaseline, .painPoints]
             + deepDiveSteps(painPointIds: painPointIds)
-            + [.struggleFreq, .beliefThemes, .tone, .lifeContext, .routineAnchors, .priorAttempts]
+            + [.struggleFreq, .beliefThemes, .microPreview, .tone, .lifeContext, .routineAnchors, .priorAttempts]
             + experienceFollowUp
-            + [.startReason, .quietHours, .planReveal, .nudgeTimes, .notifications]
+            + [.startReason, .quietHours, .themeChoice, .iconChoice, .widgetPreview, .planReveal, .nudgeTimes, .notifications, .paywall]
     }
 
     func resumableStep(painPointIds: [String], priorAttempts: [String] = []) -> OnboardingStep {
@@ -130,6 +138,12 @@ extension OnboardingStep {
 extension OnboardingStep {
     var analyticsName: String {
         switch self {
+        case .focusCategories: return "focus_categories"
+        case .microPreview: return "micro_preview"
+        case .themeChoice: return "theme_choice"
+        case .iconChoice: return "icon_choice"
+        case .widgetPreview: return "widget_preview"
+        case .paywall: return "paywall"
         case .welcome: return "welcome"
         case .goal: return "goal"
         case .name: return "name"

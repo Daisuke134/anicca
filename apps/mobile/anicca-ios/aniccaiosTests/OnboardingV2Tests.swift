@@ -22,17 +22,17 @@ final class OnboardingV2Tests: XCTestCase {
 
     func test_initialJourney_asksDeviceOnlyNameSeparatelyAfterGoal() {
         XCTAssertEqual(OnboardingStep.initialJourney, [
-            .welcome, .goal, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq,
-            .beliefThemes, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours,
-            .planReveal, .nudgeTimes, .notifications
+            .welcome, .goal, .focusCategories, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq,
+            .beliefThemes, .microPreview, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours,
+            .themeChoice, .iconChoice, .widgetPreview, .planReveal, .nudgeTimes, .notifications, .paywall
         ])
         XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
-        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
+        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .focusCategories)
         XCTAssertEqual(OnboardingStep.name.nextInitialStep, .birthContext)
         XCTAssertEqual(OnboardingStep(rawValue: 9)?.resumableStep(painPointIds: []), .name)
         XCTAssertEqual(AnalyticsScreenID.onboarding(.name).rawValue, "onboarding.name")
         XCTAssertEqual(AnalyticsScreenID.onboarding(.birthContext).rawValue, "onboarding.birth_context")
-        XCTAssertNil(OnboardingStep.notifications.nextInitialStep)
+        XCTAssertEqual(OnboardingStep.notifications.nextInitialStep, .paywall)
     }
 
     func test_resumingWelcome_keepsIntroduction() {
@@ -46,7 +46,7 @@ final class OnboardingV2Tests: XCTestCase {
 
     func test_progressBar_followsJourneyOrderNotRawValues() {
         for (index, step) in OnboardingStep.initialJourney.enumerated() {
-            XCTAssertEqual(OnboardingProgressBar.progress(for: step), Double(index + 1) / 17, accuracy: 0.001)
+            XCTAssertEqual(OnboardingProgressBar.progress(for: step), Double(index + 1) / Double(OnboardingStep.initialJourney.count), accuracy: 0.001)
         }
     }
 

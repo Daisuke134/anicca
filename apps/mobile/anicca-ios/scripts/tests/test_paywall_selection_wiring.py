@@ -136,21 +136,20 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         resume = onboarding.split("if appState.onboardingQuestionsCompleted", 1)[1].split(
             "step = appState.onboardingStep", 1
         )[0]
-        completion = onboarding.split("if step == .notifications", 1)[1].split(
-            "if let next = step.nextInitialStep", 1
-        )[0]
         self.assertIn("completeFreeOnboarding()", resume)
-        self.assertIn("showPaywall = true", completion)
-        paywall = onboarding.split(".fullScreenCover(isPresented: $showPaywall)", 1)[1].split(
-            ".fullScreenCover(isPresented: $showFirstIntervention)", 1
+        # Winner spec section 6: the paywall is the final journey step, not a
+        # cover gate. Dismissing it or purchasing both advance, entitled
+        # users skip its presentation entirely, and advancing from it
+        # completes onboarding locally.
+        paywall_step = onboarding.split("case .paywall:", 1)[1].split("case .name:", 1)[0]
+        self.assertIn("PaywallFlowContainer(onPurchaseSuccess: { _ in advance() }, onDismiss: advance)", paywall_step)
+        self.assertIn("PaywallPresentationPolicy.shouldPresent(", paywall_step)
+        completion = onboarding.split("if step == .paywall {", 1)[1].split(
+            "if let next = step.nextStep(", 1
         )[0]
-        self.assertIn("onDismiss:", paywall)
-        self.assertEqual(paywall.count("showFirstIntervention = true"), 2)
-        intervention = onboarding.split(".fullScreenCover(isPresented: $showFirstIntervention)", 1)[1].split(
-            "// MARK: - Onboarding Steps", 1
-        )[0]
-        self.assertIn("completeFreeOnboarding()", intervention)
-        self.assertNotIn("refreshCustomerInfo()", onboarding)
+        self.assertIn("completeFreeOnboarding()", completion)
+        self.assertNotIn("showPaywall", onboarding)
+        self.assertNotIn("showFirstIntervention", onboarding)
 
     def test_soft_paywall_does_not_emit_retired_hard_experiment_exposure(self):
         container = PAYWALL_CONTAINER.read_text(encoding="utf-8").split("struct PaywallFlowContainer", 1)[1]
@@ -269,7 +268,7 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("text: Cancel", relaunch)
         self.assertIn("optional: true", relaunch)
         self.assertLess(relaunch.index("text: Cancel"), relaunch.index("id: feed-today"))
-        self.assertIn("maestro.copiedText === output.intervention", relaunch)
+        self.assertIn("maestro.copiedText === output.savedAffirmation", relaunch)
         self.assertNotIn("maestro.copiedText !== output.relaunchedQuote", relaunch)
 
     def test_trial_disclosures_never_fall_back_to_another_product(self):
@@ -281,9 +280,11 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("PaywallTrialPresentation.resolve(", self.source)
 
     def test_primary_offer_and_alternatives_do_not_have_competing_scroll_regions(self):
-        self.assertIn('accessibilityIdentifier("paywall-other-plans")', self.source)
-        self.assertIn(".sheet(isPresented: $showOtherPlans)", self.source)
-        self.assertNotIn("private var planCards", self.source)
+        # Winner spec section 6: exactly three plans as cards on one screen;
+        # no "Other plans" sheet may hide a plan.
+        self.assertNotIn('accessibilityIdentifier("paywall-other-plans")', self.source)
+        self.assertNotIn(".sheet(isPresented: $showOtherPlans)", self.source)
+        self.assertIn("private var planCards", self.source)
         self.assertIn('accessibilityIdentifier("paywall-billed-amount")', self.source)
         self.assertIn('accessibilityIdentifier("paywall-monthly-equivalent")', self.source)
         self.assertNotIn("dailyPrice", self.source)

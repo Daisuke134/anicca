@@ -48,3 +48,14 @@
 "presence_supportive" = "I can choose one thing that matters and give it my attention for the next minute.";
 "self_love_supportive" = "I can practice being on my own side through one kind choice today.";
 "gratitude_gentle" = "I can notice one small thing I appreciate without needing the whole day to feel good.";
+
+// Onboarding winner prior vocabulary
+"courage_gentle" = "I can be afraid and still take a step that is kind to me.";
+"letting_go_gentle" = "I can put down a regret without pretending it never mattered.";
+"letting_go_direct" = "The past does not need another punishment from me.";
+"letting_go_poetic" = "I can loosen my grip on what this day cannot change.";
+"letting_go_practical" = "I can name what is over and leave one hand free for today.";
+"relationships_gentle" = "I can care for someone and still leave room for myself.";
+"relationships_direct" = "My needs belong in this conversation too.";
+"relationships_poetic" = "Connection can have room for both your voice and mine.";
+"relationships_practical" = "I can ask for one thing I need without apologizing for needing it.";

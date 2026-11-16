@@ -2,7 +2,7 @@ appId: ai.anicca.app.ios
 name: Remaining adaptive modules and absent unselected modules
 ---
 - runFlow: _start-to-pain.yaml
-# Reverse the tap order to verify that stress is presented before self-doubt.
+# The first-selected self-doubt module must precede stress.
 - tapOn:
     id: onboarding-struggle-self_doubt
 - tapOn:
@@ -14,19 +14,19 @@ name: Remaining adaptive modules and absent unselected modules
 - assertNotVisible:
     id: onboarding-sleep_reason-title
 - assertVisible:
-    id: onboarding-stress_trigger-title
-- tapOn:
-    id: onboarding-stress_trigger-work
-- takeScreenshot: 02f-stress-trigger
-- tapOn:
-    id: onboarding-stress_trigger-continue
-- assertVisible:
     id: onboarding-self_criticism-title
 - tapOn:
     id: onboarding-self_criticism-work
 - takeScreenshot: 02g-self-criticism
 - tapOn:
     id: onboarding-self_criticism-continue
+- assertVisible:
+    id: onboarding-stress_trigger-title
+- tapOn:
+    id: onboarding-stress_trigger-work
+- takeScreenshot: 02f-stress-trigger
+- tapOn:
+    id: onboarding-stress_trigger-continue
 - assertVisible:
     id: onboarding-depth-daily
 - assertNotVisible:

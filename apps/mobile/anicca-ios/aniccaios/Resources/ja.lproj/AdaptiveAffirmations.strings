@@ -48,3 +48,14 @@
 "presence_supportive" = "大切なことをひとつ選んで、次の1分だけそこに意識を向けよう。";
 "self_love_supportive" = "今日は自分をいたわる選択をひとつして、自分の味方でいる練習をしよう。";
 "gratitude_gentle" = "一日すべてが良くなくても、ありがたいと思える小さなことをひとつ見つけていい。";
+
+// Onboarding winner prior vocabulary
+"courage_gentle" = "怖さがあっても、自分にやさしい一歩を選べる。";
+"letting_go_gentle" = "大切だったと認めながら、後悔を手放してもいい。";
+"letting_go_direct" = "過去のために、これ以上自分を罰しなくていい。";
+"letting_go_poetic" = "今日変えられないことを、少しだけ手放していい。";
+"letting_go_practical" = "終わったことを認めて、今日のために手を空けよう。";
+"relationships_gentle" = "誰かを大切にしながら、自分の居場所も守っていい。";
+"relationships_direct" = "この会話には、私の願いもあっていい。";
+"relationships_poetic" = "つながりの中には、あなたと私の両方の声があっていい。";
+"relationships_practical" = "必要だと感じることを、謝らずにひとつ伝えていい。";

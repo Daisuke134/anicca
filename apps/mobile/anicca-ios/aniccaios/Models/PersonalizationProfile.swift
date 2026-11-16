@@ -157,8 +157,15 @@ enum PersonalizationRules {
         case "confidence": return "confidence"
         case "focus": return "presence"
         case "self_love": return "self_love"
+        case "letting_go": return "letting_go"
         default: return nil
         }
+    }
+
+    static func focusCategories(_ ids: [String]) -> [String] {
+        let mapping = ["anxiety": "calm", "self_love": "self_love", "personal_growth": "growth",
+                       "body": "self_love", "work": "presence", "relationships": "relationships", "gratitude": "gratitude"]
+        return ids.compactMap { mapping[$0] }
     }
 
     static func boostCategories(painPointId: String) -> [String] {

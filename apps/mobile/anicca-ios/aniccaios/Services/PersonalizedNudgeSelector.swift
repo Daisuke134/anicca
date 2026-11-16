@@ -43,6 +43,7 @@ enum PersonalizedNudgeSelector {
         /// Exact probability of this quote under the ε-greedy policy.
         let assignedProbability: Double
         let policyVersion: String
+        var candidateIDs: [String] = []
     }
 
     /// Categories the profile asks for, primary first.
@@ -53,6 +54,7 @@ enum PersonalizedNudgeSelector {
         if let primary = PersonalizationRules.primaryCategory(desiredState: profile.desiredState) {
             ordered.append(primary)
         }
+        for category in PersonalizationRules.focusCategories(profile.answers.ids(for: .focusCategories)) where !ordered.contains(category) { ordered.append(category) }
         for painPointId in profile.painPointIds {
             for category in PersonalizationRules.boostCategories(painPointId: painPointId) where !ordered.contains(category) {
                 ordered.append(category)
@@ -75,6 +77,7 @@ enum PersonalizedNudgeSelector {
         if boosts.contains(quote.categoryID) {
             value += 1
         }
+        if PersonalizationRules.focusCategories(profile.answers.ids(for: .focusCategories)).contains(quote.categoryID) { value += 1 }
         guard profile.adaptiveAnswers != nil else { return value }
         value *= 100 // desired state remains primary; other axes refine it.
         guard let traits = AdaptiveAffirmationCatalog.traits(for: quote) else { return value }
@@ -99,7 +102,10 @@ enum PersonalizedNudgeSelector {
         // Legacy users keep the legacy pool until they answer the new questions.
         guard profile.adaptiveAnswers != nil else { return false }
         if PersonalizationRules.intensity(profile: profile) == "gentle", traits.intensity != "gentle" { return false }
-        if let tone = profile.answers.ids(for: .tone).first, traits.tone != tone { return false }
+        if traits.fearBased { return false }
+        let heavy = !Set(profile.answers.ids(for: .moodBaseline)).isDisjoint(with: ["heavy", "very_heavy"])
+        let tone = heavy ? "gentle" : profile.answers.ids(for: .tone).first
+        if let tone, traits.tone != tone { return false }
         let contexts = Set(profile.answers.ids(for: .lifeContext))
         if !Set(traits.contexts).isSubset(of: contexts) { return false }
         let snapshot = user.answerSnapshot.values
@@ -123,7 +129,7 @@ enum PersonalizedNudgeSelector {
         preferredLanguage: LanguagePreference
     ) -> (selection: Selection, deliveryId: String)? {
         guard let previewCase = cases.last(where: {
-            $0.personId == personId && $0.source == "onboarding_preview"
+            $0.personId == personId && ["onboarding_preview", "onboarding_first_intervention"].contains($0.source)
         }), let quote = QuoteProvider.shared.byId(previewCase.stimulus.messageId, preferredLanguage: preferredLanguage) else {
             return nil
         }
@@ -232,7 +238,8 @@ enum PersonalizedNudgeSelector {
             reason: reason,
             candidateCount: count,
             assignedProbability: probability,
-            policyVersion: policyVersion
+            policyVersion: policyVersion,
+            candidateIDs: ranked.map(\.id)
         )
     }
 }

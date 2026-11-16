@@ -25,6 +25,12 @@ enum OnboardingAnalytics {
         switch step {
         case .welcome, .processing, .planReveal, .comparison:
             return nil
+        case .focusCategories: return "focus_categories"
+        case .microPreview: return "micro_preview_reaction"
+        case .themeChoice: return "theme"
+        case .iconChoice: return "app_icon"
+        case .widgetPreview: return "widget_interest"
+        case .paywall: return nil
         case .goal: return "desired_state"
         case .name: return "name_status"
         case .birthContext: return "birth_context"

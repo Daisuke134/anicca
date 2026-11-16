@@ -48,3 +48,14 @@
 "presence_supportive" = "Je peux choisir une chose qui compte et lui accorder mon attention pendant la prochaine minute.";
 "self_love_supportive" = "Aujourd’hui, un choix bienveillant peut m’aider à apprendre à être de mon côté.";
 "gratitude_gentle" = "Je peux apprécier une petite chose sans que toute la journée ait besoin d’être agréable.";
+
+// Onboarding winner prior vocabulary
+"courage_gentle" = "Je peux avoir peur et faire quand même un pas qui soit doux pour moi.";
+"letting_go_gentle" = "Je peux déposer un regret sans prétendre qu'il n'a jamais compté.";
+"letting_go_direct" = "Le passé n'a pas besoin d'une punition de plus de ma part.";
+"letting_go_poetic" = "Je peux desserrer mon emprise sur ce que ce jour ne peut pas changer.";
+"letting_go_practical" = "Je peux nommer ce qui est terminé et garder une main libre pour aujourd'hui.";
+"relationships_gentle" = "Je peux prendre soin de quelqu'un et garder quand même de l'espace pour moi.";
+"relationships_direct" = "Mes besoins ont aussi leur place dans cette conversation.";
+"relationships_poetic" = "Le lien peut avoir de la place pour ta voix et pour la mienne.";
+"relationships_practical" = "Je peux demander une chose dont j'ai besoin sans m'excuser d'en avoir besoin.";

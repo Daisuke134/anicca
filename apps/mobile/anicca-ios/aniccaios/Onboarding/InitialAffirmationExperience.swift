@@ -53,7 +53,8 @@ struct AffirmationGoalStepView: View {
         ("self_love", "growth_goal_self_love", "heart"),
         ("calm", "growth_goal_calm", "leaf"),
         ("confidence", "growth_goal_confidence", "sun.max"),
-        ("focus", "growth_goal_focus", "scope")
+        ("focus", "growth_goal_focus", "scope"),
+        ("letting_go", "growth_goal_letting_go", "wind")
     ]
 
     var body: some View {
@@ -195,7 +196,13 @@ struct FirstAffirmationStepView: View {
             .accessibilityIdentifier("onboarding-first-save")
             Spacer(minLength: 16)
         } footer: {
-            PrimaryButton(title: String(localized: "growth_set_reminders"), isEnabled: revealComplete, action: next)
+            PrimaryButton(title: String(localized: "growth_set_reminders"), isEnabled: revealComplete) {
+                if let quote = selection?.quote {
+                    DailyAffirmationStore.shared.seed(quote, language: appState.effectiveLanguage.rawValue, deliveryId: deliveryId)
+                }
+                if let deliveryId { DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .responded) }
+                next()
+            }
                 .accessibilityIdentifier("onboarding-first-continue")
         }
         .onAppear {
@@ -211,15 +218,21 @@ struct FirstAffirmationStepView: View {
     private func computeSelectionIfNeeded() {
         guard selection == nil else { return }
         let user = appState.syntheticUser
+        if let carryover = PersonalizedNudgeSelector.previewCarryoverSelection(
+            cases: DecisionPointStore.shared.allCases(), personId: user.personId,
+            preferredLanguage: appState.effectiveLanguage) {
+            selection = carryover.selection
+            deliveryId = carryover.deliveryId
+            return
+        }
         let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
-        selection = PersonalizedNudgeSelector.select(
+        selection = OnboardingManagerPrior.select(
             user: user,
             pool: QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage),
-            shownAt: user.shownTimestamps,
             band: band
         )
         if let selection, deliveryId == nil {
-            deliveryId = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_preview")
+            deliveryId = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_first_intervention")
         }
     }
 }
@@ -239,7 +252,7 @@ private struct AffirmationRevealCard: View {
 
     private var answerLabel: String {
         let goal = answerSnapshot.values["desired_state"]?.first ?? "unknown"
-        guard ["calm", "confidence", "focus", "self_love"].contains(goal) else {
+        guard ["calm", "confidence", "focus", "self_love", "letting_go"].contains(goal) else {
             return String(localized: "growth_first_affirmation")
         }
         return NSLocalizedString("growth_goal_\(goal)", comment: "")
@@ -491,10 +504,9 @@ struct FirstInterventionStepView: View {
             return
         }
         let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
-        selection = PersonalizedNudgeSelector.select(
+        selection = OnboardingManagerPrior.select(
             user: user,
             pool: QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage),
-            shownAt: user.shownTimestamps,
             band: band
         )
         if let selection, deliveryId == nil {
