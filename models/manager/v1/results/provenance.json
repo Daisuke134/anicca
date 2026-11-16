@@ -31,5 +31,8 @@
   "eval_seed": 0,
   "behaviorbench_n": 100,
   "behaviorbench_seed": 42,
-  "initial_resume": null
+  "initial_resume": null,
+  "base_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+  "behaviorbench_revision": "ec382c701589da2f24bf697dd1b3bb9f7bd62a35",
+  "behaviorbench_source_sha256": "580b690b5bf7e69b58f1606cb0ee125a7d78a6308bce050fa2cb84eb1c289506"
 }

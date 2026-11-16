@@ -1,0 +1,22 @@
+{
+  "checkpoint": "out/manager-v1/_trainer/checkpoint-50",
+  "global_step": 50,
+  "epoch": 0.4,
+  "files": {
+    "adapter_model.safetensors": 19593064,
+    "optimizer.pt": 39417295,
+    "scheduler.pt": 1465,
+    "rng_state.pth": 14327,
+    "trainer_state.json": 3585
+  },
+  "last_loss": {
+    "entropy": 0.13036378026008605,
+    "epoch": 0.4,
+    "grad_norm": 0.11931576579809189,
+    "learning_rate": 0.0006958301789735852,
+    "loss": 0.10132217407226562,
+    "mean_token_accuracy": 0.9708333492279053,
+    "num_tokens": 65184.0,
+    "step": 50
+  }
+}

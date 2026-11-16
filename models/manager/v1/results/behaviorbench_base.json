@@ -1,0 +1,745 @@
+{
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "dataset": "befm/BehaviorBench",
+  "revision": "ec382c701589da2f24bf697dd1b3bb9f7bd62a35",
+  "file": "big_five/surv_resp_pred/test.jsonl",
+  "source_sha256": "580b690b5bf7e69b58f1606cb0ee125a7d78a6308bce050fa2cb84eb1c289506",
+  "protocol": {
+    "task": "surv_resp_pred",
+    "metric": "row accuracy (not grouped leaderboard)",
+    "seed": 42,
+    "requested_n": 100,
+    "dtype": "float32",
+    "decoding": "greedy, max_new_tokens=8, strict bracket parsing",
+    "subset": "Python random.Random(seed).sample, sorted indices"
+  },
+  "complete": true,
+  "metrics": {
+    "n": 100,
+    "correct": 0,
+    "accuracy": 0.0,
+    "invalid": 100
+  },
+  "prior_complement_marginal": {
+    "calibration_n": 900,
+    "prediction": 4,
+    "n": 100,
+    "correct": 25,
+    "accuracy": 0.25,
+    "invalid": 0
+  },
+  "prior_constant_3": {
+    "n": 100,
+    "correct": 31,
+    "accuracy": 0.31,
+    "invalid": 0
+  },
+  "historical_references": {
+    "befm_accuracy": 0.5556,
+    "prior_accuracy": 0.6111,
+    "scope": "MaMe-Re 18 non-tied pairs; NOT BehaviorBench, not comparable"
+  },
+  "elapsed_sec": 315.8678448869996,
+  "records": [
+    {
+      "row_index": 6,
+      "prediction": null,
+      "target": 1,
+      "generated": "I talk to a lot of different people",
+      "prompt_tokens": 139
+    },
+    {
+      "row_index": 25,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am easily disturbed. I am easily",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 27,
+      "prediction": null,
+      "target": 4,
+      "generated": "I make people feel at ease. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 30,
+      "prediction": null,
+      "target": 1,
+      "generated": "I pay attention to details. I pay",
+      "prompt_tokens": 145
+    },
+    {
+      "row_index": 32,
+      "prediction": null,
+      "target": 4,
+      "generated": "I often forget to put things back in",
+      "prompt_tokens": 139
+    },
+    {
+      "row_index": 44,
+      "prediction": null,
+      "target": 5,
+      "generated": "I have a vivid imagination.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 46,
+      "prediction": null,
+      "target": 4,
+      "generated": "I rarely feel blue.\n\nI",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 71,
+      "prediction": null,
+      "target": 4,
+      "generated": "I often feel blue. I find myself",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 80,
+      "prediction": null,
+      "target": 5,
+      "generated": "I am always prepared. I am a",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 81,
+      "prediction": null,
+      "target": 2,
+      "generated": "[1] I leave my belongings around",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 89,
+      "prediction": null,
+      "target": 4,
+      "generated": "I have a soft heart. I have",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 94,
+      "prediction": null,
+      "target": 3,
+      "generated": "I keep in the background. I keep",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 95,
+      "prediction": null,
+      "target": 2,
+      "generated": "[1] I take time out for",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 99,
+      "prediction": null,
+      "target": 3,
+      "generated": "I start conversations. I start conversations.",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 103,
+      "prediction": null,
+      "target": 3,
+      "generated": "I have excellent ideas. I have a",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 104,
+      "prediction": null,
+      "target": 2,
+      "generated": "I often forget to put things back in",
+      "prompt_tokens": 151
+    },
+    {
+      "row_index": 114,
+      "prediction": null,
+      "target": 2,
+      "generated": "I use difficult words. I use words",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 127,
+      "prediction": null,
+      "target": 1,
+      "generated": "I do not have a good imagination.",
+      "prompt_tokens": 137
+    },
+    {
+      "row_index": 142,
+      "prediction": null,
+      "target": 3,
+      "generated": "I have a rich vocabulary. I have",
+      "prompt_tokens": 138
+    },
+    {
+      "row_index": 159,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am extremely strict in my work.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 163,
+      "prediction": null,
+      "target": 3,
+      "generated": "I have excellent ideas. I have a",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 166,
+      "prediction": null,
+      "target": 1,
+      "generated": "I get upset easily.\n\nThe",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 196,
+      "prediction": null,
+      "target": 4,
+      "generated": "I am interested in people. I am",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 203,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am fully open to ideas. I",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 214,
+      "prediction": null,
+      "target": 5,
+      "generated": "I have a vivid imagination.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 220,
+      "prediction": null,
+      "target": 5,
+      "generated": "I spend time reflecting on things. I",
+      "prompt_tokens": 146
+    },
+    {
+      "row_index": 223,
+      "prediction": null,
+      "target": 5,
+      "generated": "I have a vivid imagination.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 225,
+      "prediction": null,
+      "target": 4,
+      "generated": "[1] I get chores done right",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 228,
+      "prediction": null,
+      "target": 5,
+      "generated": "I make a mess of things. I",
+      "prompt_tokens": 146
+    },
+    {
+      "row_index": 233,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am extremely critical of my work.",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 238,
+      "prediction": null,
+      "target": 3,
+      "generated": "I take time out for others. I",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 250,
+      "prediction": null,
+      "target": 1,
+      "generated": "I often forget to put things back in",
+      "prompt_tokens": 139
+    },
+    {
+      "row_index": 270,
+      "prediction": null,
+      "target": 4,
+      "generated": "I often forget to put things back in",
+      "prompt_tokens": 141
+    },
+    {
+      "row_index": 281,
+      "prediction": null,
+      "target": 5,
+      "generated": "I change my mood a lot. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 284,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am quick to understand things. I",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 296,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am easily disturbed. I am not",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 300,
+      "prediction": null,
+      "target": 3,
+      "generated": "I make a mess of things. I",
+      "prompt_tokens": 137
+    },
+    {
+      "row_index": 344,
+      "prediction": null,
+      "target": 5,
+      "generated": "I am fully open to ideas. I",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 348,
+      "prediction": null,
+      "target": 1,
+      "generated": "I feel little concern for others. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 352,
+      "prediction": null,
+      "target": 3,
+      "generated": "I talk to a lot of different people",
+      "prompt_tokens": 141
+    },
+    {
+      "row_index": 363,
+      "prediction": null,
+      "target": 5,
+      "generated": "[1] I don't mind being",
+      "prompt_tokens": 138
+    },
+    {
+      "row_index": 367,
+      "prediction": null,
+      "target": 2,
+      "generated": "I pay attention to details. I am",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 370,
+      "prediction": null,
+      "target": 4,
+      "generated": "I am not interested in abstract ideas.",
+      "prompt_tokens": 137
+    },
+    {
+      "row_index": 373,
+      "prediction": null,
+      "target": 5,
+      "generated": "I am extremely critical of my work.",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 379,
+      "prediction": null,
+      "target": 4,
+      "generated": "I keep in the background. I keep",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 387,
+      "prediction": null,
+      "target": 5,
+      "generated": "I pay attention to details. I am",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 389,
+      "prediction": null,
+      "target": 2,
+      "generated": "[1] I shirk my duties",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 429,
+      "prediction": null,
+      "target": 2,
+      "generated": "I don't talk a lot. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 432,
+      "prediction": null,
+      "target": 4,
+      "generated": "I use difficult words. I use words",
+      "prompt_tokens": 132
+    },
+    {
+      "row_index": 459,
+      "prediction": null,
+      "target": 5,
+      "generated": "I am interested in people. I am",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 464,
+      "prediction": null,
+      "target": 5,
+      "generated": "I sympathize with others' feelings.",
+      "prompt_tokens": 144
+    },
+    {
+      "row_index": 470,
+      "prediction": null,
+      "target": 2,
+      "generated": "I am not really interested in others.",
+      "prompt_tokens": 147
+    },
+    {
+      "row_index": 517,
+      "prediction": null,
+      "target": 4,
+      "generated": "I have a vivid imagination.",
+      "prompt_tokens": 132
+    },
+    {
+      "row_index": 549,
+      "prediction": null,
+      "target": 5,
+      "generated": "[1] I change my mood a",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 558,
+      "prediction": null,
+      "target": 3,
+      "generated": "I use difficult words. I use words",
+      "prompt_tokens": 143
+    },
+    {
+      "row_index": 565,
+      "prediction": null,
+      "target": 3,
+      "generated": "I shirk my duties. I do",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 574,
+      "prediction": null,
+      "target": 3,
+      "generated": "I change my mood a lot. I",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 591,
+      "prediction": null,
+      "target": 3,
+      "generated": "I don't talk a lot. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 603,
+      "prediction": null,
+      "target": 1,
+      "generated": "I do not have a good imagination.",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 604,
+      "prediction": null,
+      "target": 5,
+      "generated": "I feel others' emotions. I think",
+      "prompt_tokens": 145
+    },
+    {
+      "row_index": 616,
+      "prediction": null,
+      "target": 2,
+      "generated": "I get stressed out easily.\n\n",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 618,
+      "prediction": null,
+      "target": 4,
+      "generated": "I sympathize with others' feelings.",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 633,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am exacting in my work.",
+      "prompt_tokens": 140
+    },
+    {
+      "row_index": 643,
+      "prediction": null,
+      "target": 2,
+      "generated": "I get irritated easily.\n\nThe",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 650,
+      "prediction": null,
+      "target": 1,
+      "generated": "I have little to say. I have",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 654,
+      "prediction": null,
+      "target": 2,
+      "generated": "I am not really interested in others.",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 665,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am not really interested in others.",
+      "prompt_tokens": 137
+    },
+    {
+      "row_index": 677,
+      "prediction": null,
+      "target": 5,
+      "generated": "I pay attention to details. I am",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 686,
+      "prediction": null,
+      "target": 4,
+      "generated": "I get chores done right away.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 692,
+      "prediction": null,
+      "target": 4,
+      "generated": "I am quiet around strangers. I am",
+      "prompt_tokens": 145
+    },
+    {
+      "row_index": 714,
+      "prediction": null,
+      "target": 2,
+      "generated": "I have little to say. I have",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 718,
+      "prediction": null,
+      "target": 4,
+      "generated": "I spend time reflecting on things. I",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 721,
+      "prediction": null,
+      "target": 1,
+      "generated": "I am interested in people. I am",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 733,
+      "prediction": null,
+      "target": 4,
+      "generated": "I have excellent ideas. I have a",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 747,
+      "prediction": null,
+      "target": 4,
+      "generated": "[1] I take time out for",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 754,
+      "prediction": null,
+      "target": 3,
+      "generated": "I get irritated easily.\n\nThe",
+      "prompt_tokens": 131
+    },
+    {
+      "row_index": 758,
+      "prediction": null,
+      "target": 4,
+      "generated": "I feel comfortable around people. I think",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 759,
+      "prediction": null,
+      "target": 3,
+      "generated": "I am always prepared. I am a",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 777,
+      "prediction": null,
+      "target": 3,
+      "generated": "I spend time reflecting on things. I",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 781,
+      "prediction": null,
+      "target": 3,
+      "generated": "I worry about things.\n\nI",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 791,
+      "prediction": null,
+      "target": 4,
+      "generated": "I don't mind being the center of",
+      "prompt_tokens": 143
+    },
+    {
+      "row_index": 825,
+      "prediction": null,
+      "target": 5,
+      "generated": "I have a vivid imagination.",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 826,
+      "prediction": null,
+      "target": 5,
+      "generated": "[1] I shirk my duties",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 828,
+      "prediction": null,
+      "target": 2,
+      "generated": "I have difficulty understanding abstract ideas. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 849,
+      "prediction": null,
+      "target": 3,
+      "generated": "I like order.",
+      "prompt_tokens": 131
+    },
+    {
+      "row_index": 854,
+      "prediction": null,
+      "target": 4,
+      "generated": "I talk to a lot of different people",
+      "prompt_tokens": 140
+    },
+    {
+      "row_index": 867,
+      "prediction": null,
+      "target": 2,
+      "generated": "[1] I do not have a",
+      "prompt_tokens": 136
+    },
+    {
+      "row_index": 875,
+      "prediction": null,
+      "target": 4,
+      "generated": "I am not interested in other people's",
+      "prompt_tokens": 137
+    },
+    {
+      "row_index": 882,
+      "prediction": null,
+      "target": 5,
+      "generated": "[1] I leave my belongings around",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 887,
+      "prediction": null,
+      "target": 3,
+      "generated": "I talk to a lot of different people",
+      "prompt_tokens": 139
+    },
+    {
+      "row_index": 890,
+      "prediction": null,
+      "target": 5,
+      "generated": "I have excellent ideas. I have a",
+      "prompt_tokens": 131
+    },
+    {
+      "row_index": 906,
+      "prediction": null,
+      "target": 4,
+      "generated": "I feel others' emotions. I think",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 913,
+      "prediction": null,
+      "target": 4,
+      "generated": "I am fully open to ideas. I",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 947,
+      "prediction": null,
+      "target": 3,
+      "generated": "I have frequent mood swings. I have",
+      "prompt_tokens": 134
+    },
+    {
+      "row_index": 954,
+      "prediction": null,
+      "target": 3,
+      "generated": "I follow a schedule. I follow a",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 964,
+      "prediction": null,
+      "target": 1,
+      "generated": "I am not really interested in others.",
+      "prompt_tokens": 147
+    },
+    {
+      "row_index": 978,
+      "prediction": null,
+      "target": 3,
+      "generated": "I follow a schedule. I follow a",
+      "prompt_tokens": 131
+    },
+    {
+      "row_index": 983,
+      "prediction": null,
+      "target": 4,
+      "generated": "I get stressed out easily.\n\n",
+      "prompt_tokens": 133
+    },
+    {
+      "row_index": 986,
+      "prediction": null,
+      "target": 3,
+      "generated": "I have difficulty understanding abstract ideas. I",
+      "prompt_tokens": 135
+    },
+    {
+      "row_index": 990,
+      "prediction": null,
+      "target": 3,
+      "generated": "I do not have a good imagination.",
+      "prompt_tokens": 135
+    }
+  ]
+}
