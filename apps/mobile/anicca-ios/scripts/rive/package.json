@@ -1,0 +1,10 @@
+{
+  "name": "anicca-living-home-asset-check",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node verify.mjs" },
+  "devDependencies": {
+    "@rive-app/canvas-advanced": "2.21.3",
+    "playwright-core": "1.51.1"
+  }
+}

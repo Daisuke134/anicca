@@ -535,6 +535,44 @@ extension PersonalizationPhase1Tests {
             isUITesting: true))
     }
 
+    func test_autoAdvance_recordingOverridesUITestingAfterThreeSeconds() {
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        for isUITesting in [false, true] {
+            XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+                now: t0.addingTimeInterval(2.9), lastInteractionAt: t0,
+                isSceneActive: true, cardCount: 3, anySheetPresented: false,
+                isUITesting: isUITesting, isRecordingMode: true))
+            XCTAssertTrue(HomeAutoAdvance.shouldAdvance(
+                now: t0.addingTimeInterval(3), lastInteractionAt: t0,
+                isSceneActive: true, cardCount: 3, anySheetPresented: false,
+                isUITesting: isUITesting, isRecordingMode: true))
+        }
+    }
+
+    func test_autoAdvance_withoutRecordingPreservesProductionAndUITesting() {
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        for elapsed in [3.0, 7.9, 8.0, 60.0] {
+            XCTAssertEqual(HomeAutoAdvance.shouldAdvance(
+                now: t0.addingTimeInterval(elapsed), lastInteractionAt: t0,
+                isSceneActive: true, cardCount: 3, anySheetPresented: false,
+                isUITesting: false, isRecordingMode: false), elapsed >= 8)
+            XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+                now: t0.addingTimeInterval(elapsed), lastInteractionAt: t0,
+                isSceneActive: true, cardCount: 3, anySheetPresented: false,
+                isUITesting: true, isRecordingMode: false))
+        }
+    }
+
+    func test_autoAdvance_recordingStillRespectsSceneSheetsAndCardCount() {
+        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
+        for (active, count, sheet) in [(false, 3, false), (true, 3, true), (true, 1, false), (true, 0, false)] {
+            XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
+                now: t0.addingTimeInterval(60), lastInteractionAt: t0,
+                isSceneActive: active, cardCount: count, anySheetPresented: sheet,
+                isUITesting: true, isRecordingMode: true))
+        }
+    }
+
     func test_autoAdvance_nextIndexWraps() {
         XCTAssertEqual(HomeAutoAdvance.nextIndex(current: 0, count: 3), 1)
         XCTAssertEqual(HomeAutoAdvance.nextIndex(current: 2, count: 3), 0)
