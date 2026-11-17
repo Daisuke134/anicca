@@ -91,7 +91,7 @@ struct OnboardingIconStepView: View {
         OnboardingPage {
             Text(String(localized: "winner_icon_title")).font(AppTheme.Typography.onboardingTitle)
             ForEach(OnboardingQuestion.iconChoice.optionIDs, id: \.self) { id in
-                Button { selected = id; failed = false } label: {
+                Button { UISelectionFeedbackGenerator().selectionChanged(); selected = id; failed = false } label: {
                     HStack {
                         Image("Preview\(id)").resizable().frame(width: 64, height: 64).clipShape(RoundedRectangle(cornerRadius: 14))
                         Text(NSLocalizedString("winner_icon_\(id)", comment: ""))

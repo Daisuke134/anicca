@@ -97,9 +97,12 @@ struct QuoteCardView: View {
                 UIPasteboard.general.string = quote.text
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 withAnimation(.easeOut(duration: 0.2)) { copyFlashOpacity = 1 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                    withAnimation(.easeIn(duration: 0.4)) { copyFlashOpacity = 0 }
-                }
+                // The exit takes ease-out like every UI exit, and the hold
+                // is an animation delay — never a DispatchQueue timer
+                // (swiftui-animation, Common Mistakes #5; improve-animations
+                // AUDIT §2: ease-in on UI is always a finding, and toasts
+                // are the documented 400ms exception).
+                withAnimation(.easeOut(duration: 0.4).delay(1.4)) { copyFlashOpacity = 0 }
             }
         }
     }
@@ -112,6 +115,7 @@ struct QuoteCardView: View {
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
+        .buttonStyle(PressScaleButtonStyle())
         .accessibilityIdentifier(identifier)
     }
 }

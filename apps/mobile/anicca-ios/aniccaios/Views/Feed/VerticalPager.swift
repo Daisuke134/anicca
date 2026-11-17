@@ -7,6 +7,9 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
     let count: Int
     @Binding var currentIndex: Int
     var navigationRevision: Int = 0
+    /// When true, programmatic word changes use the short Reduce Motion
+    /// cross-fade (apple-design §14).
+    var reduceMotion: Bool = false
     let pageContent: (Int) -> Page
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -63,7 +66,11 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
             let direction: UIPageViewController.NavigationDirection = (current?.index ?? 0) < target ? .forward : .reverse
             // Cross-fades are the calm grammar for word changes and the Reduce Motion
             // form: spatial motion collapses to cross-fades. Do not use an animated slide.
-            UIView.transition(with: pvc.view, duration: 0.8,
+            // Durations come from the adopted motion catalog, not from feel:
+            // large-surface transitions stay within 200–500ms with ease-in-out
+            // for on-screen morphing (improve-animations AUDIT §2), and the
+            // Reduce Motion form is a 200ms opacity cross-fade (apple-design §14).
+            UIView.transition(with: pvc.view, duration: parent.reduceMotion ? 0.2 : 0.5,
                               options: [.transitionCrossDissolve, .curveEaseInOut, .allowAnimatedContent]) {
                 pvc.setViewControllers([self.hosting(for: target)], direction: direction, animated: false)
             }

@@ -1,6 +1,7 @@
 import SwiftUI
 import RevenueCat
 import StoreKit
+import UIKit
 
 /// Every plan on sale is shown as a card on the first screen (Issue #9356);
 /// no plan hides behind an "Other plans" sheet.
@@ -240,6 +241,8 @@ struct PaywallVariantBView: View {
         VStack(spacing: 10) {
             ForEach(orderedPackages, id: \.identifier) { package in
                 Button {
+                    // Selection feedback while a value changes (Apple HIG, Playing haptics).
+                    UISelectionFeedbackGenerator().selectionChanged()
                     selectedPackage = package
                     AnalyticsManager.shared.track(.productSelected, properties: [
                         "product_id": package.storeProduct.productIdentifier,

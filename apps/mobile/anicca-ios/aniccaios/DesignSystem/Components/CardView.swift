@@ -48,6 +48,10 @@ extension View {
                 RoundedRectangle(cornerRadius: AppTheme.Radius.card, style: .continuous)
                     .strokeBorder(isSelected ? AppTheme.Colors.accent : .clear, lineWidth: 1)
             }
+            // Selection is a state morph, so it animates with the shared
+            // selection token instead of snapping (improve-animations
+            // AUDIT §2/§7). Scoped to isSelected so nothing else animates.
+            .animation(AppMotion.selection, value: isSelected)
     }
 
     func affirmationNavigationTitle(_ title: String) -> some View {

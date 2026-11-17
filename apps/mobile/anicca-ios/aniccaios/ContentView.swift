@@ -11,24 +11,33 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        // プロファイル取得中のProgressは、オンボーディング完了後のみ（オンボーディング中の遷移を邪魔しない）
-        if appState.isBootstrappingProfile && appState.isOnboardingComplete {
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(AppBackground())
-        } else if !appState.isOnboardingComplete {
-            OnboardingFlowView()
-        } else {
-            switch appState.authStatus {
-            case .signedOut:
-                // v3-ui.md: Sign in は Skip 可能。オンボーディング完了後はアプリに進める。
-                FeedRootView()
-            case .signingIn:
-                AuthenticationProcessingView()
-            case .signedIn:
-                FeedRootView()
+        Group {
+            // プロファイル取得中のProgressは、オンボーディング完了後のみ（オンボーディング中の遷移を邪魔しない）
+            if appState.isBootstrappingProfile && appState.isOnboardingComplete {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppBackground())
+            } else if !appState.isOnboardingComplete {
+                OnboardingFlowView()
+                    .transition(.opacity)
+            } else {
+                switch appState.authStatus {
+                case .signedOut:
+                    // v3-ui.md: Sign in は Skip 可能。オンボーディング完了後はアプリに進める。
+                    FeedRootView()
+                        .transition(.opacity)
+                case .signingIn:
+                    AuthenticationProcessingView()
+                case .signedIn:
+                    FeedRootView()
+                        .transition(.opacity)
+                }
             }
         }
+        // Completing onboarding is the flow's peak-end moment, so the scene
+        // change cross-fades instead of cutting (onboarding skill, Peak-End
+        // Rule; AppMotion.move is the shared on-screen motion token).
+        .animation(AppMotion.move, value: appState.isOnboardingComplete)
     }
 }
 

@@ -128,6 +128,7 @@ struct FeedRootView: View {
     @StateObject private var quoteNavigation = QuoteNavigationCoordinator.shared
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var currentIndex: Int = 0
     @State private var navigationRevision: Int = 0
     @State private var displayedIndex: Int?
@@ -179,7 +180,7 @@ struct FeedRootView: View {
 
                 GeometryReader { contentGeometry in
                     if !deckModel.cards.isEmpty {
-                        VerticalPager(count: deckModel.cards.count, currentIndex: $currentIndex, navigationRevision: navigationRevision) { index in
+                        VerticalPager(count: deckModel.cards.count, currentIndex: $currentIndex, navigationRevision: navigationRevision, reduceMotion: reduceMotion) { index in
                             HomeDeckPage(model: deckModel, index: index, pageWidth: geo.size.width)
                                 .frame(width: contentGeometry.size.width, height: contentGeometry.size.height)
                                 .environmentObject(themeStore)
@@ -208,7 +209,7 @@ struct FeedRootView: View {
                     .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
                     .scaleEffect(backgroundDrift ? 1.09 : 1.02)
                     .offset(x: backgroundDrift ? -12 : 12)
-                    .animation(.easeInOut(duration: 26).repeatForever(autoreverses: true), value: backgroundDrift)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 26).repeatForever(autoreverses: true), value: backgroundDrift)
                     .clipped()
                     .overlay {
                         LivingRiveBackground(wordID: displayedWordID)
@@ -221,7 +222,9 @@ struct FeedRootView: View {
         .environmentObject(likedStore)
         .analyticsScreen(.feed, flowID: "feed")
         .onAppear {
-            backgroundDrift = true
+            // Ambient drift is motion, so under Reduce Motion the theme
+            // stays still (apple-design §14; swiftui-animation checklist).
+            if !reduceMotion { backgroundDrift = true }
             refreshToday()
         }
         .onReceive(autoAdvanceTimer) { now in
@@ -233,9 +236,11 @@ struct FeedRootView: View {
                 anySheetPresented: anySheetPresented
             ) else { return }
             pendingEndCause = .autoAdvance
-            withAnimation(.easeInOut(duration: 0.6)) {
-                currentIndex = HomeAutoAdvance.nextIndex(current: currentIndex, count: deckModel.cards.count)
-            }
+            // No withAnimation wrapper here: VerticalPager owns the word
+            // transition. A second, mismatched animation around the binding
+            // animates nothing the pager shows (swiftui-animation: scope an
+            // animation to what it actually drives).
+            currentIndex = HomeAutoAdvance.nextIndex(current: currentIndex, count: deckModel.cards.count)
         }
         .onChange(of: currentIndex) { newIndex in
             handleIndexChange(to: newIndex)
@@ -304,7 +309,7 @@ struct FeedRootView: View {
         lastInteractionAt = Date()
         guard currentIndex != 0, !deckModel.cards.isEmpty else { return }
         pendingEndCause = .userSwipe
-        withAnimation(.easeInOut(duration: 0.35)) { currentIndex = 0 }
+        currentIndex = 0 // VerticalPager owns the transition (see auto-advance).
     }
 
     private func refreshToday() {

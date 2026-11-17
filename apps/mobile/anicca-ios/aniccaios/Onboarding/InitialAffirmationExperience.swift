@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum InitialExperienceStyle {
     static var accent: Color { AppTheme.Colors.accent }
@@ -71,6 +72,8 @@ struct AffirmationGoalStepView: View {
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(options, id: \.0) { option in
                 Button {
+                    // Selection feedback while a value changes (Apple HIG, Playing haptics).
+                    UISelectionFeedbackGenerator().selectionChanged()
                     selection = option.0
                 } label: {
                     HStack(spacing: 14) {
@@ -376,7 +379,7 @@ struct ReminderScheduleStepView: View {
                     .font(.headline).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
                     ForEach(1...PersonalizationRules.freeFrequencyCap, id: \.self) { count in
-                        Button { frequency = count } label: {
+                        Button { UISelectionFeedbackGenerator().selectionChanged(); frequency = count } label: {
                             HStack(spacing: 8) {
                                 Text("\(count)").font(.headline)
                                 Image(systemName: frequency == count ? "checkmark.circle.fill" : "circle")
@@ -408,6 +411,8 @@ struct ReminderScheduleStepView: View {
     }
 
     private func toggle(_ slot: NudgeSlot) {
+        // Selection feedback while a value changes (Apple HIG, Playing haptics).
+        UISelectionFeedbackGenerator().selectionChanged()
         if selectedSlots.contains(slot) {
             selectedSlots.remove(slot)
         } else if selectedSlots.count < PersonalizationRules.freeFrequencyCap {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The same single-question card language as StrugglesStepView (round one).
 struct AdaptiveQuestionStepView: View {
@@ -105,6 +106,8 @@ struct AdaptiveQuestionStepView: View {
     }
 
     private func toggle(_ option: String) {
+        // Selection feedback while a value changes (Apple HIG, Playing haptics).
+        UISelectionFeedbackGenerator().selectionChanged()
         if question.allowsMultiple {
             if selected.contains(option) { selected.remove(option) }
             else if option == question.exclusiveOption { selected = [option] }
