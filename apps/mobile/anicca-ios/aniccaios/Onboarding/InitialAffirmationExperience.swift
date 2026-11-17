@@ -424,7 +424,8 @@ struct ReminderScheduleStepView: View {
 struct FirstInterventionStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
-    @State private var selection: PersonalizedNudgeSelector.Selection?
+    @State private var managerQuote: Quote?
+    @State private var requested = false
     @State private var deliveryId: String?
     @State private var revealComplete = false
 
@@ -436,7 +437,7 @@ struct FirstInterventionStepView: View {
         OnboardingPage {
             Text("Anicca").font(.system(.title, design: .serif))
             Spacer(minLength: 16)
-            if let quote = selection?.quote {
+            if let quote = managerQuote {
                 AffirmationRevealCard(
                     quote: quote,
                     answerSnapshot: appState.syntheticUser.answerSnapshot,
@@ -453,7 +454,7 @@ struct FirstInterventionStepView: View {
             Spacer(minLength: 16)
         } footer: {
             PrimaryButton(title: String(localized: "growth_open_today"), isEnabled: revealComplete) {
-                if let quote = selection?.quote {
+                if let quote = managerQuote {
                     DailyAffirmationStore.shared.seed(quote, language: appState.effectiveLanguage.rawValue, deliveryId: deliveryId)
                 }
                 if let deliveryId {
@@ -465,7 +466,7 @@ struct FirstInterventionStepView: View {
         }
         .onAppear { computeSelectionIfNeeded() }
         .onChange(of: revealComplete) { revealed in
-            if revealed, let quote = selection?.quote {
+            if revealed, let quote = managerQuote {
                 AnalyticsManager.shared.track(.firstAffirmationViewed, properties: [
                     "quote_id": quote.id, "category": quote.categoryID, "source": "first_intervention"
                 ])
@@ -474,31 +475,18 @@ struct FirstInterventionStepView: View {
     }
 
     private func computeSelectionIfNeeded() {
-        guard selection == nil else { return }
-        let user = appState.syntheticUser
-        // The words revealed in the preview step are this person's first
-        // affirmation. Carry that exact quote into the first intervention —
-        // and from there into the home card — instead of selecting a second,
-        // different quote here. Falls back to a fresh selection when no
-        // preview decision exists for this person.
-        if let carryover = PersonalizedNudgeSelector.previewCarryoverSelection(
-            cases: DecisionPointStore.shared.allCases(),
-            personId: DecisionPointRecorder.shared.personId,
-            preferredLanguage: appState.effectiveLanguage
-        ) {
-            selection = carryover.selection
-            deliveryId = carryover.deliveryId
-            return
-        }
-        let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: Date()))
-        selection = PersonalizedNudgeSelector.select(
-            user: user,
-            pool: QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage),
-            shownAt: user.shownTimestamps,
-            band: band
-        )
-        if let selection, deliveryId == nil {
-            deliveryId = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_first_intervention")
+        guard !requested else { return }
+        requested = true
+        Task { @MainActor in
+            defer { if managerQuote == nil { revealComplete = true } }
+            do {
+                let moment = try ManagerInterventionService.shared.momentID(for: "onboarding-first")
+                guard let decision = try await ManagerInterventionService.shared.decide(source: "onboarding_first_intervention", moment: moment) else { return }
+                managerQuote = decision.quote
+                deliveryId = decision.deliveryId
+            } catch {
+                // Let onboarding continue on failure; never fabricate an intervention.
+            }
         }
     }
 }

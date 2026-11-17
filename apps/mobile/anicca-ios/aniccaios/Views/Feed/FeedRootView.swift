@@ -296,41 +296,34 @@ struct FeedRootView: View {
     private func refreshToday() {
         let now = Date()
         appState.refreshSyntheticUserIfNeeded(now: now)
-        let language = appState.effectiveLanguage
-        let presentation = DailyAffirmationStore.shared.todayAffirmation(language: language.rawValue, now: now) {
-            let user = appState.syntheticUser
-            let catalog = QuoteProvider.shared.all(preferredLanguage: language)
-            let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: now))
-            guard let selection = PersonalizedNudgeSelector.select(
-                user: user, pool: catalog,
-                shownAt: user.shownTimestamps, now: now, band: band
-            ) else { return catalog.first.map { .init(quote: $0, deliveryId: nil) } }
-            let origin = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "daily_home")
-            return .init(quote: selection.quote, deliveryId: origin)
+        Task { @MainActor in
+            do {
+                let day = Calendar.current.startOfDay(for: now).timeIntervalSince1970
+                let moment = try ManagerInterventionService.shared.momentID(for: "home-\(day)-\(appState.effectiveLanguage.rawValue)")
+                guard let decision = try await ManagerInterventionService.shared.decide(source: "daily_home", moment: moment) else { return }
+                if let quote = decision.quote {
+                    DailyAffirmationStore.shared.seed(quote, language: appState.effectiveLanguage.rawValue, deliveryId: decision.deliveryId)
+                    if deckModel.cards.first?.quote.id != quote.id {
+                        buildDeck(selected: .init(quote: quote, deliveryId: decision.deliveryId), language: appState.effectiveLanguage, now: now)
+                    }
+                } else {
+                    endDisplay(cause: .replaced)
+                    deckModel.cards = []
+                }
+                applyPendingQuoteNavigation()
+            } catch {
+                // No catalog substitute for an unavailable Manager decision.
+                applyPendingQuoteNavigation()
+            }
         }
-        if let presentation, deckModel.cards.first?.quote.id != presentation.quote.id {
-            buildDeck(selected: presentation, language: language, now: now)
-        }
-        applyPendingQuoteNavigation()
     }
 
     /// Deck order: today's chosen intervention first, then the selector's
     /// ranked candidates in rank order.
     private func buildDeck(selected presentation: DailyAffirmationStore.Presentation, language: LanguagePreference, now: Date, firstOrigin: HomeDeckCard.Origin = .selectedIntervention) {
         endDisplay(cause: .replaced)
-        let user = appState.syntheticUser
-        let catalog = QuoteProvider.shared.all(preferredLanguage: language)
-        let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: now))
-        let ranked = PersonalizedNudgeSelector.rankedCandidates(
-            user: user, pool: catalog,
-            shownAt: user.shownTimestamps, now: now, band: band
-        )
-        deckModel.candidateCount = max(ranked.count, 1)
-        var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
-        for quote in ranked where quote.id != presentation.quote.id {
-            cards.append(HomeDeckCard(quote: quote, origin: .exploration, deliveryId: nil))
-            if cards.count >= 12 { break }
-        }
+        deckModel.candidateCount = 1
+        let cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
         deckModel.cards = cards
         currentIndex = 0
         navigationRevision += 1

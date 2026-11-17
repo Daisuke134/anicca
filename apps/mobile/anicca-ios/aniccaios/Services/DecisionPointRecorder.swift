@@ -269,6 +269,7 @@ final class DecisionPointRecorder {
     }
 
     func recordResponse(deliveryId: String, event: ManagerBenchEvent, at date: Date = Date(), messageId: String? = nil) {
+        ManagerInterventionService.shared.observe(deliveryId: deliveryId, event: event, at: date)
         guard DecisionPointStore.shared.recordResponse(personId: personId, deliveryId: deliveryId, event: event, at: date, messageId: messageId) else { return }
         let recordedMessageId = DecisionPointStore.shared.allCases().first { $0.personId == personId && $0.deliveryId == deliveryId }?.stimulus.messageId ?? messageId
         AppState.shared.recordSyntheticIntervention(messageId: recordedMessageId, deliveryId: deliveryId, event: event.rawValue, at: date)

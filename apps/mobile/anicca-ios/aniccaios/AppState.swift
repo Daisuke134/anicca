@@ -240,6 +240,7 @@ final class AppState: ObservableObject {
     }
 
     func resetState() {
+        ManagerInterventionService.shared.clearLocal()
         authStatus = .signedOut
         isOnboardingComplete = false
         onboardingStep = .welcome
@@ -330,6 +331,7 @@ final class AppState: ObservableObject {
     
     /// 通常ログアウト: デバイス権限/連携トグルは維持する（Account deletionとは別）
     func signOutPreservingSensorAccess() {
+        ManagerInterventionService.shared.clearLocal()
         authStatus = .signedOut
         userProfile = UserProfile()
         clearSyntheticUser()
@@ -362,6 +364,7 @@ final class AppState: ObservableObject {
     
     // Guideline 5.1.1(v)対応: アカウント削除時の完全な状態リセット
     func signOutAndWipe() {
+        ManagerInterventionService.shared.clearLocal()
         authStatus = .signedOut
         userProfile = UserProfile()
         clearSyntheticUser()

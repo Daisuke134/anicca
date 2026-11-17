@@ -61,6 +61,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
             DecisionPointRecorder.shared.recordAppOpened()
+            ManagerInterventionService.shared.appOpened()
         }
         // Best-effort: recover APNs token registration if it was delayed on first run.
         Task { await registerForRemoteIfAuthorized() }
@@ -140,6 +141,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 QuoteNavigationCoordinator.shared.request(quoteID: quoteID, alertBody: alertBody, deliveryId: deliveryId)
             }
             completionHandler()
+        }
+    }
+
+    // A content-available push identifies the moment, never supplies canned text.
+    // iOS wakeups are best effort; reliable background delivery needs the sender
+    // to call this same decision API before sending the visible APNs alert.
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        guard let moment = userInfo["manager_moment_id"] as? String, UUID(uuidString: moment) != nil else {
+            completionHandler(.noData); return
+        }
+        Task { @MainActor in
+            do {
+                try await ManagerInterventionService.shared.notify(moment: moment)
+                completionHandler(.newData)
+            } catch { completionHandler(.failed) }
         }
     }
 
