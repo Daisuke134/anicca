@@ -16,10 +16,12 @@ final class OnboardingWinnerE2ETests: XCTestCase {
 
     func testStandardJourneyClosesPaywallIntoSameIntervention() throws {
         let app = XCUIApplication()
-        // No -aniccaRecordingMode here: with auto-advance on, the deck moves
-        // past the first card before the closing assertion can read it on a
-        // slow CI runner (the same race build-830's Maestro run hit). The
-        // recording-mode home capture lives in the second test below.
+        // No -aniccaRecordingMode for the journey itself: with auto-advance
+        // on, the deck moves past the first card before the closing
+        // assertion can read it on a slow CI runner (the same race
+        // build-830's Maestro run hit). The recording-mode home capture is
+        // integrated at the end of this test instead of living in a second
+        // test — see the comment there.
         app.launchArguments = ["-resetOnLaunch", "-uiTesting", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         let start = Date()
@@ -88,22 +90,29 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("paywall-close-button")
         XCTAssertTrue(app.staticTexts["quote-text"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quote-text"].label, words)
-    }
 
-    /// Second launch in the same recording: onboarding is already complete,
-    /// so the app lands directly on the living home. With
-    /// -aniccaRecordingMode the deck auto-advances every 3s; dwelling here
-    /// is what captures the words actually changing in the recorded video.
-    /// Labels are attached as evidence only — the frame-level check happens
-    /// on the video itself. Named to sort after the journey test.
-    func testZRecordingHomeAutoAdvance() throws {
-        let app = XCUIApplication()
+        // Recording-mode home capture, integrated into this test on
+        // purpose. As a separate test it never got to run in run
+        // 43980794304: XCTest's between-test teardown failed with
+        // "Failed to terminate ai.anicca.app.ios" and the test died at
+        // launch. So terminate explicitly here (retrying until the app
+        // is really gone), swap the launch arguments to recording mode,
+        // and relaunch inside the same test. Onboarding is already
+        // complete, so the relaunch lands directly on the living home;
+        // with -aniccaRecordingMode the deck auto-advances every 3s and
+        // the 15s dwell is what captures the words actually changing in
+        // the recorded video. Labels are attached as evidence only —
+        // the frame-level check happens on the video itself.
+        for _ in 0..<5 where app.state != .notRunning {
+            app.terminate()
+            Thread.sleep(forTimeInterval: 2)
+        }
+        XCTAssertEqual(app.state, .notRunning, "app must terminate before the recording-mode relaunch")
         app.launchArguments = ["-uiTesting", "-aniccaRecordingMode", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        // If a previous journey stopped mid-onboarding, the app resumes
-        // at the paywall instead of the home screen (seen in run
-        // 43974753572, where this test then waited in vain for the home).
-        // Close a resumed paywall first so the dwell always starts at home.
+        // If the relaunch resumes at the paywall instead of the home
+        // screen (the resume state seen in run 43974753572), close it
+        // first so the dwell always starts at home.
         let resumedClose = app.buttons["paywall-close-button"]
         if resumedClose.waitForExistence(timeout: 10) {
             resumedClose.tap()
