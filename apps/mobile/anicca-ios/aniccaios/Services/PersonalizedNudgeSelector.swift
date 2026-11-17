@@ -39,6 +39,7 @@ enum PersonalizedNudgeSelector {
         /// Human-readable reason code, stored with the decision record.
         let reason: String
         /// Size of the candidate set the choice was made from.
+        var candidateIDs: [String] = []
         let candidateCount: Int
         /// Exact probability of this quote under the ε-greedy policy.
         let assignedProbability: Double
@@ -230,6 +231,7 @@ enum PersonalizedNudgeSelector {
         return Selection(
             quote: chosen,
             reason: reason,
+            candidateIDs: ranked.map(\.id),
             candidateCount: count,
             assignedProbability: probability,
             policyVersion: policyVersion

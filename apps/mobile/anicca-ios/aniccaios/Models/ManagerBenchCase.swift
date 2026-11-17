@@ -2,6 +2,10 @@ import Foundation
 
 /// A complete assignment and its measured responses. No message text or raw profile enters this row.
 struct ManagerBenchCase: Codable, Equatable {
+    var backend: String? = nil
+    var fallback: Bool? = nil
+    var candidateIds: [String]? = nil
+    var selectionReason: String? = nil
     var schemaVersion = 1
     var personId: String
     var deliveryId: String
@@ -101,6 +105,8 @@ struct ManagerBenchCase: Codable, Equatable {
     mutating func observe(_ event: ManagerBenchEvent, at date: Date) {
         guard containsInObservationWindow(date) else { return }
         switch event {
+        case .shown, .thumbsUp, .thumbsDown:
+            break // Exact events are retained in the upload journal.
         case .notificationDelivered:
             response.notificationDelivered = true
             response.notificationDeliveredAt = earliest(response.notificationDeliveredAt, date)
@@ -163,7 +169,9 @@ enum ManagerBenchEvent: String, Codable {
     case notificationDelivered = "notification_delivered"
     case notificationOpened = "notification_opened"
     case appOpened = "app_opened"
-    case responded, skipped, saved, shared
+    case responded, skipped, saved, shared, shown
+    case thumbsUp = "thumbs_up"
+    case thumbsDown = "thumbs_down"
 }
 
 /// Evidence awaiting a sender assignment; never exported as a complete eval case.

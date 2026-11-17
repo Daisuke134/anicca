@@ -44,6 +44,17 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
         except (ValueError, KeyError, TypeError):
             raise HTTPException(422, 'invalid observation')
 
+    @api.post('/decision-records')
+    async def decision_records(request: Request):
+        owner = await subject(request)
+        from .decision_records import ingest
+        from starlette.concurrency import run_in_threadpool
+        try:
+            return await run_in_threadpool(
+                ingest, str(store.path) + '.decision-records.jsonl', owner, await request.json())
+        except (ValueError, KeyError, TypeError):
+            raise HTTPException(422, 'invalid decision record')
+
     @api.delete('/evidence')
     async def delete(request: Request):
         store.delete(await subject(request))

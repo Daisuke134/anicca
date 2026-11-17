@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import CryptoKit
 
 /// Legacy v1/v2 decoder used only to migrate pre-ManagerBench local records.
 /// One row per decision point, per the Phase 1 measurement contract in
@@ -15,7 +16,7 @@ import OSLog
 ///   decided by the backend sender, the outcome row is the on-device half
 ///   of the record; the decision row lives with the sender.
 ///
-/// Storage is on-device only (Application Support). Analytics receives IDs,
+/// Durable storage is in Application Support and acknowledged records upload. Analytics receives IDs,
 /// categories, and versions — never the user's name or free text.
 struct DecisionPointRecord: Codable, Equatable {
     var recordKind: String              // "decision" | "outcome"
@@ -57,6 +58,43 @@ final class DecisionPointStore {
     func allCases() -> [ManagerBenchCase] { queue.sync { loadCases() } }
     func pendingObservations() -> [PendingDecisionObservation] { queue.sync { loadObservations() } }
     func outsideWindowObservations() -> [PendingDecisionObservation] { queue.sync { load(PendingDecisionObservation.self, from: outsideWindowURL) } }
+
+    private var uploadJournalURL: URL { directory.appendingPathComponent("decision-upload-journal.jsonl") }
+
+    struct Upload { let id: String; let data: Data }
+    private var acknowledgementsURL: URL { directory.appendingPathComponent("uploaded-decision-records.jsonl") }
+
+    func pendingUploads() -> [Upload] {
+        // Read pending sender observations as well as complete cases. Keep the source
+        // journal for local history; only acknowledged revisions leave the upload queue.
+        let observations = pendingObservations() + outsideWindowObservations()
+        let cases = allCases()
+        return queue.sync {
+            let acknowledged = Set(load(String.self, from: acknowledgementsURL))
+            let bodies = load(Data.self, from: uploadJournalURL) + cases.compactMap { try? ManagerBenchCase.encoder.encode($0) }
+                + observations.compactMap { try? ManagerBenchCase.encoder.encode($0) }
+            return bodies.compactMap { body in
+                let id = SHA256.hash(data: body).map { String(format: "%02x", $0) }.joined()
+                guard !acknowledged.contains(id),
+                      var object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return nil }
+                if object["stimulus"] != nil {
+                    object["backend"] = object["backend"] ?? "unknown"
+                    object["fallback"] = object["fallback"] ?? true
+                }
+                let envelope: [String: Any] = ["record_id": id, "record": object]
+                guard let data = try? JSONSerialization.data(withJSONObject: envelope) else { return nil }
+                return Upload(id: id, data: data)
+            }
+        }
+    }
+
+    func acknowledgeUpload(_ id: String) {
+        queue.sync {
+            var ids = load(String.self, from: acknowledgementsURL)
+            if !ids.contains(id) { ids.append(id) }
+            _ = write(ids, to: acknowledgementsURL)
+        }
+    }
 
     /// Preserve the original occurrence IDs and measured times when upgrading
     /// the conditioning record. A legacy positive without a time is not dated.
@@ -102,14 +140,17 @@ final class DecisionPointStore {
                 records.append(record)
                 index = records.count - 1
             }
+            guard journalUpload(record) else { return false }
             let pending = loadObservations()
             let matching = pending.filter { $0.deliveryId == record.deliveryId && $0.personId == record.personId }
             for observation in matching {
+                guard journalUpload(observation) else { return false }
                 if records[index].containsInObservationWindow(observation.observedAt) {
                     records[index].observe(observation.event, at: observation.observedAt)
                 } else if !persistOutsideWindow(observation) { return false }
             }
             guard write(records, to: casesURL) else { return false }
+            guard journalUpload(records[index]) else { return false }
             if !matching.isEmpty {
                 _ = write(pending.filter { $0.deliveryId != record.deliveryId || $0.personId != record.personId }, to: observationsURL)
             }
@@ -120,10 +161,12 @@ final class DecisionPointStore {
     @discardableResult
     func recordResponse(personId: String, deliveryId: String, event: ManagerBenchEvent, at date: Date, messageId: String? = nil) -> Bool {
         queue.sync {
+            guard journalUpload(PendingDecisionObservation(personId: personId, deliveryId: deliveryId, messageId: messageId, event: event, observedAt: date)) else { return false }
             var records = loadCases()
             if let index = records.firstIndex(where: { $0.personId == personId && $0.deliveryId == deliveryId }) {
                 if records[index].containsInObservationWindow(date) {
                     records[index].observe(event, at: date)
+                    guard journalUpload(records[index]) else { return false }
                     return write(records, to: casesURL)
                 }
                 return persistOutsideWindow(.init(personId: personId, deliveryId: deliveryId, messageId: messageId, event: event, observedAt: date))
@@ -134,6 +177,7 @@ final class DecisionPointStore {
                 if pending[index].observedAt <= date { return true }
                 pending[index] = observation
             } else { pending.append(observation) }
+            guard journalUpload(observation) else { return false }
             return write(pending, to: observationsURL)
         }
     }
@@ -150,7 +194,20 @@ final class DecisionPointStore {
     private func persistOutsideWindow(_ observation: PendingDecisionObservation) -> Bool {
         var observations = load(PendingDecisionObservation.self, from: outsideWindowURL)
         if !observations.contains(observation) { observations.append(observation) }
+        guard journalUpload(observation) else { return false }
         return write(observations, to: outsideWindowURL)
+    }
+
+    private func journalUpload<T: Encodable>(_ record: T) -> Bool {
+        do {
+            let body = try ManagerBenchCase.encoder.encode(record)
+            var rows = load(Data.self, from: uploadJournalURL)
+            if !rows.contains(body) { rows.append(body) }
+            return write(rows, to: uploadJournalURL)
+        } catch {
+            logger.error("Unable to encode decision upload")
+            return false
+        }
     }
 
     private func loadCases() -> [ManagerBenchCase] { load(ManagerBenchCase.self, from: casesURL) }
@@ -229,7 +286,37 @@ final class DecisionPointRecorder {
     static let shared = DecisionPointRecorder()
     private let personIdKey = "com.anicca.decisionPersonId"
     private let outcomeWindowSec = 30 * 60
-    private init() {}
+    private init() {
+        Task {
+            while !Task.isCancelled {
+                await flush()
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
+            }
+        }
+    }
+    private var flushing = false
+
+    func flush() async {
+        guard !flushing else { return }
+        flushing = true
+        defer { flushing = false }
+        let store = DecisionPointStore.shared
+        let rows = await Task.detached { store.pendingUploads() }.value
+        for row in rows {
+            do {
+                var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("manager/decision-records"))
+                request.httpMethod = "POST"
+                request.httpBody = row.data
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                try await NetworkSessionManager.shared.setAuthHeaders(for: &request)
+                let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
+                guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+                      let ack = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      ack["accepted"] as? Bool == true, ack["record_id"] as? String == row.id else { return }
+                await Task.detached { store.acknowledgeUpload(row.id) }.value
+            } catch { return }
+        }
+    }
 
     var personId: String {
         if let existing = UserDefaults.standard.string(forKey: personIdKey) { return existing }
@@ -240,6 +327,7 @@ final class DecisionPointRecorder {
 
     @discardableResult
     func recordDecision(selection: PersonalizedNudgeSelector.Selection, syntheticUser: SyntheticUser, source: String) -> String {
+        defer { Task { await flush() } }
         let now = Date()
         let deliveryId = UUID().uuidString
         let snapshot = syntheticUser.answerSnapshot
@@ -248,6 +336,7 @@ final class DecisionPointRecorder {
         let calendar = Calendar.current
         let weekday = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][calendar.component(.weekday, from: now) - 1]
         let record = ManagerBenchCase(
+            backend: "local_rule", fallback: true, candidateIds: selection.candidateIDs, selectionReason: selection.reason,
             personId: personId, deliveryId: deliveryId, decisionPointAt: now, source: source, outcomeWindowSec: outcomeWindowSec,
             situation: .init(answerSnapshot: snapshot.values, answerVersion: snapshot.version,
                              scheduledTimeBand: PersonalizedNudgeSelector.TimeBand.band(forHour: calendar.component(.hour, from: now)).rawValue,
@@ -269,6 +358,7 @@ final class DecisionPointRecorder {
     }
 
     func recordResponse(deliveryId: String, event: ManagerBenchEvent, at date: Date = Date(), messageId: String? = nil) {
+        defer { Task { await flush() } }
         ManagerInterventionService.shared.observe(deliveryId: deliveryId, event: event, at: date)
         guard DecisionPointStore.shared.recordResponse(personId: personId, deliveryId: deliveryId, event: event, at: date, messageId: messageId) else { return }
         let recordedMessageId = DecisionPointStore.shared.allCases().first { $0.personId == personId && $0.deliveryId == deliveryId }?.stimulus.messageId ?? messageId
@@ -281,6 +371,7 @@ final class DecisionPointRecorder {
     }
 
     func recordAppOpened(at date: Date = Date()) {
+        Task { await flush() }
         for row in DecisionPointStore.shared.allCases() where row.personId == personId &&
             row.decisionPointAt <= date && date <= row.decisionPointAt.addingTimeInterval(TimeInterval(row.outcomeWindowSec)) {
             recordResponse(deliveryId: row.deliveryId, event: .appOpened, at: date)

@@ -379,3 +379,4 @@
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
 
 - 2026-11-17 Codex: batch 1/6 Manager /manager mount completed locally; evidence in models/manager/product/evidence/REPORT.md; no push/deploy.
+- 2026-11-17 / Codex / G6 upload: durable journal and replay-safe ingest; 2 tests PASS. Evidence: docs/evidence/decision-log-upload-2026-11-17.md. Swift/Xcode unavailable; native validation pending. Commit only, no push.
