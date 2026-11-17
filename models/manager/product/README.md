@@ -15,6 +15,21 @@ labelling. This is intentional: mounting does not promote the failed manager-v1
 candidate. Health is 200 with generation_available=false. Observations and deletion
 use authenticated pseudonymous ownership. No paid API or catalogue fallback.
 
+Model-generated mode (integrated 2026-11-17, branch codex/manager-integration-2026-11-17):
+set MANAGER_LLM_BASE_URL (any OpenAI-compatible chat base, e.g.
+https://api.openai.com/v1) and MANAGER_LLM_MODEL, plus MANAGER_LLM_API_KEY
+(or OPENAI_API_KEY) when the endpoint needs one. Decisions are then generated
+per person at decision time by that LLM (ChatLLMGenerator in interventions.py):
+the person's context and synthetic-user push_state go in, a validated candidate
+distribution comes out, and the chosen word is what gets delivered. Health then
+reports generation_available=true and the generator model name; every decision
+record also carries generator_model for provenance. Optionally set
+MANAGER_SENDER_TOKEN to enable the sender-only /manager/push-decisions batch
+route used by the APNs sender patch. A free keyless compatible endpoint works
+for local verification; production should use the already-paid OpenAI key that
+the proxy's LLM nudges already use. There is still no catalogue fallback: if
+generation fails or returns invalid candidates, nothing is sent.
+
 The Express mount uses existing requireAuth, also requiring unexpired JWTs. Incoming
 subject headers are discarded; only the verified account subject is forwarded.
 Missing configuration, timeout, invalid upstream JSON and redirects fail closed.

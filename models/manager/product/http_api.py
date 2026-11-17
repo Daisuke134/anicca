@@ -87,8 +87,13 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes, authent
     return api
 
 
-def create_app(path, pseudonym_key, service_token):
-    """Private product service. Only the authenticated proxy supplies subjects."""
+def create_app(path, pseudonym_key, service_token, generator=None, sender_token=None):
+    """Private product service. Only the authenticated proxy supplies subjects.
+
+    With a generator configured, decisions are generated per person at
+    decision time by that LLM engine. Without one, the service stays in
+    the honest prior mode: decisions fail closed with explicit labelling.
+    """
     from fastapi import FastAPI
     from models.manager.api.server import PRIOR_P_TREATED, PRIOR_P_CONTROL
     if not service_token:
@@ -100,6 +105,12 @@ def create_app(path, pseudonym_key, service_token):
             raise HTTPException(401, 'authentication required')
         return request.headers.get('x-manager-subject')
 
+    async def authenticate_sender(request):
+        if not sender_token:
+            return False
+        authorization = request.headers.get('authorization', '')
+        return hmac.compare_digest(authorization, 'Bearer ' + sender_token)
+
     def prior(context):
         raise HTTPException(503, detail={
             'backend': 'prior', 'error': 'text_generation_unavailable',
@@ -107,19 +118,32 @@ def create_app(path, pseudonym_key, service_token):
         })
 
     app = FastAPI()
-    app.include_router(router(InterventionStore(path, prior), authenticate, pseudonym_key))
+    app.include_router(router(InterventionStore(path, generator or prior),
+                              authenticate, pseudonym_key,
+                              authenticate_sender=authenticate_sender if sender_token else None))
 
     @app.get('/manager/health')
     async def health(request: Request):
         if not await authenticate(request):
             raise HTTPException(401, 'authentication required')
-        return {'status': 'ok', 'default_backend': 'prior', 'generation_available': False}
+        if generator is None:
+            return {'status': 'ok', 'default_backend': 'prior', 'generation_available': False}
+        return {'status': 'ok', 'default_backend': 'manager-v1', 'generation_available': True,
+                'generator_model': getattr(generator, 'model', 'manager-v1')}
 
     return app
 
 
 def app_from_env():
     import os
+    generator = None
+    if os.environ.get('MANAGER_LLM_BASE_URL') and os.environ.get('MANAGER_LLM_MODEL'):
+        from .interventions import ChatLLMGenerator
+        generator = ChatLLMGenerator(
+            os.environ['MANAGER_LLM_BASE_URL'], os.environ['MANAGER_LLM_MODEL'],
+            api_key=os.environ.get('MANAGER_LLM_API_KEY') or os.environ.get('OPENAI_API_KEY'))
     return create_app(os.environ['MANAGER_STORE_PATH'],
                       os.environ['MANAGER_PSEUDONYM_KEY'].encode(),
-                      os.environ['MANAGER_SERVICE_TOKEN'])
+                      os.environ['MANAGER_SERVICE_TOKEN'],
+                      generator=generator,
+                      sender_token=os.environ.get('MANAGER_SENDER_TOKEN'))
