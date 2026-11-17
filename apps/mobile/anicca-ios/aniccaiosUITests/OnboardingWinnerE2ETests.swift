@@ -73,8 +73,15 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("onboarding-notifications-skip")
         // All three plans wait: the cards render staggered as products
         // resolve, and an instant .exists check raced the Lifetime card
-        // in run 43974753572 (failure at the lifetime assertion).
-        XCTAssertTrue(app.buttons["paywall-plan-annual"].waitForExistence(timeout: 30))
+        // in run 43974753572 (failure at the lifetime assertion). The
+        // annual wait also gates the flow's offerings load before the
+        // paywall, and that load can stall on the Intel runner: in run
+        // 43988380826 the loading spinner was still up after 45s+ and
+        // the 30s wait expired with no plan rendered (journey code
+        // unchanged from the passing run 43980794304). Annual therefore
+        // waits 120s; once products resolve, the other cards follow
+        // within the stagger the 30s waits already cover.
+        XCTAssertTrue(app.buttons["paywall-plan-annual"].waitForExistence(timeout: 120))
         XCTAssertTrue(app.buttons["paywall-plan-weekly"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.buttons["paywall-plan-lifetime"].waitForExistence(timeout: 30))
         XCTAssertFalse(app.buttons["paywall-plan-monthly"].exists)
