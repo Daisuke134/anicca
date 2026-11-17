@@ -1,0 +1,44 @@
+{
+  "app": "Anicca iOS \u2014 Q5 SN code-side state, 2026-11-16; external dashboard/relay unverified",
+  "client_honesty": {
+    "access_follows_live_entitlement": true,
+    "offline_cache_bounded": true,
+    "verification_mode_enforced_or_gap_recorded": true
+  },
+  "coverage": {
+    "price_and_offer_changes_handled": false,
+    "refund_and_revoke_remove_access": true,
+    "renew_expire_billing_grace_handled": true,
+    "test_notification_verified_end_to_end": false
+  },
+  "delivery": {
+    "ack_only_after_durable_persist": false,
+    "event_id_dedup_idempotent": false,
+    "missed_recovered_via_history_or_reconciliation": false,
+    "out_of_order_safe_via_authoritative_reread": true
+  },
+  "inventory": {
+    "asc_or_dashboard_state_evidenced": false,
+    "relay_to_own_backend_evidenced": false,
+    "sandbox_and_production_both_covered": false,
+    "server_truth_path_decided": true
+  },
+  "measurement": {
+    "client_server_divergence_measured": false,
+    "reconciliation_scheduled": false,
+    "server_events_logged_with_ids": false
+  },
+  "verification": {
+    "environment_checked": false,
+    "nested_transaction_and_renewal_verified": false,
+    "no_decode_only_path_in_production": true,
+    "signatures_verified_before_trust": false
+  },
+  "evidence_notes": {
+    "scope": "Source inspection and static wiring tests only, not provider readback or native execution.",
+    "offline_cache_bounded": "72-hour requestDate staleness flag + fetchCurrent on launch/foreground; flags stale data without revoking or extending access. Unknown timestamp is stale. No verification-success claim.",
+    "client_only_passes": "Authoritative reread, lifecycle core and refund/revoke retain baseline client-observation passes; they do not prove any server handler.",
+    "external_unknowns": "ASC prod/sandbox URLs, RevenueCat notification/webhook settings, relay, environment and signature verification remain false/unverified.",
+    "measurement": "Local request-date/staleness diagnostic only; no event ledger, scheduled reconciliation or divergence rate."
+  }
+}

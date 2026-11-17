@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F61A00000000000000000001 /* RiveRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = F61A00000000000000000002 /* RiveRuntime */; };
 		E54CE0022F14A00100000002 /* ManagerBenchCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54CE0012F14A00100000001 /* ManagerBenchCaseTests.swift */; };
 		E44CE0022F14A00100000002 /* SyntheticUserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44CE0012F14A00100000001 /* SyntheticUserTests.swift */; };
 		E34CE0022F14A00100000002 /* OnboardingV2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E34CE0012F14A00100000001 /* OnboardingV2Tests.swift */; };
@@ -185,6 +186,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F61A00000000000000000001 /* RiveRuntime in Frameworks */,
 				A0714DDC2FC1D35400D7F9C7 /* Singular in Frameworks */,
 				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
 				84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */,
@@ -370,6 +372,7 @@
 			);
 			name = aniccaios;
 			packageProductDependencies = (
+				F61A00000000000000000002 /* RiveRuntime */,
 				840BA3A92EC772EA005CDB8D /* RevenueCat */,
 				840BA3AB2EC772EA005CDB8D /* RevenueCatUI */,
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
@@ -455,6 +458,7 @@
 			mainGroup = 8471AE722EB783E1002CECAA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				F61A00000000000000000003 /* XCRemoteSwiftPackageReference "rive-ios" */,
 				840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */,
 				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
@@ -1551,6 +1555,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		F61A00000000000000000003 /* XCRemoteSwiftPackageReference "rive-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/rive-app/rive-ios";
+			requirement = {
+				kind = exactVersion;
+				version = 6.12.2;
+			};
+		};
 		840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
@@ -1594,6 +1606,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F61A00000000000000000002 /* RiveRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F61A00000000000000000003 /* XCRemoteSwiftPackageReference "rive-ios" */;
+			productName = RiveRuntime;
+		};
 		840BA3A92EC772EA005CDB8D /* RevenueCat */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */;

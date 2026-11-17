@@ -11,6 +11,23 @@ final class SubscriptionManager: NSObject {
     private var offeringsRefreshGeneration = 0
     private(set) var isConfigured = false
 
+    static let entitlementStalenessLimit: TimeInterval = 72 * 60 * 60
+    /// Server request date of the last observed CustomerInfo, NOT proof of
+    /// cryptographic verification. Replaying the SDK cache cannot renew it.
+    /// Unknown after launch until CustomerInfo arrives; intentionally not persisted.
+    private(set) var lastCustomerInfoRequestAt: Date?
+
+    var isEntitlementStale: Bool {
+        guard let lastCustomerInfoRequestAt else { return true }
+        let age = Date().timeIntervalSince(lastCustomerInfoRequestAt)
+        return age < 0 || age >= Self.entitlementStalenessLimit
+    }
+
+    private func recordCustomerInfoFreshness(_ info: CustomerInfo) {
+        lastCustomerInfoRequestAt = info.requestDate
+        print("[SubscriptionManager] customer_info_request_at=\(info.requestDate.timeIntervalSince1970) entitlement_stale=\(isEntitlementStale)")
+    }
+
     private override init() {
         super.init()
     }
@@ -27,7 +44,9 @@ final class SubscriptionManager: NSObject {
         let apiKey = AppConfig.revenueCatAPIKey
         
         // V2/StoreKit 2対応のシンプル構成
-        // entitlementVerificationMode: .informational は推奨設定（検証結果を情報として提供）
+        // .informational surfaces verification failure as information; it does not block access.
+        // This is a deliberate tradeoff, not enforcement: access still follows CustomerInfo.
+        // See docs/gates/server-notifications-decision-2026-11-16.md.
         // 言語設定は自動検出されるため明示的な設定は不要
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
@@ -55,6 +74,7 @@ final class SubscriptionManager: NSObject {
         Task {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { _ = await self.refreshOfferings() }
+                group.addTask { _ = await self.refreshCustomerInfo() }
                 group.addTask { await self.listenCustomerInfo() }
             }
         }
@@ -63,6 +83,7 @@ final class SubscriptionManager: NSObject {
     private func listenCustomerInfo() async {
         for await info in Purchases.shared.customerInfoStream {
             await MainActor.run {
+                self.recordCustomerInfoFreshness(info)
                 var subscription = SubscriptionInfo(info: info)
                 
                 // 重要: RevenueCatの情報を優先して即座に更新
@@ -204,6 +225,7 @@ final class SubscriptionManager: NSObject {
         guard isConfigured else { return nil }
         do {
             let customerInfo = try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)
+            recordCustomerInfoFreshness(customerInfo)
             let subscription = SubscriptionInfo(info: customerInfo)
             AppState.shared.updateSubscriptionInfo(subscription)
             return subscription.isEntitled
@@ -267,6 +289,7 @@ extension SubscriptionManager: PurchasesDelegate {
         print("[RevenueCat] Delegate received update. Active entitlements: \(customerInfo.entitlements.active.keys)")
         
         Task { @MainActor in
+            recordCustomerInfoFreshness(customerInfo)
             let subscription = SubscriptionInfo(info: customerInfo)
             
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
@@ -285,6 +308,7 @@ extension SubscriptionManager: PurchasesDelegate {
         purchase { (transaction, info, error, cancelled) in
             if let info = info {
                 Task { @MainActor in
+                    self.recordCustomerInfoFreshness(info)
                     let sub = SubscriptionInfo(info: info)
                     AppState.shared.updateSubscriptionInfo(sub)
                 }
