@@ -43,7 +43,11 @@ final class OnboardingWinnerTests: XCTestCase {
         XCTAssertFalse(distribution.isEmpty)
         XCTAssertEqual(distribution.reduce(0) { $0 + $1.probability }, 1, accuracy: 0.000001)
         for candidate in distribution {
-            XCTAssertEqual(AdaptiveAffirmationCatalog.traits(for: candidate.quote)?.tone, "gentle")
+            // Heavy mood caps intensity to gentle but does not override the
+            // tone the person chose (winner spec 2026-11-16 §6.1 row 6:
+            // tone is an initial value biased at presentation, rule 3).
+            XCTAssertEqual(AdaptiveAffirmationCatalog.traits(for: candidate.quote)?.tone, "direct")
+            XCTAssertEqual(AdaptiveAffirmationCatalog.traits(for: candidate.quote)?.intensity, "gentle")
         }
         let selection = OnboardingManagerPrior.select(user: user, pool: pool, band: .day, random: { 0 })!
         XCTAssertEqual(selection.candidateIDs, distribution.map { $0.quote.id })
