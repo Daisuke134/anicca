@@ -106,8 +106,8 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         // is really gone), swap the launch arguments to recording mode,
         // and relaunch inside the same test. Onboarding is already
         // complete, so the relaunch lands directly on the living home;
-        // with -aniccaRecordingMode the deck uses the production 30s interval.
-        // The 75s dwell captures two full 30s dwells, each ending in the
+        // with -aniccaRecordingMode the deck uses the production 29s interval.
+        // The 75s dwell captures two full 29s dwells, each ending in the
         // 0.8s cross-fade, in the recorded video. Labels are attached as
         // evidence only — the frame-level check happens on the video itself.
         for _ in 0..<5 where app.state != .notRunning {
