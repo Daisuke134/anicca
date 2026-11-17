@@ -103,8 +103,14 @@ enum PersonalizedNudgeSelector {
         guard profile.adaptiveAnswers != nil else { return false }
         if PersonalizationRules.intensity(profile: profile) == "gentle", traits.intensity != "gentle" { return false }
         if traits.fearBased { return false }
-        let heavy = !Set(profile.answers.ids(for: .moodBaseline)).isDisjoint(with: ["heavy", "very_heavy"])
-        let tone = heavy ? "gentle" : profile.answers.ids(for: .tone).first
+        // Heavy mood caps intensity to gentle (enforced above via
+        // PersonalizationRules.intensity) and pre-selects gentle on the
+        // tone question (AdaptiveQuestionStepView), but the tone the
+        // person actually chose still governs eligibility: the winner
+        // spec (2026-11-16, §6.1 row 6 and rule 3) defines the heavy-mood
+        // tone rule as an initial value / presentation bias, not a
+        // selection-time override.
+        let tone = profile.answers.ids(for: .tone).first
         if let tone, traits.tone != tone { return false }
         let contexts = Set(profile.answers.ids(for: .lifeContext))
         if !Set(traits.contexts).isSubset(of: contexts) { return false }

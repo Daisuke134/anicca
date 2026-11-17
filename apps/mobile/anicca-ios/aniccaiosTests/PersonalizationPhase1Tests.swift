@@ -159,17 +159,19 @@ final class PersonalizationPhase1Tests: XCTestCase {
     func test_initialJourney_includesPainPointsAndFrequencyBeforePreview() {
         XCTAssertEqual(
             OnboardingStep.initialJourney,
-            [.welcome, .goal, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq, .beliefThemes, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours, .planReveal, .nudgeTimes, .notifications]
+            [.welcome, .goal, .focusCategories, .name, .birthContext, .moodBaseline, .painPoints, .struggleFreq, .beliefThemes, .microPreview, .tone, .lifeContext, .routineAnchors, .priorAttempts, .startReason, .quietHours, .themeChoice, .iconChoice, .widgetPreview, .planReveal, .nudgeTimes, .notifications, .paywall]
         )
         XCTAssertEqual(OnboardingStep.welcome.nextInitialStep, .goal)
-        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .name)
+        XCTAssertEqual(OnboardingStep.goal.nextInitialStep, .focusCategories)
+        XCTAssertEqual(OnboardingStep.focusCategories.nextInitialStep, .name)
         XCTAssertEqual(OnboardingStep.name.nextInitialStep, .birthContext)
         XCTAssertEqual(OnboardingStep.name.resumableInitialStep, .name)
         XCTAssertEqual(OnboardingStep.painPoints.nextInitialStep, .struggleFreq)
         XCTAssertEqual(OnboardingStep.struggleFreq.nextInitialStep, .beliefThemes)
         XCTAssertEqual(OnboardingStep.planReveal.nextInitialStep, .nudgeTimes)
         XCTAssertEqual(OnboardingStep.nudgeTimes.nextInitialStep, .notifications)
-        XCTAssertNil(OnboardingStep.notifications.nextInitialStep)
+        XCTAssertEqual(OnboardingStep.notifications.nextInitialStep, .paywall)
+        XCTAssertNil(OnboardingStep.paywall.nextInitialStep)
     }
 }
 
@@ -213,11 +215,13 @@ extension PersonalizationPhase1Tests {
         XCTAssertEqual(answers.ids(for: .birthContext), [])
     }
 
-    func test_adaptiveModules_followPresentationOrderAndLimitToTwo() {
+    func test_adaptiveModules_followSelectionOrderAndLimitToTwo() {
+        // Winner spec 2026-11-16 rule 1: deep-dive modules follow the order
+        // the pain points were selected, capped at two modules.
         XCTAssertEqual(OnboardingStep.deepDiveSteps(painPointIds: ["sleep", "anxiety"]),
-                       [.anxietyTarget, .sleepReason, .bedtime, .wakeTime])
+                       [.sleepReason, .bedtime, .wakeTime, .anxietyTarget])
         XCTAssertEqual(OnboardingStep.deepDiveSteps(painPointIds: ["sleep", "procrastination", "self_doubt", "anxiety", "stress"]),
-                       [.stressTrigger, .anxietyTarget])
+                       [.sleepReason, .bedtime, .wakeTime, .avoidanceTask])
         XCTAssertEqual(OnboardingStep.deepDiveSteps(painPointIds: ["sleep", "sleep", "unknown"]),
                        [.sleepReason, .bedtime, .wakeTime])
         XCTAssertTrue(OnboardingStep.deepDiveSteps(painPointIds: []).isEmpty)
@@ -226,7 +230,7 @@ extension PersonalizationPhase1Tests {
     func test_adaptiveJourney_insertsOnlySelectedModulesImmediatelyAfterPain() {
         let journey = OnboardingStep.journey(painPointIds: ["sleep", "anxiety"])
         let pain = journey.firstIndex(of: .painPoints)!
-        XCTAssertEqual(Array(journey[(pain + 1)...(pain + 4)]), [.anxietyTarget, .sleepReason, .bedtime, .wakeTime])
+        XCTAssertEqual(Array(journey[(pain + 1)...(pain + 4)]), [.sleepReason, .bedtime, .wakeTime, .anxietyTarget])
         XCTAssertEqual(journey[pain + 5], .struggleFreq)
         XCTAssertFalse(journey.contains(.stressTrigger))
         XCTAssertFalse(journey.contains(.avoidanceTask))
@@ -414,9 +418,9 @@ extension PersonalizationPhase1Tests {
     @MainActor
     func test_progressIncludesOnlyTheActiveQuestions() {
         let journey = OnboardingStep.journey(painPointIds: ["sleep", "anxiety"], priorAttempts: ["meditation"])
-        XCTAssertEqual(journey.count, 22)
-        XCTAssertEqual(OnboardingProgressBar.progress(for: .anxietyTarget, journey: journey), 7.0 / 22, accuracy: 0.001)
-        XCTAssertEqual(OnboardingProgressBar.progress(for: .notifications, journey: journey), 1)
+        XCTAssertEqual(journey.count, 28)
+        XCTAssertEqual(OnboardingProgressBar.progress(for: .anxietyTarget, journey: journey), 11.0 / 28, accuracy: 0.001)
+        XCTAssertEqual(OnboardingProgressBar.progress(for: .notifications, journey: journey), 27.0 / 28, accuracy: 0.001)
     }
 }
 
