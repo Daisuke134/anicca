@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct StrugglesStepView: View {
     let next: () -> Void
@@ -65,6 +66,8 @@ struct StrugglesStepView: View {
     private func listRow(option: (id: String, labelKey: String)) -> some View {
         let isSelected = selected.contains(option.id)
         return Button {
+            // Selection feedback while a value changes (Apple HIG, Playing haptics).
+            UISelectionFeedbackGenerator().selectionChanged()
             if isSelected {
                 selected.removeAll { $0 == option.id }
             } else {

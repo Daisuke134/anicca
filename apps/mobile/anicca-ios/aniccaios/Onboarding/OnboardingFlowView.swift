@@ -8,6 +8,7 @@ import StoreKit
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var step: OnboardingStep = .welcome
     @State private var lastTrackedStep: OnboardingStep?
     @State private var didTrackOnboardingStart = false
@@ -29,10 +30,13 @@ struct OnboardingFlowView: View {
                 Group {
                     onboardingContent(for: step)
                 }
+                .id(step)
+                .transition(stepTransition)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
         }
+        .animation(stepAnimation, value: step)
         .onAppear {
             if startedAt == 0 { startedAt = Date().timeIntervalSince1970 }
             if appState.onboardingQuestionsCompleted {
@@ -68,6 +72,21 @@ struct OnboardingFlowView: View {
             }
         }
 
+    }
+
+    /// Step changes are on-screen movement, so they take the shared
+    /// ease-in-out motion token; under Reduce Motion they collapse to a
+    /// cross-fade (improve-animations AUDIT §2/§6; apple-design §14).
+    private var stepAnimation: Animation {
+        reduceMotion ? .easeInOut(duration: 0.2) : AppMotion.move
+    }
+
+    private var stepTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity))
     }
 
     private var journey: [OnboardingStep] {

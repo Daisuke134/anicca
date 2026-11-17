@@ -52,8 +52,14 @@ struct LivingRiveBackground: View {
         Group {
             if let viewModel = animation.viewModel {
                 viewModel.view()
-                    // 0.3 was imperceptible in the 2026-11-17 five-senses demo review.
-                    .opacity(0.55)
+                    // No runtime opacity override: the .riv is the designed
+                    // artifact — art, animation, and intensity are authored
+                    // into the file and its state machine, and the runtime
+                    // renders it as authored (Rive runtime documentation).
+                    // The earlier 0.3 / 0.55 overrides were unsourced
+                    // runtime guesses; if the artwork's intensity is ever
+                    // wrong, the fix belongs in the asset, not in a magic
+                    // number here.
                     .onAppear { updatePlayback() }
                     .onDisappear { viewModel.pause() }
                     .onChange(of: canAnimate) { _ in updatePlayback() }

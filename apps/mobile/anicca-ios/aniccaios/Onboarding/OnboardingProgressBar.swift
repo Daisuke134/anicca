@@ -18,7 +18,7 @@ struct OnboardingProgressBar: View {
                         width: geometry.size.width * Self.progress(for: step, journey: journey),
                         height: 4
                     )
-                    .animation(.easeInOut(duration: 0.4), value: step)
+                    .animation(AppMotion.progress, value: step)
             }
         }
         .frame(height: 4)

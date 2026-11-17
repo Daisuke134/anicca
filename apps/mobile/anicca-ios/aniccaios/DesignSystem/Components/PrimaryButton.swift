@@ -49,6 +49,7 @@ struct PrimaryButton: View {
         )
         .opacity(isEnabled ? 1 : 0.6)
         .disabled(!isEnabled || isLoading)
+        .buttonStyle(PressScaleButtonStyle())
     }
 
     private var backgroundColor: Color {

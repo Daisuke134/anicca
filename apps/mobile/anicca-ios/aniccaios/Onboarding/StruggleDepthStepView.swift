@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct StruggleDepthStepView: View {
     let next: () -> Void
@@ -23,6 +24,8 @@ struct StruggleDepthStepView: View {
             VStack(spacing: 12) {
                 ForEach(options, id: \.key) { option in
                     Button {
+                        // Selection feedback while a value changes (Apple HIG, Playing haptics).
+                        UISelectionFeedbackGenerator().selectionChanged()
                         selected = option.key
                     } label: {
                         HStack(spacing: 14) {

@@ -96,6 +96,7 @@ struct NotificationPermissionStepView: View {
                         .font(.subheadline).foregroundStyle(AppTheme.Colors.accent)
                         .frame(minHeight: 44)
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .disabled(isRequesting)
                 .accessibilityIdentifier("onboarding-notifications-skip")
             }

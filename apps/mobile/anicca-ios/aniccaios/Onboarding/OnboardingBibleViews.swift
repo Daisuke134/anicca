@@ -105,6 +105,7 @@ struct PaywallFlowContainer: View {
             switch step {
             case .primer:
                 PaywallPrimerStepView(next: { step = .planSelection })
+                    .transition(.opacity)
             case .planSelection:
                 PaywallVariantBView(
                     variant: "b",
@@ -112,6 +113,7 @@ struct PaywallFlowContainer: View {
                     onDismiss: onDismiss,
                     flowID: flowID
                 )
+                .transition(.opacity)
             }
 
             Group {
@@ -122,12 +124,16 @@ struct PaywallFlowContainer: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .accessibilityIdentifier("paywall-close-button")
                 .accessibilityLabel(Text(String(localized: "common_close")))
                 .padding(.trailing, 12)
                 .padding(.top, 8)
             }
         }
+        // Primer -> plan selection is on-screen movement: cross-fade with
+        // the shared motion token instead of teleporting (AUDIT §8).
+        .animation(AppMotion.move, value: step)
         .analyticsScreen(.paywall, flowID: flowID)
     }
 }

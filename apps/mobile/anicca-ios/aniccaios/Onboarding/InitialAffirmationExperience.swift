@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum InitialExperienceStyle {
     static var accent: Color { AppTheme.Colors.accent }
@@ -71,6 +72,8 @@ struct AffirmationGoalStepView: View {
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(options, id: \.0) { option in
                 Button {
+                    // Selection feedback while a value changes (Apple HIG, Playing haptics).
+                    UISelectionFeedbackGenerator().selectionChanged()
                     selection = option.0
                 } label: {
                     HStack(spacing: 14) {
@@ -180,6 +183,9 @@ struct FirstAffirmationStepView: View {
             Button {
                 guard let quote = selection?.quote else { return }
                 let liked = likedStore.toggle(quote, themeID: ThemeStore().selected.rawValue)
+                // Same impact feedback as the home card's like action
+                // (QuoteCardView), so the save moment feels identical.
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if liked, let deliveryId {
                     DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .saved)
                 }
@@ -191,7 +197,7 @@ struct FirstAffirmationStepView: View {
                     .background(AppTheme.Colors.cardBackground.opacity(0.8))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressScaleButtonStyle())
             .disabled(!revealComplete)
             .accessibilityIdentifier("onboarding-first-save")
             Spacer(minLength: 16)
@@ -376,7 +382,7 @@ struct ReminderScheduleStepView: View {
                     .font(.headline).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
                     ForEach(1...PersonalizationRules.freeFrequencyCap, id: \.self) { count in
-                        Button { frequency = count } label: {
+                        Button { UISelectionFeedbackGenerator().selectionChanged(); frequency = count } label: {
                             HStack(spacing: 8) {
                                 Text("\(count)").font(.headline)
                                 Image(systemName: frequency == count ? "checkmark.circle.fill" : "circle")
@@ -408,6 +414,8 @@ struct ReminderScheduleStepView: View {
     }
 
     private func toggle(_ slot: NudgeSlot) {
+        // Selection feedback while a value changes (Apple HIG, Playing haptics).
+        UISelectionFeedbackGenerator().selectionChanged()
         if selectedSlots.contains(slot) {
             selectedSlots.remove(slot)
         } else if selectedSlots.count < PersonalizationRules.freeFrequencyCap {
