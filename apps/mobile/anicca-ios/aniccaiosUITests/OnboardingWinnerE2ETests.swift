@@ -106,10 +106,10 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         // is really gone), swap the launch arguments to recording mode,
         // and relaunch inside the same test. Onboarding is already
         // complete, so the relaunch lands directly on the living home;
-        // with -aniccaRecordingMode the deck uses the production 20s interval.
-        // The 45s dwell captures two full word changes with cross-fades
-        // in the recorded video. Labels are attached as evidence only —
-        // the frame-level check happens on the video itself.
+        // with -aniccaRecordingMode the deck uses the production 30s interval.
+        // The 75s dwell captures two full 30s dwells, each ending in the
+        // 0.8s cross-fade, in the recorded video. Labels are attached as
+        // evidence only — the frame-level check happens on the video itself.
         for _ in 0..<5 where app.state != .notRunning {
             app.terminate()
             Thread.sleep(forTimeInterval: 2)
@@ -129,8 +129,8 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         let arrival = XCTAttachment(string: "home_quote_at_arrival=\(quote.label)")
         arrival.lifetime = .keepAlways
         add(arrival)
-        Thread.sleep(forTimeInterval: 45)
-        let afterDwell = XCTAttachment(string: "home_quote_after_45s=\(app.staticTexts["quote-text"].label)")
+        Thread.sleep(forTimeInterval: 75)
+        let afterDwell = XCTAttachment(string: "home_quote_after_75s=\(app.staticTexts["quote-text"].label)")
         afterDwell.lifetime = .keepAlways
         add(afterDwell)
         let homeScreenshot = XCTAttachment(screenshot: app.screenshot())

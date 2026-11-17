@@ -513,10 +513,10 @@ extension PersonalizationPhase1Tests {
     func test_autoAdvance_requiresIdleActiveMultiCardAndNoSheet() {
         let t0 = Date(timeIntervalSince1970: 1_700_000_000)
         XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
-            now: t0.addingTimeInterval(19.9), lastInteractionAt: t0,
+            now: t0.addingTimeInterval(29.9), lastInteractionAt: t0,
             isSceneActive: true, cardCount: 3, anySheetPresented: false))
         XCTAssertTrue(HomeAutoAdvance.shouldAdvance(
-            now: t0.addingTimeInterval(20), lastInteractionAt: t0,
+            now: t0.addingTimeInterval(30), lastInteractionAt: t0,
             isSceneActive: true, cardCount: 3, anySheetPresented: false))
         XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
             now: t0.addingTimeInterval(60), lastInteractionAt: t0,
@@ -539,11 +539,11 @@ extension PersonalizationPhase1Tests {
         let t0 = Date(timeIntervalSince1970: 1_700_000_000)
         for isUITesting in [false, true] {
             XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
-                now: t0.addingTimeInterval(19.9), lastInteractionAt: t0,
+                now: t0.addingTimeInterval(29.9), lastInteractionAt: t0,
                 isSceneActive: true, cardCount: 3, anySheetPresented: false,
                 isUITesting: isUITesting, isRecordingMode: true))
             XCTAssertTrue(HomeAutoAdvance.shouldAdvance(
-                now: t0.addingTimeInterval(20), lastInteractionAt: t0,
+                now: t0.addingTimeInterval(30), lastInteractionAt: t0,
                 isSceneActive: true, cardCount: 3, anySheetPresented: false,
                 isUITesting: isUITesting, isRecordingMode: true))
         }
@@ -551,11 +551,11 @@ extension PersonalizationPhase1Tests {
 
     func test_autoAdvance_withoutRecordingPreservesProductionAndUITesting() {
         let t0 = Date(timeIntervalSince1970: 1_700_000_000)
-        for elapsed in [3.0, 19.9, 20.0, 60.0] {
+        for elapsed in [3.0, 29.9, 30.0, 60.0] {
             XCTAssertEqual(HomeAutoAdvance.shouldAdvance(
                 now: t0.addingTimeInterval(elapsed), lastInteractionAt: t0,
                 isSceneActive: true, cardCount: 3, anySheetPresented: false,
-                isUITesting: false, isRecordingMode: false), elapsed >= 20)
+                isUITesting: false, isRecordingMode: false), elapsed >= 30)
             XCTAssertFalse(HomeAutoAdvance.shouldAdvance(
                 now: t0.addingTimeInterval(elapsed), lastInteractionAt: t0,
                 isSceneActive: true, cardCount: 3, anySheetPresented: false,

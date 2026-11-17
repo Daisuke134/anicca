@@ -56,12 +56,13 @@ final class HomeDeckModel: ObservableObject {
 }
 
 /// Idle auto-advance for the living home. The user rejected the old 3s recording
-/// dwell on 2026-11-17 because it felt like flashcards. Production and recording
-/// now give each word 20s to be read fully and land. The interval remains an
+/// dwell on 2026-11-17 because it felt like flashcards, then judged the 20s
+/// dwell still too fast the same day and set 30s. Production and recording
+/// give each word 30s to be read fully and land. The interval remains an
 /// eval-tunable constant, not a design constant.
 enum HomeAutoAdvance {
-    static let interval: TimeInterval = 20
-    static let recordingInterval: TimeInterval = 20
+    static let interval: TimeInterval = 30
+    static let recordingInterval: TimeInterval = 30
 
     static var isRecordingMode: Bool {
         ProcessInfo.processInfo.arguments.contains("-aniccaRecordingMode")
