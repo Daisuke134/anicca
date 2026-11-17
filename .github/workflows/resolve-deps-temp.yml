@@ -1,0 +1,24 @@
+name: resolve-deps-temp
+on:
+  workflow_dispatch:
+jobs:
+  resolve:
+    name: Resolve Swift packages (temp)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate xcconfig files from examples
+        run: |
+          cp Configs/Production.xcconfig.example Configs/Production.xcconfig
+          cp Configs/Staging.xcconfig.example Configs/Staging.xcconfig
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios -clonedSourcePackagesDirPath .spm-cache
+      - name: Upload resolved Package.resolved
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-resolved-${{ github.sha }}
+          path: apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if-no-files-found: error
