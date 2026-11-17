@@ -5,7 +5,6 @@ account subject. No trusting a request-body person ID, no embedded app secret.
 """
 import hashlib
 import hmac
-import uuid
 from fastapi import APIRouter, HTTPException, Request
 from .interventions import InterventionStore
 
@@ -24,8 +23,8 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
     @api.post('/decisions')
     async def decide(request: Request):
         owner = await subject(request)
-        body = await request.json()
         try:
+            body = await request.json()
             # Sync model/database work must not block the gateway event loop.
             from starlette.concurrency import run_in_threadpool
             return await run_in_threadpool(store.decide, owner, body['delivery_id'], body['context'])
@@ -37,8 +36,8 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
     @api.post('/observations')
     async def observe(request: Request):
         owner = await subject(request)
-        body = await request.json()
         try:
+            body = await request.json()
             return store.observe(owner, body['delivery_id'], body['event'], body['observed_at'])
         except LookupError:
             raise HTTPException(409, 'sender assignment pending')
@@ -51,3 +50,41 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
         return {'deleted': True}
 
     return api
+
+
+def create_app(path, pseudonym_key, service_token):
+    """Private product service. Only the authenticated proxy supplies subjects."""
+    from fastapi import FastAPI
+    from models.manager.api.server import PRIOR_P_TREATED, PRIOR_P_CONTROL
+    if not service_token:
+        raise ValueError('service token required')
+
+    async def authenticate(request):
+        authorization = request.headers.get('authorization', '')
+        if not hmac.compare_digest(authorization, 'Bearer ' + service_token):
+            raise HTTPException(401, 'authentication required')
+        return request.headers.get('x-manager-subject')
+
+    def prior(context):
+        raise HTTPException(503, detail={
+            'backend': 'prior', 'error': 'text_generation_unavailable',
+            'p_visit_treated': PRIOR_P_TREATED, 'p_visit_control': PRIOR_P_CONTROL,
+        })
+
+    app = FastAPI()
+    app.include_router(router(InterventionStore(path, prior), authenticate, pseudonym_key))
+
+    @app.get('/manager/health')
+    async def health(request: Request):
+        if not await authenticate(request):
+            raise HTTPException(401, 'authentication required')
+        return {'status': 'ok', 'default_backend': 'prior', 'generation_available': False}
+
+    return app
+
+
+def app_from_env():
+    import os
+    return create_app(os.environ['MANAGER_STORE_PATH'],
+                      os.environ['MANAGER_PSEUDONYM_KEY'].encode(),
+                      os.environ['MANAGER_SERVICE_TOKEN'])
