@@ -1131,3 +1131,5 @@ e8c3a96f42f94f3a419fd9f343877338ecd6dbf9:docs/research/evidence/naive-live-20261
 
 # Adjudicated Cursor Agent generic-api-key test fixture commit on 2026-11-11
 3ac666de5099d1dc1992b323d139cab4af8f5ed2:hybrid-affirmations/src/logic.mjs:generic-api-key:1
+# UserDefaults storage-key name (SubscriptionManager.pendingKey, used only via UserDefaults forKey:), not a credential. Adjudicated 2026-11-17 during the 1.10.0 merge gate.
+51ff5569763b5c5187a214fdb34741b8710834f3:apps/mobile/anicca-ios/aniccaios/Services/SubscriptionManager.swift:generic-api-key:23
