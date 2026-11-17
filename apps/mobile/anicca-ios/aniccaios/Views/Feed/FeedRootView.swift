@@ -462,7 +462,9 @@ struct FeedRootView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(minHeight: 44)
-        }.accessibilityIdentifier(id)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityIdentifier(id)
     }
 
     private var billingIssueBanner: some View {
@@ -498,7 +500,7 @@ struct FeedRootView: View {
             )
             .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
         .accessibilityIdentifier("billing-issue-banner")
     }
 
@@ -520,6 +522,7 @@ struct FeedRootView: View {
                 .contentShape(Circle())
 
         }
+        .buttonStyle(PressScaleButtonStyle())
         .accessibilityIdentifier(identifier)
     }
 }

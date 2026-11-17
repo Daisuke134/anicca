@@ -224,6 +224,8 @@ struct ThemePickerView: View {
                 ForEach(orderedThemes) { theme in
                     Button {
                         if theme.isAvailable(isEntitled: appState.subscriptionInfo.isEntitled) {
+                            // Selection feedback while a value changes (Apple HIG, Playing haptics).
+                            UISelectionFeedbackGenerator().selectionChanged()
                             themeStore.select(theme)
                             if !onboarding { dismiss() }
                         } else {
@@ -266,6 +268,9 @@ struct ThemePickerView: View {
                             RoundedRectangle(cornerRadius: 16)
                                 .strokeBorder(themeStore.selected == theme ? AppTheme.Colors.accent : .clear, lineWidth: 2)
                         }
+                        // The checkmark and stroke morph with the shared
+                        // selection token instead of cutting (AppMotion).
+                        .animation(AppMotion.selection, value: themeStore.selected)
                     }
                     .accessibilityIdentifier("theme-\(theme.rawValue)")
                     .accessibilityLabel(theme.displayName)

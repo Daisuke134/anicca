@@ -53,6 +53,7 @@ struct RetentionOfferSheet: View {
                         Button(String(localized: "paywall_b_retry")) {
                             Task { await loadOffer() }
                         }
+                        .buttonStyle(PressScaleButtonStyle())
                     } else {
                         ProgressView()
                     }

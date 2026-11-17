@@ -183,6 +183,9 @@ struct FirstAffirmationStepView: View {
             Button {
                 guard let quote = selection?.quote else { return }
                 let liked = likedStore.toggle(quote, themeID: ThemeStore().selected.rawValue)
+                // Same impact feedback as the home card's like action
+                // (QuoteCardView), so the save moment feels identical.
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if liked, let deliveryId {
                     DecisionPointRecorder.shared.recordResponse(deliveryId: deliveryId, event: .saved)
                 }
@@ -194,7 +197,7 @@ struct FirstAffirmationStepView: View {
                     .background(AppTheme.Colors.cardBackground.opacity(0.8))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressScaleButtonStyle())
             .disabled(!revealComplete)
             .accessibilityIdentifier("onboarding-first-save")
             Spacer(minLength: 16)

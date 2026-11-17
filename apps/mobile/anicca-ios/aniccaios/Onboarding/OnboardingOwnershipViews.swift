@@ -22,6 +22,7 @@ struct MicroPreviewStepView: View {
                 PrimaryButton(title: String(localized: "growth_keep_close"), isEnabled: quote != nil) { finish(saved: true) }
                     .accessibilityIdentifier("onboarding-micro-save")
                 Button(String(localized: "adaptive_skip")) { finish(saved: false) }
+                    .buttonStyle(PressScaleButtonStyle())
                     .accessibilityIdentifier("onboarding-micro-skip")
             }
         }
@@ -160,6 +161,7 @@ struct OnboardingWidgetStepView: View {
                 PrimaryButton(title: String(localized: "winner_widget_add")) { finish("interested") }
                     .accessibilityIdentifier("onboarding-widget-interested")
                 Button(String(localized: "winner_widget_later")) { finish("later") }
+                    .buttonStyle(PressScaleButtonStyle())
                     .accessibilityIdentifier("onboarding-widget-later")
             }
         }

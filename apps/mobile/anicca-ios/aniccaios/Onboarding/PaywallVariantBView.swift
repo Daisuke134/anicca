@@ -166,6 +166,7 @@ struct PaywallVariantBView: View {
                         trackOfferingLoadResult(loaded)
                     }
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .font(.headline)
             }
         }
@@ -190,6 +191,7 @@ struct PaywallVariantBView: View {
 
     private var restoreButton: some View {
         Button(String(localized: "paywall_plan_restore")) { restorePurchases() }
+            .buttonStyle(PressScaleButtonStyle())
             .frame(minHeight: 44)
             .disabled(isPurchasing)
             .accessibilityIdentifier("paywall-restore")
@@ -231,6 +233,7 @@ struct PaywallVariantBView: View {
                 .background(AppTheme.Colors.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 18))
             }
+            .buttonStyle(PressScaleButtonStyle())
             .disabled(selectedPackage == nil || isPurchasing)
             .accessibilityIdentifier("paywall-plan-cta")
         }
