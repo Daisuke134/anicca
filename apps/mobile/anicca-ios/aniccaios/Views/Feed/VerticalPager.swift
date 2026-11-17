@@ -61,7 +61,12 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
             let current = pvc.viewControllers?.first as? IndexedHosting
             guard current?.index != target else { return }
             let direction: UIPageViewController.NavigationDirection = (current?.index ?? 0) < target ? .forward : .reverse
-            pvc.setViewControllers([hosting(for: target)], direction: direction, animated: false)
+            // Cross-fades are the calm grammar for word changes and the Reduce Motion
+            // form: spatial motion collapses to cross-fades. Do not use an animated slide.
+            UIView.transition(with: pvc.view, duration: 0.8,
+                              options: [.transitionCrossDissolve, .curveEaseInOut, .allowAnimatedContent]) {
+                pvc.setViewControllers([self.hosting(for: target)], direction: direction, animated: false)
+            }
         }
 
         func pageViewController(_ pvc: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {

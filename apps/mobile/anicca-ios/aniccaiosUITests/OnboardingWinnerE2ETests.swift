@@ -106,9 +106,9 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         // is really gone), swap the launch arguments to recording mode,
         // and relaunch inside the same test. Onboarding is already
         // complete, so the relaunch lands directly on the living home;
-        // with -aniccaRecordingMode the deck auto-advances every 3s and
-        // the 15s dwell is what captures the words actually changing in
-        // the recorded video. Labels are attached as evidence only —
+        // with -aniccaRecordingMode the deck uses the production 20s interval.
+        // The 45s dwell captures two full word changes with cross-fades
+        // in the recorded video. Labels are attached as evidence only —
         // the frame-level check happens on the video itself.
         for _ in 0..<5 where app.state != .notRunning {
             app.terminate()
@@ -129,8 +129,8 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         let arrival = XCTAttachment(string: "home_quote_at_arrival=\(quote.label)")
         arrival.lifetime = .keepAlways
         add(arrival)
-        Thread.sleep(forTimeInterval: 15)
-        let afterDwell = XCTAttachment(string: "home_quote_after_15s=\(app.staticTexts["quote-text"].label)")
+        Thread.sleep(forTimeInterval: 45)
+        let afterDwell = XCTAttachment(string: "home_quote_after_45s=\(app.staticTexts["quote-text"].label)")
         afterDwell.lifetime = .keepAlways
         add(afterDwell)
         let homeScreenshot = XCTAttachment(screenshot: app.screenshot())

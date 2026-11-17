@@ -55,13 +55,13 @@ final class HomeDeckModel: ObservableObject {
     var candidateCount: Int = 1
 }
 
-/// Idle auto-advance for the living home. The interval is provisional: the
-/// living-home research (anicca-ops `files/home-living-ux-research-2026-11-15.md`)
-/// records that no source fixes the number, so it is an eval decision to
-/// make later, not a design constant.
+/// Idle auto-advance for the living home. The user rejected the old 3s recording
+/// dwell on 2026-11-17 because it felt like flashcards. Production and recording
+/// now give each word 20s to be read fully and land. The interval remains an
+/// eval-tunable constant, not a design constant.
 enum HomeAutoAdvance {
-    static let interval: TimeInterval = 8
-    static let recordingInterval: TimeInterval = 3
+    static let interval: TimeInterval = 20
+    static let recordingInterval: TimeInterval = 20
 
     static var isRecordingMode: Bool {
         ProcessInfo.processInfo.arguments.contains("-aniccaRecordingMode")

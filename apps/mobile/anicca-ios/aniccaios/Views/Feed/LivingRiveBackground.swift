@@ -52,7 +52,8 @@ struct LivingRiveBackground: View {
         Group {
             if let viewModel = animation.viewModel {
                 viewModel.view()
-                    .opacity(0.3)
+                    // 0.3 was imperceptible in the 2026-11-17 five-senses demo review.
+                    .opacity(0.55)
                     .onAppear { updatePlayback() }
                     .onDisappear { viewModel.pause() }
                     .onChange(of: canAnimate) { _ in updatePlayback() }
