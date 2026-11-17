@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from .interventions import InterventionStore
 
 
-def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
+def router(store: InterventionStore, authenticate, pseudonym_key: bytes, authenticate_sender=None):
     if len(pseudonym_key) < 32:
         raise ValueError('server pseudonym key must contain at least 32 bytes')
     api = APIRouter(prefix='/manager')
@@ -30,6 +30,30 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes):
             return await run_in_threadpool(store.decide, owner, body['delivery_id'], body['context'])
         except (ValueError, KeyError, TypeError):
             raise HTTPException(422, 'invalid decision or model output')
+        except PermissionError:
+            raise HTTPException(410, 'subject deleted')
+
+    @api.post('/push-decisions')
+    async def push_decisions(request: Request):
+        # Separate trusted service identity; app tokens cannot select other users.
+        if authenticate_sender is None or not await authenticate_sender(request):
+            raise HTTPException(401, 'sender authentication required')
+        try:
+            body = await request.json()
+            items = body['decisions']
+            if not isinstance(items, list) or not 1 <= len(items) <= 100:
+                raise ValueError('invalid batch')
+            from starlette.concurrency import run_in_threadpool
+            results = []
+            for item in items:
+                if not isinstance(item['subject'], str) or not item['subject']:
+                    raise ValueError('invalid subject')
+                owner = hmac.new(pseudonym_key, item['subject'].encode(), hashlib.sha256).hexdigest()
+                results.append(await run_in_threadpool(store.decide_push, owner,
+                    item['delivery_id'], item['context'], item['push_state']))
+            return {'decisions': results}
+        except (ValueError, KeyError, TypeError):
+            raise HTTPException(422, 'invalid push decision or model output')
         except PermissionError:
             raise HTTPException(410, 'subject deleted')
 

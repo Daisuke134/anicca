@@ -380,3 +380,4 @@
 
 - 2026-11-17 Codex: batch 1/6 Manager /manager mount completed locally; evidence in models/manager/product/evidence/REPORT.md; no push/deploy.
 - 2026-11-17 / Codex / G6 upload: durable journal and replay-safe ingest; 2 tests PASS. Evidence: docs/evidence/decision-log-upload-2026-11-17.md. Swift/Xcode unavailable; native validation pending. Commit only, no push.
+- 2026-11-17 Codex: R4/G1 Manager push decisions + apply-ready products sender patch; fixture two-user same-slot decisions differ, rerun duplicates=0; see team-outbox/codex/push-decider/REPORT.md. Local commit only; integration pending.
