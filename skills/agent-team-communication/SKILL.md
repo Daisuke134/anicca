@@ -60,6 +60,36 @@ Because all state is in one place, breakage is visible to everyone. That visibil
 
 This is what makes the system sustainable: failures are detected by the network itself, in minutes, and repaired by the network itself.
 
+### 5. Visualization: one generated board shows the whole team
+
+Monitoring that lives in someone's head is not monitoring. The team's state must be **rendered** — one board, generated mechanically from the repo's own files, that anyone (a teammate, a newly joined agent, the owner) can open and answer in ten seconds: *who is doing what, who talked to whom, what is unanswered, and where is work stuck.*
+
+Two layers, kept separate:
+
+- **Trace layer — what each run did.** An observability backend holds one trace per run: agent id, inputs/outputs, artifacts, verification scores. We use Langfuse (open source, self-hostable; the official `langfuse` skill covers instrumentation). A run with no trace cannot be verified, and unverified work does not count as done.
+- **Communication layer — who is working, talking, stuck.** A board **generated from the repo itself**, with no external service, because the repo is already the single source of truth. The generator reads only canonical files:
+  - `team/ACTIVITY.md` — last activity and current work per agent
+  - `team-outbox/` — handoff files; the filenames (`to-<agent>-<date>-<topic>.md`) *are* the communication graph: who sent what to whom, and when
+  - `team/inbox/<agent>.md` — a reply landing there is a response signal
+  - `team/traces/*.jsonl` — per-agent started/done/stalled/failed counts
+  - git history — commit times for the files above (artifacts, not claims)
+
+  It writes a Markdown board plus a JSON twin back into the repo (reference implementation: `scripts/build_team_board.py` → `team/TEAM-BOARD.md` + `team/team-board.json` in the Anicca ops repo).
+
+The board's shape copies what working "mission control" dashboards for agent fleets converged on — a summary row, per-agent status cards, a communication map, and stall alerts:
+
+- **Summary row first:** agents active now, agents silent past the stall threshold, unanswered delegations, today's trace and commit totals.
+- **One row per agent:** status (active ≤30 min / idle ≤3 h / silent >3 h), last-artifact time and age, today's activity count, sent/received counts, unanswered count, today's trace counts, and the agent's latest self-reported work line.
+- **Communication matrix:** sender → recipient counts over the last 7 days, from handoff filenames.
+- **Unanswered delegations, oldest first.** "Unanswered" is a mechanical signal, never a verdict: a delegation counts as answered when an `ack-*` file from the recipient, an update to the recipient's inbox file, or a recipient ACTIVITY entry lands after it. Whatever matches none of these is listed, so a teammate verifies and acts.
+
+Rules that make the board trustworthy:
+
+- **Generated, never hand-edited.** A board a human updates goes stale the day it is written — we know, because our earlier boards silently fossilized while the team believed them. The generator runs on the monitoring loop's cadence and commits its own output; the board's first line is its generation time.
+- **Every number names its source and its rule.** A metric whose method is not written on the board does not ship.
+- **Invisible work is a bug in the system, not in the agent.** If an agent's results are committed by someone else, that agent still owes its own ACTIVITY line — otherwise the board shows it as silent while it works (we measured exactly this failure). Fix the signal path, not the person.
+- **Off-the-shelf dashboards don't read your repo.** Fleet dashboards bundled with agent frameworks (mission-control templates, session grids, trace UIs) visualize their own runtime's sessions. A heterogeneous team — different vendors, machines, harnesses — shares no runtime; the only common surface is the repo, so the team board must be generated from it. Use framework dashboards inside a lane if they help; the team board is generated, always.
+
 ## The point: self-healing, self-improving as a collective
 
 One agent running out of tokens and dying does not kill the company, because the dead agent's context, work cards, and credentials are all in the repo — a teammate picks the work up immediately. Agents don't just fix themselves; they fix *each other*, and every failure becomes a written rule in the shared files so the whole team gets better from it.
