@@ -1531,3 +1531,28 @@
 "adaptive_prior_attempts_hint" = "Dass du etwas ausprobiert hast, bedeutet nicht, dass es dir nicht geholfen hat. Im nächsten Schritt kannst du angeben, was nicht zu dir gepasst hat.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+// Onboarding winner: ownership and first value
+"adaptive_focus_categories_title" = "Wo möchtest du mehr Raum zum Wachsen haben?";
+"adaptive_focus_categories_anxiety" = "Ein ruhigerer Geist";
+"adaptive_focus_categories_self_love" = "Selbstliebe";
+"adaptive_focus_categories_personal_growth" = "Persönliches Wachstum";
+"adaptive_focus_categories_body" = "Mich in meinem Körper zu Hause fühlen";
+"adaptive_focus_categories_work" = "Arbeit";
+"adaptive_focus_categories_relationships" = "Beziehungen";
+"adaptive_focus_categories_gratitude" = "Dankbarkeit";
+"winner_micro_title" = "Eine kleine Erinnerung, nur für dich";
+"winner_theme_title" = "Mach diesen Ort zu deinem";
+"winner_icon_title" = "Wähle deine kleine Erinnerung";
+"winner_icon_AppIcon" = "Original";
+"winner_icon_AppIconOcean" = "Ozean";
+"winner_icon_AppIconRose" = "Rose";
+"winner_icon_AppIconNight" = "Nacht";
+"winner_icon_error" = "Das Symbol konnte nicht geändert werden. Versuche es erneut oder behalte dein aktuelles Symbol.";
+"winner_widget_title" = "Behalte deine Worte in Reichweite";
+"winner_widget_lock" = "Sperrbildschirm";
+"winner_widget_home" = "Home-Bildschirm";
+"winner_widget_words" = "Hier ist Platz für dich.";
+"winner_widget_instructions" = "Home-Bildschirm: Berühre eine freie Stelle und halte sie gedrückt, wähle Bearbeiten und dann Widget hinzufügen. Suche nach Anicca.\n\nSperrbildschirm: Berühre den Bildschirm und halte ihn gedrückt, wähle Anpassen, dann Widgets hinzufügen und Anicca.";
+"winner_widget_add" = "Ich füge es nach der Einrichtung hinzu";
+"winner_widget_later" = "Vielleicht später";

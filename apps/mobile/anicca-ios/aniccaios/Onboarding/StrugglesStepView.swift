@@ -3,7 +3,7 @@ import SwiftUI
 struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
-    @State private var selected: Set<String> = []
+    @State private var selected: [String] = []
 
     /// Legacy identifiers remain readable by the problem-nudge profile bridge.
     static let problemMapping: [String: String] = [
@@ -48,11 +48,11 @@ struct StrugglesStepView: View {
             PrimaryButton(title: String(localized: "common_next"), isEnabled: !selected.isEmpty, action: saveAndContinue)
                 .accessibilityIdentifier("onboarding-struggles-next")
         }
-        .onAppear { selected = Set(appState.personalizationProfile.painPointIds) }
+        .onAppear { selected = appState.personalizationProfile.painPointIds }
     }
 
     private func saveAndContinue() {
-        let chosen = options.map(\.id).filter { selected.contains($0) }
+        let chosen = selected
         var personalization = appState.personalizationProfile
         personalization.painPointIds = chosen
         appState.updatePersonalizationProfile(personalization)
@@ -66,9 +66,9 @@ struct StrugglesStepView: View {
         let isSelected = selected.contains(option.id)
         return Button {
             if isSelected {
-                selected.remove(option.id)
+                selected.removeAll { $0 == option.id }
             } else {
-                selected.insert(option.id)
+                selected.append(option.id)
             }
         } label: {
             HStack(spacing: 14) {

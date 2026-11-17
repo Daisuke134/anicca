@@ -11,6 +11,7 @@ struct AffirmationTraits {
     var methods: [String] = []
     var timeBands: [String] = []
     var milestone: String? = nil
+    var fearBased: Bool = false
 }
 
 /// A small explicitly tagged vocabulary for the adaptive onboarding answers. Generic
@@ -47,6 +48,25 @@ enum AdaptiveAffirmationCatalog {
     private static let traitsByID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0.traits) })
 
     private static let entries: [Entry] = [
+        Entry(category: "confidence", key: "courage_gentle", english: "I can be afraid and still take a step that is kind to me.",
+              traits: AffirmationTraits(tone: "gentle", intensity: "gentle", beliefThemes: ["courage"])),
+        Entry(category: "letting_go", key: "letting_go_gentle", english: "I can put down a regret without pretending it never mattered.",
+              traits: AffirmationTraits(tone: "gentle", intensity: "gentle", beliefThemes: ["forgiveness"])),
+        Entry(category: "letting_go", key: "letting_go_direct", english: "The past does not need another punishment from me.",
+              traits: AffirmationTraits(tone: "direct", intensity: "gentle", beliefThemes: ["forgiveness"])),
+        Entry(category: "letting_go", key: "letting_go_poetic", english: "I can loosen my grip on what this day cannot change.",
+              traits: AffirmationTraits(tone: "poetic", intensity: "gentle", beliefThemes: ["forgiveness"])),
+        Entry(category: "letting_go", key: "letting_go_practical", english: "I can name what is over and leave one hand free for today.",
+              traits: AffirmationTraits(tone: "practical", intensity: "gentle", beliefThemes: ["forgiveness"])),
+        Entry(category: "relationships", key: "relationships_gentle", english: "I can care for someone and still leave room for myself.",
+              traits: AffirmationTraits(tone: "gentle", intensity: "gentle", beliefThemes: ["self_trust"])),
+        Entry(category: "relationships", key: "relationships_direct", english: "My needs belong in this conversation too.",
+              traits: AffirmationTraits(tone: "direct", intensity: "gentle", beliefThemes: ["self_trust"])),
+        Entry(category: "relationships", key: "relationships_poetic", english: "Connection can have room for both your voice and mine.",
+              traits: AffirmationTraits(tone: "poetic", intensity: "gentle", beliefThemes: ["self_trust"])),
+        Entry(category: "relationships", key: "relationships_practical", english: "I can ask for one thing I need without apologizing for needing it.",
+              traits: AffirmationTraits(tone: "practical", intensity: "gentle", beliefThemes: ["self_trust"])),
+
         Entry(
             category: "calm", key: "calm_gentle",
             english: "I can let this moment ask a little less of me.",

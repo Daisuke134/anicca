@@ -55,13 +55,27 @@ final class HomeDeckModel: ObservableObject {
     var candidateCount: Int = 1
 }
 
-/// Idle auto-advance for the living home. The interval is provisional: the
-/// living-home research (anicca-ops `files/home-living-ux-research-2026-11-15.md`)
-/// records that no source fixes the number, so it is an eval decision to
-/// make later, not a design constant.
+/// Idle auto-advance for the living home. The user rejected the old 3s recording
+/// dwell on 2026-11-17 because it felt like flashcards, and judged the 20s
+/// dwell still too fast the same day. The 29s value is derived, not picked:
+/// dwell = design words x seconds per word x repetitions + one breath.
+/// - Design words = 15: the p90 of the shipped English pool, measured
+///   2026-11-17 (SupplementalAffirmations p90 = 11 words,
+///   AdaptiveAffirmationCatalog p90 = 15 words).
+/// - Pace = 150 wpm (0.4 s/word): an affirmation is read as subvocal
+///   self-talk, near oral-reading speed and inside the conservative
+///   on-screen-text band (BBC Subtitle Guidelines 160-180 wpm;
+///   DCMP Captioning Key 130-160 wpm).
+/// - Repetitions = 3: the niche winner's form (affirmsoftly,
+///   "Repeat 3 times" — pattern A13 in the distribution ledger).
+/// - Settle = one resonance-frequency breath: 5.5 breaths/min = 10.9 s
+///   (Lehrer & Gevirtz, HRV biofeedback).
+/// 15 x 0.4 x 3 + 10.9 = 28.9 -> 29 s. Production and recording use the
+/// same interval so the recorded experience is the real one. The interval
+/// remains an eval-tunable constant, not a design constant.
 enum HomeAutoAdvance {
-    static let interval: TimeInterval = 8
-    static let recordingInterval: TimeInterval = 3
+    static let interval: TimeInterval = 29
+    static let recordingInterval: TimeInterval = 29
 
     static var isRecordingMode: Bool {
         ProcessInfo.processInfo.arguments.contains("-aniccaRecordingMode")

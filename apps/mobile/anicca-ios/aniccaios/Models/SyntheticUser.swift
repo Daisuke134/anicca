@@ -63,15 +63,15 @@ struct SyntheticUser: Codable, Equatable {
         }
         schemaVersion = Self.currentSchemaVersion
         self.personId = personId
-        attributes = axes(["age_band", "birth_context", "life_context"])
-        initialState = axes(["mood_baseline"])
+        attributes = axes(["age_band", "birth_context", "life_context", "desired_state", "focus_categories", "pain_points"])
+        initialState = axes(["mood_baseline", "struggle_frequency"])
         beliefThemes = values["belief_themes"] ?? ["unknown"]
         triggerContext = axes(["pain_points", "struggle_frequency", "stress_trigger", "anxiety_target",
                                "self_criticism", "avoidance_task", "sleep_reason"])
         receptivityWindows = axes(["routine_anchors", "bedtime", "wake_time", "reminder_slots", "daily_frequency"])
         quietHours = values["quiet_hours"] ?? ["unknown"]
         motivation = axes(["desired_state", "start_reason"])
-        var preferences = axes(["tone", "prior_attempts", "prior_helpfulness", "notification_permission"])
+        var preferences = axes(["tone", "prior_attempts", "prior_helpfulness", "notification_permission", "theme", "app_icon", "widget_interest", "micro_preview_reaction"])
         let hasCalendarContext = profile.answers.birthDate != nil || !profile.answers.ids(for: .birthContext).isEmpty
         preferences["birthday_season"] = [hasCalendarContext
             ? (profile.answers.isBirthdaySeason(now: now) ? "active" : "inactive") : "unknown"]

@@ -2897,3 +2897,28 @@
 "adaptive_prior_attempts_hint" = "Trying something does not mean it failed. Next, you can tell us what did not suit you.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+// Onboarding winner: ownership and first value
+"adaptive_focus_categories_title" = "Where would you like more room to grow?";
+"adaptive_focus_categories_anxiety" = "A calmer mind";
+"adaptive_focus_categories_self_love" = "Self-love";
+"adaptive_focus_categories_personal_growth" = "Personal growth";
+"adaptive_focus_categories_body" = "Feeling at home in my body";
+"adaptive_focus_categories_work" = "Work";
+"adaptive_focus_categories_relationships" = "Relationships";
+"adaptive_focus_categories_gratitude" = "Gratitude";
+"winner_micro_title" = "A small reminder, just for you";
+"winner_theme_title" = "Make this space yours";
+"winner_icon_title" = "Choose your little reminder";
+"winner_icon_AppIcon" = "Original";
+"winner_icon_AppIconOcean" = "Ocean";
+"winner_icon_AppIconRose" = "Rose";
+"winner_icon_AppIconNight" = "Night";
+"winner_icon_error" = "The icon could not be changed. Try again, or keep your current icon.";
+"winner_widget_title" = "Keep your words within reach";
+"winner_widget_lock" = "Lock Screen";
+"winner_widget_home" = "Home Screen";
+"winner_widget_words" = "There is room for you here.";
+"winner_widget_instructions" = "Home Screen: touch and hold an empty space, choose Edit, then Add Widget. Search for Anicca.\n\nLock Screen: touch and hold the screen, choose Customize, then Add Widgets and Anicca.";
+"winner_widget_add" = "I’ll add it after setup";
+"winner_widget_later" = "Maybe later";

@@ -52,6 +52,7 @@ struct AdaptiveQuestionStepView: View {
         .onAppear {
             let answers = appState.personalizationProfile.answers
             selected = Set(answers.ids(for: question))
+            if question == .tone, selected.isEmpty, !Set(answers.ids(for: .moodBaseline)).isDisjoint(with: ["heavy", "very_heavy"]) { selected = ["gentle"] }
             if let saved = answers.birthDate {
                 birthDate = saved
                 useBirthDate = true

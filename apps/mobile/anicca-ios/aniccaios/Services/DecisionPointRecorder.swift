@@ -255,7 +255,8 @@ final class DecisionPointRecorder {
                              notificationPermissionObservedAt: NotificationScheduler.shared.authorizationObservedAt),
             stimulus: .init(messageId: selection.quote.id, category: selection.quote.categoryID, tags: Array(Set(tags)).sorted(),
                             scheduledAt: now, treatmentAssigned: selection.quote.id,
-                            assignedProbability: selection.assignedProbability, policyVersion: selection.policyVersion)
+                            assignedProbability: selection.assignedProbability, policyVersion: selection.policyVersion,
+                            candidateIDs: selection.candidateIDs, selectionReason: selection.reason)
         )
         if DecisionPointStore.shared.append(record) {
             AppState.shared.recordSyntheticIntervention(messageId: selection.quote.id, deliveryId: deliveryId, event: "selected", at: now)
@@ -263,7 +264,7 @@ final class DecisionPointRecorder {
         AnalyticsManager.shared.track(.nudgeDecisionMade, properties: [
             "delivery_id": deliveryId, "message_id": selection.quote.id, "category": selection.quote.categoryID,
             "assigned_probability": selection.assignedProbability, "policy_version": selection.policyVersion,
-            "selection_reason": selection.reason, "answer_ids": snapshot.analyticsIDs, "answer_version": snapshot.version, "source": source
+            "candidate_ids": selection.candidateIDs, "selection_reason": selection.reason, "answer_ids": snapshot.analyticsIDs, "answer_version": snapshot.version, "source": source
         ])
         return deliveryId
     }
@@ -321,7 +322,7 @@ final class DecisionPointRecorder {
         var vocabulary = Dictionary(uniqueKeysWithValues: OnboardingQuestion.allCases.map { ($0.rawValue, $0.optionIDs + ["unknown", "not_asked"]) })
         vocabulary["birth_context", default: []].append("date_provided")
         vocabulary["age_band"] = ["under_18", "18_24", "25_34", "35_44", "45_54", "55_64", "65_plus", "unknown"]
-        vocabulary["desired_state"] = ["calm", "confidence", "focus", "self_love", "unknown"]
+        vocabulary["desired_state"] = ["calm", "confidence", "focus", "self_love", "letting_go", "unknown"]
         vocabulary["pain_points"] = ["stress", "anxiety", "self_doubt", "procrastination", "sleep", "unknown"]
         vocabulary["struggle_frequency"] = ["rarely", "weekly", "daily", "many_times_daily", "unknown"]
         vocabulary["name_status"] = ["unknown", "provided"]

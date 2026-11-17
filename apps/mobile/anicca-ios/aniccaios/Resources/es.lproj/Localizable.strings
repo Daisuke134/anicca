@@ -2815,3 +2815,28 @@
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
 "feed_picked_from_answers" = "Picked for you, from your answers";
+
+// Onboarding winner: ownership and first value
+"adaptive_focus_categories_title" = "¿En qué aspecto te gustaría tener más espacio para crecer?";
+"adaptive_focus_categories_anxiety" = "Una mente más tranquila";
+"adaptive_focus_categories_self_love" = "Amor propio";
+"adaptive_focus_categories_personal_growth" = "Crecimiento personal";
+"adaptive_focus_categories_body" = "Sentirme en casa en mi cuerpo";
+"adaptive_focus_categories_work" = "Trabajo";
+"adaptive_focus_categories_relationships" = "Relaciones";
+"adaptive_focus_categories_gratitude" = "Gratitud";
+"winner_micro_title" = "Un pequeño recordatorio, solo para ti";
+"winner_theme_title" = "Haz tuyo este espacio";
+"winner_icon_title" = "Elige tu pequeño recordatorio";
+"winner_icon_AppIcon" = "Original";
+"winner_icon_AppIconOcean" = "Océano";
+"winner_icon_AppIconRose" = "Rosa";
+"winner_icon_AppIconNight" = "Noche";
+"winner_icon_error" = "No se pudo cambiar el icono. Inténtalo de nuevo o conserva el actual.";
+"winner_widget_title" = "Mantén tus palabras al alcance";
+"winner_widget_lock" = "Pantalla bloqueada";
+"winner_widget_home" = "Pantalla de inicio";
+"winner_widget_words" = "Aquí hay espacio para ti.";
+"winner_widget_instructions" = "Pantalla de inicio: mantén presionado un espacio vacío, elige Editar y luego Añadir widget. Busca Anicca.\n\nPantalla bloqueada: mantén presionada la pantalla, elige Personalizar, luego Añadir widgets y Anicca.";
+"winner_widget_add" = "Lo añadiré después de la configuración";
+"winner_widget_later" = "Quizás más tarde";

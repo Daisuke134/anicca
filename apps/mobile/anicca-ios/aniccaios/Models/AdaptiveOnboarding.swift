@@ -2,6 +2,11 @@ import Foundation
 
 /// Stable answer vocabulary. Labels live in Localizable.strings, never in storage.
 enum OnboardingQuestion: String, CaseIterable {
+    case focusCategories = "focus_categories"
+    case microPreview = "micro_preview_reaction"
+    case themeChoice = "theme"
+    case iconChoice = "app_icon"
+    case widgetPreview = "widget_interest"
     case birthContext = "birth_context"
     case moodBaseline = "mood_baseline"
     case beliefThemes = "belief_themes"
@@ -22,6 +27,11 @@ enum OnboardingQuestion: String, CaseIterable {
 
     var optionIDs: [String] {
         switch self {
+        case .focusCategories: return ["anxiety", "self_love", "personal_growth", "body", "work", "relationships", "gratitude"]
+        case .microPreview: return ["saved", "skipped"]
+        case .themeChoice: return ["silkDusk", "sandWave", "oceanSunset", "midnightDusk", "linenCream", "sageMist", "skyDawn", "rosePetal"]
+        case .iconChoice: return ["AppIcon", "AppIconOcean", "AppIconRose", "AppIconNight"]
+        case .widgetPreview: return ["interested", "later"]
         case .birthContext: return ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"]
         case .moodBaseline: return ["very_heavy", "heavy", "neutral", "light", "very_light"]
         case .beliefThemes: return ["self_trust", "inner_peace", "courage", "forgiveness", "gratitude"]
@@ -43,7 +53,7 @@ enum OnboardingQuestion: String, CaseIterable {
     }
 
     var allowsMultiple: Bool {
-        [OnboardingQuestion.beliefThemes, .lifeContext, .routineAnchors, .priorAttempts, .quietHours, .priorHelpfulness].contains(self)
+        [OnboardingQuestion.focusCategories, .beliefThemes, .lifeContext, .routineAnchors, .priorAttempts, .quietHours, .priorHelpfulness].contains(self)
     }
 
     var exclusiveOption: String? {
@@ -56,6 +66,11 @@ enum OnboardingQuestion: String, CaseIterable {
 
     var step: OnboardingStep {
         switch self {
+        case .focusCategories: return .focusCategories
+        case .microPreview: return .microPreview
+        case .themeChoice: return .themeChoice
+        case .iconChoice: return .iconChoice
+        case .widgetPreview: return .widgetPreview
         case .birthContext: return .birthContext
         case .moodBaseline: return .moodBaseline
         case .beliefThemes: return .beliefThemes
@@ -173,8 +188,9 @@ extension PersonalizationProfile {
             }
         }
         result["age_band"] = [answers.ageBand(now: now)]
-        result["desired_state"] = [Self.enumerated(desiredState, allowed: ["calm", "confidence", "focus", "self_love"])]
-        let pain = ["stress", "anxiety", "self_doubt", "procrastination", "sleep"].filter { painPointIds.contains($0) }
+        result["desired_state"] = [Self.enumerated(desiredState, allowed: ["calm", "confidence", "focus", "self_love", "letting_go"])]
+        var seenPain = Set<String>()
+        let pain = painPointIds.filter { ["stress", "anxiety", "self_doubt", "procrastination", "sleep"].contains($0) && seenPain.insert($0).inserted }
         result["pain_points"] = pain.isEmpty ? ["unknown"] : pain
         result["struggle_frequency"] = [Self.enumerated(struggleFrequency, allowed: ["rarely", "weekly", "daily", "many_times_daily"])]
         result["name_status"] = [preferredName == nil ? "unknown" : "provided"]
@@ -184,7 +200,7 @@ extension PersonalizationProfile {
             PersonalizationRules.presetSlots.contains(slot) ? "slot_\(slot.hour)_\(slot.minute)" : nil
         }
         result["daily_frequency"] = [(1...3).contains(dailyFrequency) ? ["one", "two", "three"][dailyFrequency - 1] : "unknown"]
-        return OnboardingAnswerSnapshot(version: 2, values: result)
+        return OnboardingAnswerSnapshot(version: 3, values: result)
     }
 
     private static func enumerated(_ value: String?, allowed: [String]) -> String {
@@ -235,8 +251,10 @@ extension PersonalizationRules {
         if !profile.nudgeSlots.isEmpty { return profile.nudgeSlots.sorted() }
         let anchors = profile.answers.ids(for: .routineAnchors)
         var proposed: [NudgeSlot] = []
-        if anchors.contains("waking") || anchors.contains("commute") { proposed.append(presetSlots[0]) }
-        if anchors.contains("lunch") { proposed.append(presetSlots[1]) }
+        if anchors.contains("waking") || anchors.contains("commute") {
+            proposed.append(profile.answers.ids(for: .wakeTime).contains("after_8") ? presetSlots[1] : presetSlots[0])
+        }
+        if anchors.contains("lunch"), !proposed.contains(presetSlots[1]) { proposed.append(presetSlots[1]) }
         if anchors.contains("bedtime") { proposed.append(presetSlots[3]) }
         if proposed.isEmpty {
             if profile.painPointIds.contains("sleep"), profile.answers.ids(for: .bedtime).contains("before_22") {

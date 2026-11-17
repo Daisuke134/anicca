@@ -379,6 +379,7 @@ enum AnalyticsEvent: String {
     case appOpened = "app_opened"
 
     // Onboarding funnel (v3 — spec-185 Bible-compliant 20-step)
+    case onboardingPaywallArrived = "onboarding_paywall_arrived"
     case onboardingStarted = "onboarding_started"
     case onboardingStepCompleted = "onboarding_step_completed"
     case onboardingStepViewed = "onboarding_step_viewed"
@@ -441,6 +442,11 @@ enum AnalyticsEvent: String {
 }
 
 enum AnalyticsScreenID: String, CaseIterable {
+    case onboardingFocusCategories = "onboarding.focus_categories"
+    case onboardingMicroPreview = "onboarding.micro_preview"
+    case onboardingThemeChoice = "onboarding.theme_choice"
+    case onboardingIconChoice = "onboarding.icon_choice"
+    case onboardingWidgetPreview = "onboarding.widget_preview"
     case onboardingWelcome = "onboarding.welcome"
     case onboardingGoal = "onboarding.goal"
     case onboardingName = "onboarding.name"
@@ -480,6 +486,12 @@ enum AnalyticsScreenID: String, CaseIterable {
 
     static func onboarding(_ step: OnboardingStep) -> AnalyticsScreenID {
         switch step {
+        case .focusCategories: return .onboardingFocusCategories
+        case .microPreview: return .onboardingMicroPreview
+        case .themeChoice: return .onboardingThemeChoice
+        case .iconChoice: return .onboardingIconChoice
+        case .widgetPreview: return .onboardingWidgetPreview
+        case .paywall: return .paywall
         case .welcome: return .onboardingWelcome
         case .goal: return .onboardingGoal
         case .name: return .onboardingName

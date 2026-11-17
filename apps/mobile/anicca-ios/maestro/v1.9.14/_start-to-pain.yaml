@@ -22,6 +22,10 @@ name: Fresh onboarding through the pain-point question
     id: onboarding-goal-self_love
 - tapOn:
     id: onboarding-goal-continue
+- tapOn:
+    id: onboarding-focus_categories-anxiety
+- tapOn:
+    id: onboarding-focus_categories-continue
 - assertVisible:
     id: onboarding-name-field
 - tapOn:

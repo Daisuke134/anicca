@@ -31,10 +31,12 @@ struct ManagerBenchCase: Codable, Equatable {
         var treatmentAssigned: String
         var assignedProbability: Double
         var policyVersion: String
+        var candidateIDs: [String]? = nil
+        var selectionReason: String? = nil
 
         private enum CodingKeys: String, CodingKey {
             case messageId, category, tags, scheduledAt, deliveredAt
-            case treatmentAssigned, assignedProbability, policyVersion
+            case treatmentAssigned, assignedProbability, policyVersion, candidateIDs, selectionReason
         }
 
         func encode(to encoder: Encoder) throws {
@@ -47,6 +49,8 @@ struct ManagerBenchCase: Codable, Equatable {
             try container.encode(treatmentAssigned, forKey: .treatmentAssigned)
             try container.encode(assignedProbability, forKey: .assignedProbability)
             try container.encode(policyVersion, forKey: .policyVersion)
+            try container.encodeIfPresent(candidateIDs, forKey: .candidateIDs)
+            try container.encodeIfPresent(selectionReason, forKey: .selectionReason)
         }
     }
 
