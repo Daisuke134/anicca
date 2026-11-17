@@ -1,6 +1,11 @@
 name: resolve-deps-temp
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/fix-package-resolved-rive-2026-11-17
+    paths:
+      - .github/workflows/resolve-deps-temp.yml
 jobs:
   resolve:
     name: Resolve Swift packages (temp)
