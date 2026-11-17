@@ -56,7 +56,7 @@ jobs:
           path: ${{ runner.temp }}/soft-paywall-evidence
           if-no-files-found: warn
   build:
-    name: Build and unit tests (unsigned)
+    name: Build app (unsigned)
     if: github.event_name != 'workflow_dispatch' || !inputs.run_maestro
     runs-on: macos-15
     defaults:
@@ -76,8 +76,20 @@ jobs:
           cp Configs/Production.xcconfig.example Configs/Production.xcconfig
           cp Configs/Staging.xcconfig.example Configs/Staging.xcconfig
 
+      # CI speed (2026-11-17): package resolution took 111s of the 12.9 min
+      # combined build+test job (run 44003117641) because SwiftPM checkouts
+      # were re-fetched from scratch on every run. Cache the cloned source
+      # packages in a pinned directory, keyed on Package.resolved.
+      - name: Cache Swift package dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/anicca-ios/.spm-cache
+          key: ${{ runner.os }}-spm-${{ hashFiles('apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Resolve Swift packages
-        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios -clonedSourcePackagesDirPath .spm-cache
 
       - name: Build app (unsigned)
         run: |
@@ -87,6 +99,7 @@ jobs:
             -project aniccaios.xcodeproj \
             -scheme aniccaios \
             -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO \
             > "$RUNNER_TEMP/build-output.log" 2>&1
           BUILD_EXIT=$?
@@ -96,6 +109,49 @@ jobs:
           echo "----- build summary -----"
           tail -40 "$RUNNER_TEMP/build-output.log"
           exit "$BUILD_EXIT"
+
+      - name: Preserve full build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/build-output.log
+          if-no-files-found: warn
+
+  unit-tests:
+    name: Unit tests (unsigned)
+    if: github.event_name != 'workflow_dispatch' || !inputs.run_maestro
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Generate xcconfig files from examples
+        # Real values are injected by Xcode Cloud (ci_post_clone.sh) for
+        # release builds. CI only needs the files to exist to type-check
+        # and build; the examples contain placeholders only.
+        run: |
+          cp Configs/Production.xcconfig.example Configs/Production.xcconfig
+          cp Configs/Staging.xcconfig.example Configs/Staging.xcconfig
+
+      # Same SwiftPM cache as the build job (shared key): build and unit
+      # tests used to run sequentially in one job (276s build + 370s test,
+      # run 44003117641); they are independent, so they now run in parallel.
+      - name: Cache Swift package dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/anicca-ios/.spm-cache
+          key: ${{ runner.os }}-spm-${{ hashFiles('apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios -clonedSourcePackagesDirPath .spm-cache
 
       - name: Run unit tests (unsigned)
         # The macos-15 image (Xcode 16.4) ships no pre-created "iPhone 15"
@@ -117,6 +173,7 @@ jobs:
             -scheme aniccaios \
             -destination "platform=iOS Simulator,id=$UDID" \
             -only-testing:aniccaiosTests \
+            -clonedSourcePackagesDirPath .spm-cache \
             CODE_SIGNING_ALLOWED=NO \
             > "$RUNNER_TEMP/test-output.log" 2>&1
           TEST_EXIT=$?
@@ -128,12 +185,10 @@ jobs:
           tail -20 "$RUNNER_TEMP/test-output.log"
           exit $TEST_EXIT
 
-      - name: Preserve full build and unit test logs on failure
+      - name: Preserve full unit test log on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-and-unit-test-logs-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/build-output.log
-            ${{ runner.temp }}/test-output.log
+          name: ios-unit-test-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/test-output.log
           if-no-files-found: warn

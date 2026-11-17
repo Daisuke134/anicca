@@ -377,3 +377,4 @@
 - 2026-11-14 / Codex / Anicca iOS Issue #9353 第2ラウンド: 指定PR #9352 branchの1f26b0f42上に、Q-A〜I・最大2つのpain別深掘り・Q-G適応補足、UserProfile保存/ID snapshot、gentle優先と静かな時間、6言語、49候補、21 XCTest、Maestro新17フレーム導線を実装。FIX-NOTESへ質問→合成データ/実装/テスト/監査対応を記録。Python 36件中35成功・Swift依存1skip、Swift/Xcode/実撮影と独立レビュー/配信readbackは未完了。未commit差分を委任元へ引渡し、push/merge/ASC提出なし。
 
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
+- 2026-11-16 JST / Codex / Anicca iOS Account Deletion gate: Settingsから確認付きDELETE /mobile/accountを開始し、成功後のみ端末・Keychain・App Group identityを消去するフロー、進行/失敗UI、6言語文言、静的回帰テストを追加。サーバー/ASC操作0。次: Xcode CI後にRestore Purchases gate。

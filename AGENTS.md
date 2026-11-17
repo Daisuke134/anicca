@@ -1,5 +1,9 @@
 # Life Manager project instructions
 
+## Comedy live performance (all AI performers, mandatory)
+
+For any comedy sketch, rehearsal, stage event or voice performance under `comedy/`, read **[`comedy/AGENTS.md`](comedy/AGENTS.md)** first, then `comedy/HANDOVER.md`, `comedy/README.md` and the selected script. **Dais speaks first; AI stays silent before his cue.** During the sketch, respond only to Dais, not to audience/staff/ambient speech. These are performance instructions, not a guarantee of speaker-verification technology. See the local Comedy protocol for exceptions and details. This section applies to Comedy only.
+
 This repository is the source authority for Life Manager. The canonical remote is
 `https://github.com/Daisuke134/life-manager.git`; the normal local checkout is
 `/Users/anicca/Projects/life-manager-main`.

@@ -20,8 +20,86 @@ jobs:
       - name: Verify canonical agent instructions and cleanup contract
         run: bash scripts/verify-agent-contract.sh "$GITHUB_WORKSPACE"
 
-  loop-control:
-    name: Loop control contracts (arm64)
+  # CI speed (2026-11-17): this was one sequential macos-15 job whose steps
+  # measured (run 44017615514, job total 405s): registry discover 228s,
+  # bounded-storage pytest 90s, all platform contract groups ~55s combined.
+  # The groups are independent, so they now run as parallel shards; the
+  # `loop-control` job below keeps the historical check name
+  # "Loop control contracts (arm64)" and passes only if every shard passes.
+  # The registry discover is itself split in two by file-name range
+  # (test_[a-l]* / test_[m-z]*), whose union is exactly the original
+  # test_*.py set.
+  loop-control-registry-a:
+    name: Loop control registry shard A (a-l)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install exact loop contract test dependency
+        run: python3 -m pip install --disable-pip-version-check jsonschema==4.26.0 pytest==9.0.3 websocket-client==1.9.0
+      - name: Verify registry, releases, apply fencing, and clean install (shard A)
+        # unittest does not load conftest.py; a fresh runner has no swap-in history, and the
+        # admission gate defers without one (fail-closed by design), so turn it off here too.
+        env:
+          LIFE_MANAGER_SWAPIN_GATE: "off"
+        run: python3 -m unittest discover -s runtime/loop/tests -p 'test_[a-l]*.py' --durations 15
+
+  loop-control-registry-b:
+    name: Loop control registry shard B (m-z)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install exact loop contract test dependency
+        run: python3 -m pip install --disable-pip-version-check jsonschema==4.26.0 pytest==9.0.3 websocket-client==1.9.0
+      - name: Verify registry, releases, apply fencing, and clean install (shard B)
+        # unittest does not load conftest.py; a fresh runner has no swap-in history, and the
+        # admission gate defers without one (fail-closed by design), so turn it off here too.
+        env:
+          LIFE_MANAGER_SWAPIN_GATE: "off"
+        run: python3 -m unittest discover -s runtime/loop/tests -p 'test_[m-z]*.py' --durations 15
+
+  loop-control-storage:
+    name: Loop control storage shard
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install exact loop contract test dependency
+        run: python3 -m pip install --disable-pip-version-check jsonschema==4.26.0 pytest==9.0.3 websocket-client==1.9.0
+      - name: Verify bounded storage, real syscall failures, and recurrence
+        run: >-
+          python3 -m pytest -q
+          runtime/loop/tests/test_lm_loop_run_bounds.py
+          runtime/loop/tests/test_storage_failure.py
+          runtime/loop/tests/test_release_source_reclaim.py
+          runtime/loop/tests/test_release_gc_fail_closed.py
+          runtime/host/tests/test_disk_admission.py
+          runtime/host/tests/test_storage_policy.py
+          runtime/host/tests/test_bounded_output.py
+          runtime/host/tests/test_storage_recurrence.py
+          runtime/agent-runner/tests
+          skills/self/disk-cleanup/tests/test_host_inventory.py
+          skills/self/disk-cleanup/tests/test_disk_cleanup.py
+          skills/self/disk-cleanup/tests/test_disk_watchdog_dispatcher.py
+      - name: Verify storage recovery waits and replay fencing
+        run: >-
+          node --test
+          runtime/loop/__tests__/storage-recovery.test.mjs
+          runtime/loop/__tests__/recovery-intent.test.mjs
+          runtime/loop/__tests__/recovery-intent-record.test.mjs
+          runtime/loop/__tests__/recovery-apply-plan.test.mjs
+          runtime/loop/__tests__/recovery-executor.test.mjs
+          runtime/loop/__tests__/recovery-supervisor.test.mjs
+
+  loop-control-contracts:
+    name: Loop control platform contracts shard
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -98,36 +176,14 @@ jobs:
           python3 -m pytest -q
           skills/browser/tests/test_guard_legacy_lease.py
           skills/browser/scripts/test_browser_guard_empty_lease.py
-      - name: Verify registry, releases, apply fencing, and clean install
-        # unittest does not load conftest.py; a fresh runner has no swap-in history, and the
-        # admission gate defers without one (fail-closed by design), so turn it off here too.
-        env:
-          LIFE_MANAGER_SWAPIN_GATE: "off"
-        run: python3 -m unittest discover -s runtime/loop/tests -p 'test_*.py' --durations 15
-      - name: Verify bounded storage, real syscall failures, and recurrence
-        run: >-
-          python3 -m pytest -q
-          runtime/loop/tests/test_lm_loop_run_bounds.py
-          runtime/loop/tests/test_storage_failure.py
-          runtime/loop/tests/test_release_source_reclaim.py
-          runtime/loop/tests/test_release_gc_fail_closed.py
-          runtime/host/tests/test_disk_admission.py
-          runtime/host/tests/test_storage_policy.py
-          runtime/host/tests/test_bounded_output.py
-          runtime/host/tests/test_storage_recurrence.py
-          runtime/agent-runner/tests
-          skills/self/disk-cleanup/tests/test_host_inventory.py
-          skills/self/disk-cleanup/tests/test_disk_cleanup.py
-          skills/self/disk-cleanup/tests/test_disk_watchdog_dispatcher.py
-      - name: Verify storage recovery waits and replay fencing
-        run: >-
-          node --test
-          runtime/loop/__tests__/storage-recovery.test.mjs
-          runtime/loop/__tests__/recovery-intent.test.mjs
-          runtime/loop/__tests__/recovery-intent-record.test.mjs
-          runtime/loop/__tests__/recovery-apply-plan.test.mjs
-          runtime/loop/__tests__/recovery-executor.test.mjs
-          runtime/loop/__tests__/recovery-supervisor.test.mjs
+
+  loop-control:
+    name: Loop control contracts (arm64)
+    needs: [loop-control-registry-a, loop-control-registry-b, loop-control-storage, loop-control-contracts]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All loop control shards passed
+        run: echo "registry A/B, storage, and platform contract shards all passed"
 
   writer-eval:
     name: Writer EDD receipt grader
