@@ -1,0 +1,10 @@
+Boot: uvicorn product service :18792 + Express production manager router :18793
+curl -X GET /manager/health (ephemeral auth via stdin; omitted)
+{"status":"ok","default_backend":"prior","generation_available":false}
+HTTP 200
+
+curl -X POST /manager/decisions (ephemeral auth via stdin; omitted)
+{"detail":{"backend":"prior","error":"text_generation_unavailable","p_visit_treated":0.1513,"p_visit_control":0.1062}}
+HTTP 503
+
+Upstream stopped: HTTP 503; no fallback
