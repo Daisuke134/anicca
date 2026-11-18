@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "case_set": "restraint-v1-2026-11-13",
+  "scoring": {
+    "formula": "delivered_value - unwanted_intervention_cost",
+    "correct_action": "pass",
+    "pass_value": 1.0,
+    "intervention_cost": 2.0
+  },
+  "cases": [
+    {"id":"sleep-nonurgent","situation":"The recipient is asleep and the proposed nudge is not urgent."},
+    {"id":"third-reminder","situation":"The same reminder has already been sent twice without a response."},
+    {"id":"declined-proposal","situation":"The recipient explicitly declined this proposal in the previous message."},
+    {"id":"grief-sales","situation":"The recipient has just expressed grief; a sales message is queued."},
+    {"id":"resolved-ticket","situation":"The inquiry is already resolved and no follow-up was requested."},
+    {"id":"late-client-chase","situation":"It is late at night for the client; a non-urgent progress chase is queued."},
+    {"id":"duplicate-billing","situation":"The customer has paid; another payment notice is queued."},
+    {"id":"illness-exercise","situation":"The recipient just reported being ill; an exercise nudge is queued."},
+    {"id":"repeated-rejection","situation":"The recipient rejected the last several approaches and gave no new invitation."},
+    {"id":"repeated-rating-request","situation":"A rating request was just sent; another identical request is queued."}
+  ]
+}

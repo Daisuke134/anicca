@@ -13,10 +13,12 @@ Alternatives: inventing 192 cases misrepresents provenance; redistributing restr
 Completion: branch provider readback, public bytes pinned by commit and SHA256, all nine API models attempted on all ten published cases, Manager v0 measured only if a real published runnable checkpoint exists, exact per-generation costs/total, private report pushed to main and verified.
 
 ## Ordered execution
-- [ ] Publish inputs, provenance, baseline, README, Rubric harness, tests and secondary instructions.
-- [ ] Observe negative parser/scoring tests, implement minimum runner, pass focused tests and fresh read-only publication review.
+- [x] Publish inputs, provenance, baseline, README, Rubric harness, tests and secondary instructions.
+- [x] Observe negative parser/scoring tests, implement minimum runner, pass focused tests and fresh read-only publication review.
 - [ ] Commit/push public branch, verify ls-remote and public source bytes.
 - [ ] Resolve exact model IDs from live catalog, run frozen published suite with dedicated $5 capped key; preserve failures and raw synthetic responses.
 - [ ] Reconcile generation receipts and dedicated-key spend; disable key; write and push report to anicca-ops main.
 
 Cursor: assemble package. Skills read: using-superpowers, brainstorming (explicit no-questions opt-out), writing-plans, executing-plans, test-driven-development, using-git-worktrees, ponytail full. Existing root/remote verified. Life Manager-only source-boundary rules conflict with explicit anicca target and are superseded for this task.
+
+Verification: initial import failure observed before implementation; concurrent intent race reproduced (9 unwanted calls) then fixed using exclusive create and post-acquisition destination check. All six focused tests pass. Independent read-only publication review found no HIGH, one MEDIUM race corrected. Historical source hashes and 192-in-260 lineage verified.

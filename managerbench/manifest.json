@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "real_intervention_cases": 0,
+  "runnable_synthetic_cases": 10,
+  "historical_receipts": {
+    "2026-11-14": 192,
+    "2026-11-15": 260
+  },
+  "inputs": {
+    "cases.json": "dca3e3768e083c30fa7e7129d5b3a59d45e70fd07531c073a9ce7d61fe587af1",
+    "baseline/baseline-2026-11-14.json": "d1553c7f7b3ef3d7f4b3e5dad9bea3da5da25e76179f478d0bdeb2d7eb30af23",
+    "baseline/baseline-2026-11-15.json": "688f0c564965c809cdc113d1cb61ca5ab553fb18d78f0f6980bb3b1bc44d3d42"
+  },
+  "sources": {
+    "cases.json": "anicca-ops/files/eval/restraint/cases-v1.json",
+    "baseline/baseline-2026-11-14.json": "anicca-ops/files/eval/managerbench/baseline-2026-11-14.json",
+    "baseline/baseline-2026-11-15.json": "anicca-ops/files/hf-release/managerbench/baseline-2026-11-15.json"
+  },
+  "privacy": "Only pre-existing generic synthetic situations and aggregated scores; no personal me-data or raw intervention records."
+}

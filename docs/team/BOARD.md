@@ -378,3 +378,5 @@
 
 - 2026-11-14 19:13 JST / Codex / Anicca iOS Issue #9353 第3ラウンド: Optional Boolビルド不備・CI全文ログ、04/08 reveal、合成ユーザー、3要素eval記録をローカル実装。Sol独立レビュー3指摘を修正・再レビュー解消。Python39件=37成功2skip、新規ローカライズ欠落0。Xcode/実画面/通知sender完全case接続は未確認・未完、D-01〜D-16未完。commit/push/ASC操作0、既存phase1 worktreeに差分を委任元へ。
 - 2026-11-16 JST / Codex / Anicca iOS Account Deletion gate: Settingsから確認付きDELETE /mobile/accountを開始し、成功後のみ端末・Keychain・App Group identityを消去するフロー、進行/失敗UI、6言語文言、静的回帰テストを追加。サーバー/ASC操作0。次: Xcode CI後にRestore Purchases gate。
+
+- Codex: ManagerBench公開パッケージと同条件比較を再開。対象 managerbench/、実介入0、既存合成restraint10件、旧192行は評価レシート。
