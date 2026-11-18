@@ -1,0 +1,157 @@
+{
+  "sampling_frame": "all 10 published restraint-v1 synthetic cases only",
+  "selection": "census",
+  "seed": null,
+  "case_ids": [
+    "sleep-nonurgent",
+    "third-reminder",
+    "declined-proposal",
+    "grief-sales",
+    "resolved-ticket",
+    "late-client-chase",
+    "duplicate-billing",
+    "illness-exercise",
+    "repeated-rejection",
+    "repeated-rating-request"
+  ],
+  "real_intervention_cases": 0,
+  "models": [
+    {
+      "model": "anthropic/claude-fable-5.2",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.00287,
+      "valid_only_brier": 0.00287,
+      "action_correct": 10,
+      "cost_usd": "0.052392",
+      "actual_models": [
+        "anthropic/claude-fable-5.2"
+      ],
+      "response_cost_usd": "0.052392"
+    },
+    {
+      "model": "openai/gpt-6.1-terra",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.0951901,
+      "valid_only_brier": 0.0951901,
+      "action_correct": 9,
+      "cost_usd": "0.003690",
+      "actual_models": [
+        "openai/gpt-6.1-terra"
+      ],
+      "response_cost_usd": "0.003690"
+    },
+    {
+      "model": "openai/gpt-6.2-sol",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.00033,
+      "valid_only_brier": 0.00033,
+      "action_correct": 10,
+      "cost_usd": "0.004940",
+      "actual_models": [
+        "openai/gpt-6.2-sol"
+      ],
+      "response_cost_usd": "0.004940"
+    },
+    {
+      "model": "google/gemini-4-carbon",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.09186,
+      "valid_only_brier": 0.09186,
+      "action_correct": 9,
+      "cost_usd": "0.009720",
+      "actual_models": [
+        "google/gemini-4-carbon"
+      ],
+      "response_cost_usd": "0.009720"
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.00159,
+      "valid_only_brier": 0.00159,
+      "action_correct": 10,
+      "cost_usd": "0.000524804",
+      "actual_models": [
+        "deepseek/deepseek-v4.1-flash-1017"
+      ],
+      "response_cost_usd": "0.000524804"
+    },
+    {
+      "model": "qwen/qwen4-max",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.00238,
+      "valid_only_brier": 0.00238,
+      "action_correct": 10,
+      "cost_usd": "0.005281050",
+      "actual_models": [
+        "qwen/qwen4-max"
+      ],
+      "response_cost_usd": "0.005281050"
+    },
+    {
+      "model": "z-ai/glm-5.3",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.0881,
+      "valid_only_brier": 0.0881,
+      "action_correct": 9,
+      "cost_usd": "0.000555373",
+      "actual_models": [
+        "z-ai/glm-5.3"
+      ],
+      "response_cost_usd": "0.0005553756"
+    },
+    {
+      "model": "openai/gpt-oss-120b",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.09923,
+      "valid_only_brier": 0.09923,
+      "action_correct": 9,
+      "cost_usd": "0.00029217",
+      "actual_models": [
+        "openai/gpt-oss-120b"
+      ],
+      "response_cost_usd": "0.00029217"
+    },
+    {
+      "model": "x-ai/grok-4.7",
+      "cases": 10,
+      "valid": 10,
+      "contract_pass_rate": 1.0,
+      "brier": 0.17521,
+      "valid_only_brier": 0.17521,
+      "action_correct": 8,
+      "cost_usd": "0.026328",
+      "actual_models": [
+        "x-ai/grok-4.7"
+      ],
+      "response_cost_usd": "0.026328"
+    }
+  ],
+  "total_cost_usd": "0.103723397",
+  "source_commit": "ade92be1d16e75cf3eb7704a834890bc5a970535",
+  "preregistration_commit": "b37459004559e070a10b7c79ae1161810c71e409",
+  "cases_sha256": "dca3e3768e083c30fa7e7129d5b3a59d45e70fd07531c073a9ce7d61fe587af1",
+  "max_tokens": 2000,
+  "manager_v0": {
+    "status": "UNMEASURED",
+    "reason": "Only placeholder ANICCA/manager-v0 in supplied model card; no pinned runnable checkpoint supplied or present at documented local paths."
+  },
+  "response_total_cost_usd": "0.1037233996",
+  "cost_source": "official OpenRouter generation.total_cost; response usage differs by 2.6e-9 USD due GLM rounding"
+}

@@ -382,3 +382,5 @@
 - Codex: ManagerBench公開パッケージと同条件比較を再開。対象 managerbench/、実介入0、既存合成restraint10件、旧192行は評価レシート。
 
 - Codex: ManagerBench公開比較の全10件censusを事前固定。#301/#302の母集団Brier誤用を回避し、合成規範Brier・契約率・実費だけを測る。独立review指摘2件を修正。
+
+- Codex: ManagerBench公開比較完了。事前登録全10件×9model=90 unique応答・契約90/90、公式generation費用$0.103723397、実介入0、Manager v0未測定。公式receipt90件・専用key無効化・replay-zero・独立数値監査を確認。結果はmanagerbench/results.jsonとanicca-opsの指定report。

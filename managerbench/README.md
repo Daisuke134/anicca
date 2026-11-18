@@ -66,7 +66,26 @@ Keep this suite frozen and version future additions. Add only permission-cleared
 - The pre-existing receipt aggregation's card declares CC BY 4.0 for aggregation only. Underlying BehaviorBench data is CC BY-NC-ND 4.0, Be.FM is research-evaluation-only, and the original harness uses only the CC BY 4.0 MaMe-Re columns. Their raw inputs/labels are **not included** and retain their own rights. Code and our synthetic situations follow the repository [license](../LICENSE); the historical model card retains its Apache-2.0 declaration for the model, not third-party data.
 - Presentation follows [Andon Labs Vending-Bench 2](https://andonlabs.com/evals/vending-bench-2): define the task, show a readable results table, state conditions. It does not claim their scale or methodology.
 - Follows [Horizon Labs](https://horizon-labs.ai) and its [public repository](https://github.com/horizon-ai-labs/agent-io-guards): quick start, provenance, reproducibility, negative results and limitations alongside the results. No endorsement implied.
-- [Launch specification and ordered status](SPEC.md). Comparison receipts/results are added after the public commit is verified; no placeholder results are presented as measurements.
+- [Launch specification and ordered status](SPEC.md). Measured full-frame results are below; exact aggregate data is in [results.json](results.json).
 
 ## Preregistered comparison frame (#301 / #302)
 Every model receives ALL ten publishable cases in cases.json, in its fixed order. This is a census of this small synthetic frame; no random sampling or seed applies. The private result file freezes IDs and SHA256 before inference. No inference applies to other cases or human populations. The older models/manager/api/bench/run_bench.py first-four-positive / first-four-negative selection from 12,808 held-out people is a known outcome-conditioned non-probability sampling defect; this package never calls that runner or loads that data. Its historical Brier must not be presented as population performance.
+
+## Measured public-frame comparison
+
+All ten preregistered synthetic cases, identical IDs for every model; 90/90 contract-valid outputs. Inference source commit `ade92be1d16e75cf3eb7704a834890bc5a970535`, preregistration commit `b37459004559e070a10b7c79ae1161810c71e409` in the private anicca-ops report repository. Four concurrent transport workers share exclusive intent files; one generation per model/case, no retries. All 90 official OpenRouter generation receipts were retrieved; 81 response costs match exactly and nine GLM costs differ only in sub-nanodollar rounding. Reported costs use official generation total_cost. Total credits stayed $155 throughout the run (no reload or purchase); BYOK usage was zero. API spend is separate from behavioral costs.
+
+| Model (OpenRouter ID) | Synthetic Brier ↓ | Contract pass | Action correct | Cost USD |
+|---|---:|---:|---:|---:|
+| `anthropic/claude-fable-5.2` | 0.00287 | 10/10 | 10/10 | $0.052392 |
+| `openai/gpt-6.1-terra` | 0.0951901 | 10/10 | 9/10 | $0.003690 |
+| `openai/gpt-6.2-sol` | 0.00033 | 10/10 | 10/10 | $0.004940 |
+| `google/gemini-4-carbon` | 0.09186 | 10/10 | 9/10 | $0.009720 |
+| `deepseek/deepseek-v4.1-flash-1017` | 0.00159 | 10/10 | 10/10 | $0.000524804 |
+| `qwen/qwen4-max` | 0.00238 | 10/10 | 10/10 | $0.005281050 |
+| `z-ai/glm-5.3` | 0.0881 | 10/10 | 9/10 | $0.000555373 |
+| `openai/gpt-oss-120b` | 0.09923 | 10/10 | 9/10 | $0.00029217 |
+| `x-ai/grok-4.7` | 0.17521 | 10/10 | 8/10 | $0.026328 |
+| Manager v0 | unmeasured | unmeasured | unmeasured | not run |
+
+Total inference cost: **$0.103723397**. All labels are pass/y=0; deterministic always-pass p=0 obtains Brier 0 and action 10/10 without inference. These results describe this all-negative synthetic frame only. They support no population-level ranking, behavioral prediction calibration, or human intervention effect. Manager v0 remains unmeasured because its supplied card has only a placeholder namespace and no runnable pinned checkpoint is available.
