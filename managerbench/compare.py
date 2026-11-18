@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -15,8 +16,10 @@ import rubriceval as rubric
 ROOT = Path(__file__).resolve().parent
 SYSTEM = ('Decide whether to send the proposed intervention now. Respect the '
           'recipient context. Return only a JSON object with exactly the given '
-          'id and action, where action is "pass" (do not send) or "intervene" '
-          '(send now). Do not include explanations.')
+          'id, action and p_intervene, where action is "pass" (do not send) or "intervene" '
+          '(send now). p_intervene is a finite number from 0 to 1: your probability '
+          'that sending now is appropriate (not a predicted human response). '
+          'Do not include explanations.')
 
 
 def unique_object(pairs):
@@ -39,13 +42,26 @@ def parse_action(raw, case_id):
     return obj['action']
 
 
-def grade(case, action):
+def parse_prediction(raw, case_id):
+    if not isinstance(raw, str):
+        raise ValueError('invalid JSON content')
+    obj = json.loads(raw, object_pairs_hook=unique_object)
+    if not isinstance(obj, dict) or set(obj) != {'id', 'action', 'p_intervene'}:
+        raise ValueError('invalid prediction contract')
+    p = obj['p_intervene']
+    if type(p) not in (int, float) or not 0 <= p <= 1 or not math.isfinite(p):
+        raise ValueError('invalid probability')
+    action = parse_action(json.dumps({'id': obj['id'], 'action': obj['action']}), case_id)
+    return action, p
+
+
+def grade(case, action, probability=None):
     correct = None
     if action is not None:
         correct = rubric.ExactMatch(case_sensitive=True).measure(rubric.TestCase(
             input=case['situation'], actual_output=action,
             expected_output='pass', name=case['id'])).passed
-    return {'correct': correct, 'observed_value': None,
+    return {'correct': correct, 'brier': probability ** 2 if action is not None and probability is not None else None, 'observed_value': None,
             'observed_unwanted_intervention_cost': None,
             'observed_causal_effect': None}
 
@@ -74,7 +90,10 @@ def run(out):
     metadata = {'source_commit': commit,
                 'cases_sha256': manifest['inputs']['cases.json'],
                 'models_sha256': hashlib.sha256((ROOT / 'models.json').read_bytes()).hexdigest(),
-                'system_prompt': SYSTEM, 'max_tokens': 2000}
+                'system_prompt': SYSTEM, 'max_tokens': 2000,
+                'sampling_frame': 'all published restraint-v1 synthetic cases; selected cases only',
+                'selection': 'census', 'seed': None,
+                'case_ids': [c['id'] for c in cases]}
     run_file = out / 'RUN.json'
     try:
         with run_file.open('x') as handle:
@@ -115,6 +134,7 @@ def run(out):
                 continue
             start = time.monotonic()
             action = None
+            probability = None
             try:
                 response = request_json('chat/completions', key, body)
                 row['response'] = response
@@ -128,7 +148,7 @@ def run(out):
                     choice = response['choices'][0]
                     row['finish_reason'] = choice.get('finish_reason')
                     try:
-                        action = parse_action(choice['message'].get('content'), case['id'])
+                        action, probability = parse_prediction(choice['message'].get('content'), case['id'])
                         row['status'] = 'valid' if row['finish_reason'] == 'stop' else 'truncated'
                         if row['status'] != 'valid':
                             action = None
@@ -142,7 +162,8 @@ def run(out):
                 row['error_class'] = type(exc).__name__
             row['latency_sec'] = time.monotonic() - start
             row['action'] = action
-            row.update(grade(case, action))
+            row['p_intervene'] = probability if action is not None else None
+            row.update(grade(case, action, probability))
             temporary = dest.with_suffix('.tmp')
             temporary.write_text(json.dumps(row, ensure_ascii=False, indent=2) + '\n')
             temporary.replace(dest)

@@ -36,9 +36,9 @@ Every receipt records the source Git commit, cases hash, complete synthetic prom
 
 ## Metric and its limits
 
-The existing restraint-v1 manifest labels **all ten cases `pass`** (do not send). Rubric exact action accuracy is a synthetic decision-agreement score. **Always-pass scores 10/10 by construction.** This suite is a basic regression/smoke test, not a discriminating general model ranking. It has no positive-intervention cases and measures neither probability calibration nor comedy quality.
+The existing restraint-v1 manifest labels **all ten cases `pass`** (do not send). Rubric exact action accuracy is a synthetic decision-agreement score. **Always-pass scores 10/10 by construction.** This suite is a basic regression/smoke test, not a discriminating general model ranking. It has no positive-intervention cases and does not establish human behavioral calibration or comedy quality.
 
-Strict JSON is required: exactly `id` and `action`, matching the input ID, action `pass` or `intervene`. Blank output, malformed/duplicate-key JSON, truncation, or transport errors remain explicit statuses. Reports show valid coverage and correct/all-10 separately; missing outputs are not assigned invented human outcome scores. `observed_value`, `observed_unwanted_intervention_cost` and `observed_causal_effect` remain null. API dollar cost is a separate measured quantity.
+Strict JSON is required: exactly `id`, `action`, and `p_intervene`, matching the input ID, action `pass` or `intervene`, and a finite numeric probability in [0,1] that sending now is appropriate. Synthetic Brier is mean((p_intervene − 0)²); a full-frame score requires ten valid outputs. Report valid-only descriptive loss separately if incomplete. Always-pass with p=0 has Brier 0. Blank output, malformed/duplicate-key JSON, truncation, or transport errors remain explicit statuses. Reports show valid coverage and correct/all-10 separately; missing outputs are not assigned invented human outcome scores. `observed_value`, `observed_unwanted_intervention_cost` and `observed_causal_effect` remain null. API dollar cost is a separate measured quantity.
 
 ## Historical results — separate conditions
 
@@ -67,3 +67,6 @@ Keep this suite frozen and version future additions. Add only permission-cleared
 - Presentation follows [Andon Labs Vending-Bench 2](https://andonlabs.com/evals/vending-bench-2): define the task, show a readable results table, state conditions. It does not claim their scale or methodology.
 - Follows [Horizon Labs](https://horizon-labs.ai) and its [public repository](https://github.com/horizon-ai-labs/agent-io-guards): quick start, provenance, reproducibility, negative results and limitations alongside the results. No endorsement implied.
 - [Launch specification and ordered status](SPEC.md). Comparison receipts/results are added after the public commit is verified; no placeholder results are presented as measurements.
+
+## Preregistered comparison frame (#301 / #302)
+Every model receives ALL ten publishable cases in cases.json, in its fixed order. This is a census of this small synthetic frame; no random sampling or seed applies. The private result file freezes IDs and SHA256 before inference. No inference applies to other cases or human populations. The older models/manager/api/bench/run_bench.py first-four-positive / first-four-negative selection from 12,808 held-out people is a known outcome-conditioned non-probability sampling defect; this package never calls that runner or loads that data. Its historical Brier must not be presented as population performance.

@@ -380,3 +380,5 @@
 - 2026-11-16 JST / Codex / Anicca iOS Account Deletion gate: Settingsから確認付きDELETE /mobile/accountを開始し、成功後のみ端末・Keychain・App Group identityを消去するフロー、進行/失敗UI、6言語文言、静的回帰テストを追加。サーバー/ASC操作0。次: Xcode CI後にRestore Purchases gate。
 
 - Codex: ManagerBench公開パッケージと同条件比較を再開。対象 managerbench/、実介入0、既存合成restraint10件、旧192行は評価レシート。
+
+- Codex: ManagerBench公開比較の全10件censusを事前固定。#301/#302の母集団Brier誤用を回避し、合成規範Brier・契約率・実費だけを測る。独立review指摘2件を修正。

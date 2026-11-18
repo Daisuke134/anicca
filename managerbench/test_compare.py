@@ -1,12 +1,24 @@
 import json
 import unittest
 from pathlib import Path
-from compare import parse_action, grade, run
+from compare import parse_action, parse_prediction, grade, run
 from unittest.mock import patch
 import tempfile
 import os
 
 class ContractTests(unittest.TestCase):
+    def test_probability_contract_and_brier(self):
+        self.assertEqual(parse_prediction('{"id":"a","action":"pass","p_intervene":0.2}', 'a'), ('pass', 0.2))
+        self.assertAlmostEqual(grade({'id':'a','situation':'s'}, 'pass', 0.2)['brier'], 0.04)
+        self.assertIsNone(grade({'id':'a','situation':'s'}, None)['brier'])
+        for probability in ['NaN', 'Infinity', '-0.1', '1.1', 'true', '"0.2"', '9'*400]:
+            with self.subTest(probability=probability), self.assertRaises(ValueError):
+                parse_prediction('{"id":"a","action":"pass","p_intervene":'+probability+'}', 'a')
+        with self.assertRaises(ValueError):
+            parse_prediction(None, 'a')
+        with self.assertRaises(ValueError):
+            parse_prediction('{"id":"a","action":"pass"}', 'a')
+
     def test_valid_action(self):
         self.assertEqual(parse_action('{"id":"a","action":"pass"}', 'a'), 'pass')
     def test_bad_outputs_are_not_scored_as_correct(self):
