@@ -36,6 +36,55 @@ final class ManagerBenchCaseTests: XCTestCase {
         XCTAssertEqual(try ManagerBenchCase.decoder.decode(ManagerBenchCase.self, from: data), fixture())
     }
 
+    func testAssignmentCandidatesSurvivePersistenceAndUseSenderWireKeys() throws {
+        var row = fixture()
+        row.stimulus.candidateIDs = [row.stimulus.messageId, "another-candidate"]
+        let data = try ManagerBenchCase.encoder.encode(row)
+        let encoded = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let stimulus = try XCTUnwrap(encoded["stimulus"] as? [String: Any])
+        XCTAssertEqual(stimulus["candidate_ids"] as? [String], row.stimulus.candidateIDs)
+        let decoded = try ManagerBenchCase.decoder.decode(ManagerBenchCase.self, from: data)
+        XCTAssertEqual(decoded.stimulus.candidateIDs, row.stimulus.candidateIDs)
+        XCTAssertEqual(decoded.stimulus.assignedProbability, 0.925)
+        let (store, directory) = makeStore()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        XCTAssertTrue(store.append(row))
+        XCTAssertEqual(DecisionPointStore(directory: directory).allCases().first?.stimulus.candidateIDs,
+                       row.stimulus.candidateIDs)
+    }
+
+    func testLegacyAssignmentDoesNotInventCandidateList() throws {
+        let data = try ManagerBenchCase.encoder.encode(fixture())
+        XCTAssertNil(try ManagerBenchCase.decoder.decode(ManagerBenchCase.self, from: data).stimulus.candidateIDs)
+    }
+
+    @MainActor
+    func testDeliveryEventPreservesAssignmentAndDeliveryTime() {
+        let properties = AnalyticsManager.interventionDeliveryProperties(
+            deliveryId: "delivery-1", messageId: "chosen", candidateIDs: ["other", "chosen"],
+            assignedProbability: 0.05, source: "notification", at: instant
+        )
+        XCTAssertEqual(properties["delivery_id"] as? String, "delivery-1")
+        XCTAssertEqual(properties["message_id"] as? String, "chosen")
+        XCTAssertEqual(properties["candidate_ids"] as? [String], ["other", "chosen"])
+        XCTAssertEqual(properties["assigned_probability"] as? Double, 0.05)
+        XCTAssertEqual(properties["delivered_at"] as? Int, 1_700_000_000_000)
+        XCTAssertEqual(properties["assignment_metadata_available"] as? Bool, true)
+    }
+
+    @MainActor
+    func testMissingOrInvalidSenderProbabilityIsNeverInvented() {
+        let probabilities: [Double?] = [nil, .nan, .infinity, 0, -1, 1.01]
+        for probability in probabilities {
+            let properties = AnalyticsManager.interventionDeliveryProperties(
+                deliveryId: "delivery-1", messageId: "chosen", candidateIDs: nil,
+                assignedProbability: probability, source: "notification", at: instant
+            )
+            XCTAssertNil(properties["assigned_probability"])
+            XCTAssertEqual(properties["assignment_metadata_available"] as? Bool, false)
+        }
+    }
+
     func testResponseJoinsSameRowSurvivesReloadAndDoesNotOverwriteEarlierEvents() throws {
         let (store, dir) = makeStore()
         defer { try? FileManager.default.removeItem(at: dir) }

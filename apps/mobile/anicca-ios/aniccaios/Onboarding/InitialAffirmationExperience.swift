@@ -216,6 +216,9 @@ struct FirstAffirmationStepView: View {
         }
         .onChange(of: revealComplete) { revealed in
             if revealed, let quote = selection?.quote {
+                if let deliveryId {
+                    DecisionPointRecorder.shared.recordDelivery(deliveryId: deliveryId, messageId: quote.id, source: "onboarding")
+                }
                 AnalyticsManager.shared.track(.firstAffirmationViewed, properties: ["quote_id": quote.id, "category": quote.categoryID])
             }
         }
@@ -487,6 +490,9 @@ struct FirstInterventionStepView: View {
         .onAppear { computeSelectionIfNeeded() }
         .onChange(of: revealComplete) { revealed in
             if revealed, let quote = selection?.quote {
+                if let deliveryId {
+                    DecisionPointRecorder.shared.recordDelivery(deliveryId: deliveryId, messageId: quote.id, source: "onboarding")
+                }
                 AnalyticsManager.shared.track(.firstAffirmationViewed, properties: [
                     "quote_id": quote.id, "category": quote.categoryID, "source": "first_intervention"
                 ])

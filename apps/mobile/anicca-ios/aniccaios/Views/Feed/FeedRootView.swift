@@ -53,6 +53,7 @@ final class HomeDeckModel: ObservableObject {
     /// Size of the ranked candidate list the deck was built from; the
     /// assignment probability of an explored card is 1 / candidateCount.
     var candidateCount: Int = 1
+    var candidateIDs: [String] = []
 }
 
 /// Idle auto-advance for the living home. The user rejected the old 3s recording
@@ -323,7 +324,16 @@ struct FeedRootView: View {
             guard let selection = PersonalizedNudgeSelector.select(
                 user: user, pool: catalog,
                 shownAt: user.shownTimestamps, now: now, band: band
-            ) else { return catalog.first.map { .init(quote: $0, deliveryId: nil) } }
+            ) else {
+                guard let quote = catalog.first else { return nil }
+                let fallback = PersonalizedNudgeSelector.Selection(
+                    quote: quote, reason: "home_catalog_fallback", candidateCount: 1,
+                    candidateIDs: [quote.id], assignedProbability: 1,
+                    policyVersion: PersonalizedNudgeSelector.policyVersion
+                )
+                let deliveryId = DecisionPointRecorder.shared.recordDecision(selection: fallback, syntheticUser: user, source: "daily_home")
+                return .init(quote: quote, deliveryId: deliveryId)
+            }
             let origin = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "daily_home")
             return .init(quote: selection.quote, deliveryId: origin)
         }
@@ -345,6 +355,7 @@ struct FeedRootView: View {
             shownAt: user.shownTimestamps, now: now, band: band
         )
         deckModel.candidateCount = max(ranked.count, 1)
+        deckModel.candidateIDs = ranked.map(\.id)
         var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
         for quote in ranked where quote.id != presentation.quote.id {
             cards.append(HomeDeckCard(quote: quote, origin: .exploration, deliveryId: nil))
@@ -398,12 +409,21 @@ struct FeedRootView: View {
                 quote: card.quote,
                 reason: "home_deck_exploration",
                 candidateCount: deckModel.candidateCount,
+                candidateIDs: deckModel.candidateIDs,
                 assignedProbability: 1.0 / Double(deckModel.candidateCount),
                 policyVersion: PersonalizedNudgeSelector.policyVersion
             )
             deckModel.cards[index].deliveryId = DecisionPointRecorder.shared.recordDecision(
                 selection: selection, syntheticUser: appState.syntheticUser, source: "home_deck"
             )
+        }
+        // Older cached presentations have no assignment ID or propensity.
+        if deckModel.cards[index].deliveryId == nil {
+            deckModel.cards[index].deliveryId = UUID().uuidString
+        }
+        let deliveredCard = deckModel.cards[index]
+        if let deliveryId = deliveredCard.deliveryId {
+            DecisionPointRecorder.shared.recordDelivery(deliveryId: deliveryId, messageId: deliveredCard.quote.id, source: "home")
         }
         recordViewedQuoteIfNeeded(at: index)
     }

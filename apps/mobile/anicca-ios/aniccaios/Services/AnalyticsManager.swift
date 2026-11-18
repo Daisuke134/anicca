@@ -16,6 +16,28 @@ final class AnalyticsManager {
     private var screenVisits = ScreenVisitLedger()
     private var onboardingAbandonment = OnboardingAbandonmentTracker()
 
+    /// Missing legacy/sender metadata is explicit, never a fabricated propensity.
+    func trackInterventionDelivered(deliveryId: String, messageId: String, candidateIDs: [String]?, assignedProbability: Double?, source: String, at date: Date) {
+        track(.interventionDelivered, properties: Self.interventionDeliveryProperties(
+            deliveryId: deliveryId, messageId: messageId, candidateIDs: candidateIDs,
+            assignedProbability: assignedProbability, source: source, at: date
+        ))
+    }
+
+    static func interventionDeliveryProperties(deliveryId: String, messageId: String, candidateIDs: [String]?, assignedProbability: Double?, source: String, at date: Date) -> [String: MixpanelType] {
+        var properties: [String: MixpanelType] = [
+            "delivery_id": deliveryId, "message_id": messageId,
+            "candidate_ids": candidateIDs ?? [], "source": source,
+            "delivered_at": Int(date.timeIntervalSince1970 * 1_000),
+        ]
+        if let assignedProbability, assignedProbability.isFinite,
+           assignedProbability > 0, assignedProbability <= 1 {
+            properties["assigned_probability"] = assignedProbability
+        }
+        properties["assignment_metadata_available"] = candidateIDs?.contains(messageId) == true && properties["assigned_probability"] != nil
+        return properties
+    }
+
     private var context: [String: MixpanelType] {
         #if targetEnvironment(simulator)
         let environment = "simulator"
@@ -368,6 +390,7 @@ enum AnalyticsEvent: String {
     case notificationPermissionRequested = "notification_permission_requested"
     case notificationPermissionResult = "notification_permission_result"
     case notificationPrimingViewed = "notification_priming_viewed"
+    case interventionDelivered = "intervention_delivered"
     case nudgeDecisionMade = "nudge_decision_made"
     case purchaseStarted = "purchase_started"
     case purchaseResult = "purchase_result"

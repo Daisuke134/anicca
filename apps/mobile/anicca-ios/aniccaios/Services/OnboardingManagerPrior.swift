@@ -70,8 +70,8 @@ enum OnboardingManagerPrior {
             quote: selected.quote,
             reason: "posterior_conditioned_on:" + activeAxes.joined(separator: ","),
             candidateCount: candidates.count,
+            candidateIDs: candidates.map { $0.quote.id },
             assignedProbability: selected.probability,
-            policyVersion: policyVersion,
-            candidateIDs: candidates.map { $0.quote.id })
+            policyVersion: policyVersion)
     }
 }
