@@ -41,7 +41,7 @@ struct MicroPreviewStepView: View {
             guard let chosen = matching.sorted(by: { $0.id < $1.id }).first else { return }
             quote = chosen
             let selection = PersonalizedNudgeSelector.Selection(quote: chosen, reason: "micro_belief_preview",
-                candidateCount: 1, assignedProbability: 1, policyVersion: "micro_preview_v1", candidateIDs: [chosen.id])
+                candidateCount: 1, candidateIDs: [chosen.id], assignedProbability: 1, policyVersion: "micro_preview_v1")
             deliveryID = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "onboarding_micro_preview")
         }
     }

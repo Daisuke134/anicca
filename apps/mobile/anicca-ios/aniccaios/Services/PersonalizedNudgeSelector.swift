@@ -44,7 +44,6 @@ enum PersonalizedNudgeSelector {
         /// Exact probability of this quote under the ε-greedy policy.
         let assignedProbability: Double
         let policyVersion: String
-        var candidateIDs: [String] = []
     }
 
     /// Categories the profile asks for, primary first.
@@ -247,8 +246,7 @@ enum PersonalizedNudgeSelector {
             candidateCount: count,
             candidateIDs: ranked.map(\.id),
             assignedProbability: probability,
-            policyVersion: policyVersion,
-            candidateIDs: ranked.map(\.id)
+            policyVersion: policyVersion
         )
     }
 }

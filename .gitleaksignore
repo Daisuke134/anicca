@@ -1,3 +1,7 @@
+# Mixpanel public SDK project token, not an authorization secret:
+# https://docs.mixpanel.com/reference/project-token
+16421d7d5572cfac2a808c76245f5927ec917765:apps/mobile/anicca-ios/Configs/Production.xcconfig.fallback:generic-api-key:13
+
 # Historical fingerprints adjudicated in
 # docs/evidence/security/2026-07-29-oss-security-baseline.md.
 # This baseline does not suppress a new secret at a new commit/path/line.
