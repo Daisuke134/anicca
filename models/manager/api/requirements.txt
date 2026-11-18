@@ -1,0 +1,5 @@
+fastapi>=0.110
+uvicorn>=0.29
+torch>=2.0  # CPU build is enough for the 135M weights
+transformers>=4.40
+httpx>=0.27  # bench harness only

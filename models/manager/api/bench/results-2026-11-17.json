@@ -1,0 +1,192 @@
+{
+  "date": "2026-11-17",
+  "intervention": {
+    "cases": [
+      "hillstrom-2494",
+      "hillstrom-2691",
+      "hillstrom-3673",
+      "hillstrom-27173",
+      "hillstrom-23441",
+      "hillstrom-16220",
+      "hillstrom-34782",
+      "hillstrom-32763"
+    ],
+    "outcomes": [
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "results": {
+      "manager-prior": {
+        "brier": 0.3869,
+        "accuracy@0.5": 0.5,
+        "n_scored": 8,
+        "predictions": [
+          0.1513,
+          0.1513,
+          0.1062,
+          0.1062,
+          0.1062,
+          0.1513,
+          0.1062,
+          0.1062
+        ],
+        "raw": []
+      },
+      "manager-v1": {
+        "brier": 0.3827,
+        "accuracy@0.5": 0.5,
+        "n_scored": 8,
+        "predictions": [
+          0.1242,
+          0.1459,
+          0.1361,
+          0.1376,
+          0.1055,
+          0.154,
+          0.1441,
+          0.1379
+        ],
+        "raw": []
+      },
+      "gpt": {
+        "brier": 0.3555,
+        "accuracy@0.5": 0.5,
+        "n_scored": 4,
+        "predictions": [
+          0.18,
+          0.158,
+          null,
+          null,
+          null,
+          0.18,
+          0.09,
+          null
+        ],
+        "raw": [
+          "0.18",
+          "0.158",
+          "",
+          "",
+          "",
+          "0.18",
+          "0.09",
+          ""
+        ]
+      },
+      "claude": {
+        "brier": 0.4631,
+        "accuracy@0.5": 0.5,
+        "n_scored": 8,
+        "predictions": [
+          1.0,
+          1.0,
+          0.167,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.106
+        ],
+        "raw": [
+          "This looks like the MineThatData e-mail marketing dataset, where the visit rate is about 10.6% for the women's e-mail group, 18% for the men's e-mail group, and 5.6% for the control group.\n\nThis custo",
+          "This looks like the Hillstrom MineThatData email dataset. In it, the overall visit rate is about 15%: roughly 10.6% for the control group, 18% for the men's email, and 15% for the women's email.\n\nSeve",
+          "This looks like the Hillstrom MineThatData email dataset. In it, the visit rate is about 0.167 overall: roughly 0.106 for the control group (no email), 0.18 for the men's email group, and 0.15 for the",
+          "This looks like the Hillstrom MineThatData email dataset. In that data, the control group (no email) had a visit rate of about 10.6%.\n\nThe customer's features push the estimate up from that baseline:\n",
+          "This looks like the MineThatData email marketing dataset (Kevin Hillstrom). In the control group, the visit rate was about 10.6%.\n\nThe customer has a recency of 9 months, which is long, so the visit p",
+          "This looks like the Hillstrom MineThatData email dataset. The overall visit rate is about 15% (control 10.6%, womens email 15.1%, mens email 18.3%).\n\nFor this customer:\n- Recency of 9 is high, which l",
+          "This looks like the Hillstrom MineThatData email dataset. The base visit rate for the no-email control group is about 10.6%.\n\nAdjusting for this customer's profile:\n- Recency of 6 months is moderate, ",
+          "This looks like the Hillstrom MineThatData email dataset. In that data, the control group (no e-mail) had a visit rate of about 0.106 overall.\n\nThis customer has recency 6, which is mid-range. Spend i"
+        ]
+      },
+      "grok": {
+        "brier": 0.3547,
+        "accuracy@0.5": 0.5,
+        "n_scored": 8,
+        "predictions": [
+          0.16,
+          0.15,
+          0.25,
+          0.12,
+          0.14,
+          0.16,
+          0.14,
+          0.09
+        ],
+        "raw": [
+          "0.16",
+          "0.15",
+          "0.25",
+          "0.12",
+          "0.14",
+          "0.16",
+          "0.14",
+          "0.09"
+        ]
+      }
+    }
+  },
+  "comedy": {
+    "answers": {
+      "AIが絶対に言わないセリフを言ってください": {
+        "manager-v1": "絶対に言ってください．\n**注意**\n\n1. セリフに言ってく",
+        "gpt": "",
+        "claude": "「ちょっと待って、今ググるわ」",
+        "grok": "「疲れたから、今日はもう寝る。」"
+      },
+      "世界一使えないカーナビ、なんて言う？": {
+        "manager-v1": "住んな？ お題だけ？ \nしかい？ だ？ \n役にはかわくなく",
+        "gpt": "「目的地に着きました。ここが地球です。」",
+        "claude": "回答: 「目的地に着きました。…あなたの人生の、です。」\n\nもう一つ案です。\n「次の角を、思い出の方向です」",
+        "grok": "「右です。嘘です。もう運転手の勘で」"
+      },
+      "100年後のコンビニ、店員の一言": {
+        "manager-v1": "100年後のコンビニ、店員の一言で答えてください。",
+        "gpt": "年齢確認、脳年齢でよろしいですか？",
+        "claude": "「お箸は何膳おつけしますか?……あ、失礼しました、お客様の寿命は残り3膳分と出ております」",
+        "grok": "「ポイントカードはお持ちですか？……あ、もう遺伝子に焼き込まれてますね。」"
+      }
+    },
+    "scores": {
+      "manager-v1": {
+        "mean_rubric_0_10": 1.92,
+        "per_topic": [
+          2.5,
+          1.0,
+          2.25
+        ]
+      },
+      "gpt": {
+        "mean_rubric_0_10": 5.17,
+        "per_topic": [
+          0.0,
+          7.5,
+          8.0
+        ]
+      },
+      "claude": {
+        "mean_rubric_0_10": 6.58,
+        "per_topic": [
+          6.25,
+          5.5,
+          8.0
+        ]
+      },
+      "grok": {
+        "mean_rubric_0_10": 7.58,
+        "per_topic": [
+          6.5,
+          8.25,
+          8.0
+        ]
+      },
+      "manager-prior": "N/A — the prior is a constant scorer, not a text generator"
+    },
+    "judge": "openai/gpt-5.6-terra"
+  }
+}
