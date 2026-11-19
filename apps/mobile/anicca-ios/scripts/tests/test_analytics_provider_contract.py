@@ -121,8 +121,12 @@ def main() -> int:
     if missing:
         raise AssertionError(f"Analytics screen inventory is incomplete: {missing}")
 
+    completed = manager.split("func trackOnboardingStepCompleted(", 1)[1].split("\n    }", 1)[0]
+    if "track(.onboardingStepCompleted," not in completed:
+        raise AssertionError("Onboarding completion helper must emit the step-completed event")
+
     required_callers = {
-        "onboarding": ("onboardingStepCompleted", "trackScreenViewed", "onboardingStepViewed"),
+        "onboarding": ("trackOnboardingStepCompleted", "trackScreenViewed", "onboardingStepViewed"),
         "paywall": ("analyticsScreen(.paywall",),
         "feed": ("analyticsScreen(.feed", "affirmationViewed", "trackScreenViewed"),
         "permission": ("notificationPermissionRequested",),

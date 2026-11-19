@@ -126,15 +126,22 @@ class BuildDiagnosticsTests(unittest.TestCase):
         self.assertTrue(log.is_file())
         self.assertIn("Test Case SomeTests.testBehavior failed", log.read_text())
 
-    def test_failure_artifact_upload_runs_after_tests_and_contains_both_logs(self):
+    def test_failure_artifact_upload_follows_each_job_and_keeps_its_log(self):
         source = WORKFLOW.read_text()
-        upload = source.index("- name: Preserve full build and unit test logs on failure")
-        unit_tests = source.index("- name: Run unit tests (unsigned)")
-        self.assertGreater(upload, unit_tests)
-        step = source[upload:]
-        self.assertIn("if: failure()", step)
-        self.assertIn("${{ runner.temp }}/build-output.log", step)
-        self.assertIn("${{ runner.temp }}/test-output.log", step)
+        # Build and unit tests run on separate machines; each job must upload its own log.
+        for job, next_job, producer, artifact in [
+            ("build", "unit-tests", "Build app (unsigned)", "build-output.log"),
+            ("unit-tests", None, "Run unit tests (unsigned)", "test-output.log"),
+        ]:
+            with self.subTest(job=job):
+                body = source.split(f"\n  {job}:\n", 1)[1]
+                if next_job:
+                    body = body.split(f"\n  {next_job}:\n", 1)[0]
+                upload = body.index("uses: actions/upload-artifact@")
+                self.assertGreater(upload, body.index(f"- name: {producer}"))
+                step = body[body.rfind("- name:", 0, upload):]
+                self.assertIn("if: failure()", step)
+                self.assertIn("${{ runner.temp }}/" + artifact, step)
 
 
 class NativeModelCoverageTests(unittest.TestCase):

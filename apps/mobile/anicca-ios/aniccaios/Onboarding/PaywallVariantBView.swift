@@ -160,11 +160,15 @@ struct PaywallVariantBView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(String(localized: "paywall_b_retry")) {
+                Button {
                     Task {
                         let loaded = await refreshStorefrontEligibility()
                         trackOfferingLoadResult(loaded)
                     }
+                } label: {
+                    Text(String(localized: "paywall_b_retry"))
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(PressScaleButtonStyle())
                 .font(.headline)
@@ -190,9 +194,12 @@ struct PaywallVariantBView: View {
     }
 
     private var restoreButton: some View {
-        Button(String(localized: "paywall_plan_restore")) { restorePurchases() }
+        Button { restorePurchases() } label: {
+            Text(String(localized: "paywall_plan_restore"))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+        }
             .buttonStyle(PressScaleButtonStyle())
-            .frame(minHeight: 44)
             .disabled(isPurchasing)
             .accessibilityIdentifier("paywall-restore")
     }
@@ -232,6 +239,7 @@ struct PaywallVariantBView: View {
                 .padding(.vertical, 4)
                 .background(AppTheme.Colors.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 18))
+                .contentShape(Rectangle())
             }
             .buttonStyle(PressScaleButtonStyle())
             .disabled(selectedPackage == nil || isPurchasing)
@@ -254,6 +262,7 @@ struct PaywallVariantBView: View {
                     ])
                 } label: {
                     offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(isPurchasing)

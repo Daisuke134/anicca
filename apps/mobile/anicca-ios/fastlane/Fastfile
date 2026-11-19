@@ -207,6 +207,7 @@ platform :ios do
 
   desc "Build, archive, and export IPA for App Store"
   lane :build do
+    sh("bash", File.expand_path("../scripts/onboarding-ship-gate.sh", __dir__))
     # 署名 identity は System.keychain に常駐 (2026-07-04 incident: この Mac の
     # headless session は system security domain のため user keychain が見えない。
     # 復旧手順 = ~/.anicca-signing/*.p12 を sudo security import -k /Library/Keychains/System.keychain)

@@ -1,130 +1,331 @@
-# ANICCA iOS v8 onboarding + soft-paywall E2E
-# Flow: welcome → goal → pain points → frequency → nudge time → processing
-#       → plan reveal → comparison → notifications → paywall → feed
-# (App Store review prompt is post-value, not in onboarding.)
-
+# 1.10.0 adaptive flow. Fresh dedicated simulator; real offerings, no purchase.
+# XCUITest is the coordinate-based ship gate; this is the supplementary recording lane.
 appId: ai.anicca.app.ios
-name: ANICCA v8 Onboarding and Soft Paywall
-tags:
-  - onboarding
-  - paywall
-  - v8
-
+name: Anicca Adaptive Onboarding and Soft Paywall
+tags: [onboarding, paywall]
 ---
-# Preconditions: freshly erased dedicated simulator with the Staging app installed.
-# clearState reinstalls iOS apps; this avoids a second WebRTC app-bundle copy.
 - startRecording:
-    path: "anicca-onboarding-v8"
+    path: "anicca-adaptive-onboarding"
 - launchApp:
     arguments:
-      UITESTING: "true"
-
-# === Step 1: Welcome ===
+      uiTesting: "true"
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
-    timeout: 60000
-- takeScreenshot: "v7-01-welcome"
+    timeout: 30000
 - tapOn:
     id: "onboarding-welcome-cta"
-
-# === Step 2: Goal ===
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-goal-calm"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-goal-calm"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      text: "何を変えたいですか？"
-    timeout: 15000
-- takeScreenshot: "v7-02-goal"
+      id: "onboarding-goal-continue"
+    timeout: 30000
 - tapOn:
-    text: "悪い習慣を断ち切る"
-
-# === Step 3: Pain points ===
+    id: "onboarding-goal-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-focus_categories-anxiety"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-focus_categories-anxiety"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: "onboarding-struggle-negative_thoughts"
-    timeout: 15000
-- takeScreenshot: "v7-03-pain-points"
+      id: "onboarding-focus_categories-continue"
+    timeout: 30000
 - tapOn:
-    id: "onboarding-struggle-putting_off"
+    id: "onboarding-focus_categories-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-name-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-name-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-birth_context-aries"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-birth_context-aries"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-birth_context-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-birth_context-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-mood_baseline-neutral"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-mood_baseline-neutral"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-mood_baseline-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-mood_baseline-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-struggle-stress"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-struggle-stress"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-struggles-next"
+    timeout: 30000
 - tapOn:
     id: "onboarding-struggles-next"
-
-# === Step 4: Frequency ===
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-stress_trigger-work"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-stress_trigger-work"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
+      id: "onboarding-stress_trigger-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-stress_trigger-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
       id: "onboarding-depth-daily"
-    timeout: 15000
-- takeScreenshot: "v7-04-frequency"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "onboarding-depth-daily"
-
-# === Step 5: Nudge times ===
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      text: "いつ言葉を届けましょうか？"
-    timeout: 15000
-- takeScreenshot: "v7-05-nudge-times"
-- tapOn:
-    text: "朝 (9時)"
-- tapOn:
-    text: "続ける"
-
-# === Step 6: Processing ===
-- takeScreenshot: "v7-06-processing"
-
-# === Step 7: Personalized plan reveal ===
-- extendedWaitUntil:
-    visible:
-      id: "onboarding-insight-cta"
+      id: "onboarding-depth-continue"
     timeout: 30000
-- takeScreenshot: "v7-07-plan-reveal"
 - tapOn:
-    id: "onboarding-insight-cta"
-
-# === Step 8: Comparison ===
+    id: "onboarding-depth-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-belief_themes-self_trust"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-belief_themes-self_trust"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      text: "96%"
-    timeout: 15000
-- takeScreenshot: "v7-08-comparison"
+      id: "onboarding-belief_themes-continue"
+    timeout: 30000
 - tapOn:
-    text: "続ける"
-
-# === Step 9: Notifications (rating prompt removed from onboarding) ===
+    id: "onboarding-belief_themes-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-micro-save"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-micro-save"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-tone-gentle"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-tone-gentle"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-tone-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-tone-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-life_context-work"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-life_context-work"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-life_context-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-life_context-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-routine_anchors-waking"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-routine_anchors-waking"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-routine_anchors-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-routine_anchors-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-prior_attempts-meditation"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_attempts-meditation"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-prior_attempts-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_attempts-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-prior_helpfulness-meditation"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_helpfulness-meditation"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-prior_helpfulness-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_helpfulness-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-start_reason-overwhelmed"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-start_reason-overwhelmed"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-start_reason-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-start_reason-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-quiet_hours-none"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-quiet_hours-none"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-quiet_hours-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-quiet_hours-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "theme-sandWave"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "theme-sandWave"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-theme-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-theme-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-icon-AppIcon"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-icon-AppIcon"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-icon-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-icon-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-widget-interested"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-widget-interested"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-first-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-first-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-reminder-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-reminder-continue"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: "onboarding-notifications-allow"
-    timeout: 15000
-- takeScreenshot: "v8-09-notifications"
+    timeout: 30000
 - tapOn:
     id: "onboarding-notifications-allow"
+    retryTapIfNoChange: false
 - tapOn:
     text: "許可しない|Don't Allow|Don’t Allow"
-    optional: true
-
-# === Step 10: Soft paywall ===
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: "paywall-primer-cta"
-    timeout: 30000
-- takeScreenshot: "v8-10-paywall-primer"
-- assertVisible:
-    id: "paywall-close-button"
-- tapOn:
-    id: "paywall-primer-cta"
-- extendedWaitUntil:
-    visible:
-      text: "あなたが一番つらいとき、\nそっと届く言葉"
-    timeout: 15000
-- takeScreenshot: "v7-12-plan-selection"
-- assertVisible:
-    id: "paywall-close-button"
+      id: "paywall-plan-cta"
+    timeout: 60000
 - tapOn:
     id: "paywall-close-button"
-
-# === Verify: main feed ===
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: "feed-scroll"
-    timeout: 15000
-- takeScreenshot: "v7-13-main-feed"
+    timeout: 20000
+- takeScreenshot: "adaptive-onboarding-complete"
 - stopRecording

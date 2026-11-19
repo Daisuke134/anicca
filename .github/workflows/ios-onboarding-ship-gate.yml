@@ -1,0 +1,41 @@
+name: iOS onboarding ship gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/anicca-ios/**'
+      - '.github/workflows/ios-onboarding-ship-gate.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ios-onboarding-ship-gate
+  cancel-in-progress: false
+jobs:
+  onboarding-normal-taps:
+    # Owner's existing Mac only: no paid cloud device/testing service.
+    # Do not execute untrusted pull_request code on a signing/build machine.
+    runs-on: [self-hosted, macOS, anicca-ios]
+    timeout-minutes: 60
+    env:
+      ONBOARDING_SIM_RUNTIME: ${{ vars.ONBOARDING_SIM_RUNTIME }}
+      ONBOARDING_SIM_DEVICE_TYPE: ${{ vars.ONBOARDING_SIM_DEVICE_TYPE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize private build configuration
+        env:
+          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_PRODUCTION_XCCONFIG_B64 }}
+        run: bash apps/mobile/anicca-ios/ci_scripts/ci_post_clone.sh
+      - name: Full onboarding with single normal taps
+        run: bash apps/mobile/anicca-ios/scripts/onboarding-ship-gate.sh
+      - name: Preserve results including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onboarding-normal-taps-${{ github.sha }}
+          if-no-files-found: warn
+          path: |
+            apps/mobile/anicca-ios/build/onboarding-gate/**/source.txt
+            apps/mobile/anicca-ios/build/onboarding-gate/**/*.log
+            apps/mobile/anicca-ios/build/onboarding-gate/**/*.json
+            apps/mobile/anicca-ios/build/onboarding-gate/**/*.xcresult

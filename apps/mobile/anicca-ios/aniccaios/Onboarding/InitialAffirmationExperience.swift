@@ -86,6 +86,7 @@ struct AffirmationGoalStepView: View {
                     }
                     .padding(18)
                     .selectionCard(isSelected: selection == option.0)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("onboarding-goal-\(option.0)")
@@ -196,6 +197,7 @@ struct FirstAffirmationStepView: View {
                     .font(.subheadline).padding(14)
                     .background(AppTheme.Colors.cardBackground.opacity(0.8))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .contentShape(Rectangle())
             }
             .buttonStyle(PressScaleButtonStyle())
             .disabled(!revealComplete)
@@ -367,6 +369,7 @@ struct ReminderScheduleStepView: View {
                         }
                         .padding(14)
                         .selectionCard(isSelected: selectedSlots.contains(slot))
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(PersonalizationRules.isQuiet(slot, quietHours: appState.syntheticUser.quietHours))
@@ -394,6 +397,7 @@ struct ReminderScheduleStepView: View {
                             .frame(maxWidth: .infinity)
                             .padding(14)
                             .selectionCard(isSelected: frequency == count)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("onboarding-frequency-\(count)")

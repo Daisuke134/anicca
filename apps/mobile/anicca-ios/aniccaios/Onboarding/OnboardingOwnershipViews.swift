@@ -21,7 +21,11 @@ struct MicroPreviewStepView: View {
             VStack(spacing: 12) {
                 PrimaryButton(title: String(localized: "growth_keep_close"), isEnabled: quote != nil) { finish(saved: true) }
                     .accessibilityIdentifier("onboarding-micro-save")
-                Button(String(localized: "adaptive_skip")) { finish(saved: false) }
+                Button { finish(saved: false) } label: {
+                    Text(String(localized: "adaptive_skip"))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
                     .buttonStyle(PressScaleButtonStyle())
                     .accessibilityIdentifier("onboarding-micro-skip")
             }
@@ -99,6 +103,7 @@ struct OnboardingIconStepView: View {
                         Spacer()
                         Image(systemName: selected == id ? "checkmark.circle.fill" : "circle")
                     }.padding(12).selectionCard(isSelected: selected == id)
+                    .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityIdentifier("onboarding-icon-\(id)")
             }
             if failed { Text(String(localized: "winner_icon_error")).foregroundStyle(.secondary) }
@@ -107,7 +112,11 @@ struct OnboardingIconStepView: View {
                 PrimaryButton(title: String(localized: "common_continue"), isEnabled: !applying) { apply() }
                     .accessibilityIdentifier("onboarding-icon-continue")
                 if failed {
-                    Button(String(localized: "adaptive_skip")) { save(UIApplication.shared.alternateIconName ?? "AppIcon") }
+                    Button { save(UIApplication.shared.alternateIconName ?? "AppIcon") } label: {
+                        Text(String(localized: "adaptive_skip"))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
                 }
             }
         }
@@ -160,7 +169,11 @@ struct OnboardingWidgetStepView: View {
             VStack(spacing: 12) {
                 PrimaryButton(title: String(localized: "winner_widget_add")) { finish("interested") }
                     .accessibilityIdentifier("onboarding-widget-interested")
-                Button(String(localized: "winner_widget_later")) { finish("later") }
+                Button { finish("later") } label: {
+                    Text(String(localized: "winner_widget_later"))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
                     .buttonStyle(PressScaleButtonStyle())
                     .accessibilityIdentifier("onboarding-widget-later")
             }

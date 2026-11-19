@@ -95,6 +95,7 @@ struct NotificationPermissionStepView: View {
                     Text(String(localized: "growth_maybe_later"))
                         .font(.subheadline).foregroundStyle(AppTheme.Colors.accent)
                         .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(PressScaleButtonStyle())
                 .disabled(isRequesting)
