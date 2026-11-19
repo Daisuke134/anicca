@@ -1,0 +1,9 @@
+11:12:41.316 aniccaiosUITests-Runner[40951:105998] <XCTWaiter: 0x600000d32ac0> entering wait loop for 10.00s with expectations: `acquiring background assertion`
+11:12:52.596 aniccaiosUITests-Runner[40951:105998] <XCTWaiter: 0x600000d380c0> entering wait loop for 10.00s with expectations: `Expect predicate `hittable == 1 AND enabled == 1` for object "onboarding-welcome-cta" Button`
+11:12:57.176 aniccaiosUITests-Runner[40951:105998] Computing hit point for Button, identifier: 'onboarding-welcome-cta', label: 'Get Started'
+11:12:59.535 aniccaiosUITests-Runner[40951:105998] Checking that activation point {220, 878} is inside event synthesis frame {{24, 850}, {392, 56}} (or is the {-1, -1} sentinel for unhittable)
+11:12:59.535 aniccaiosUITests-Runner[40951:105998] Computed hit point {220.0, 878.0} (hittable)
+11:13:02.849 aniccaiosUITests-Runner[40951:106557] <XCTWaiter: 0x600000d380c0> watchdog first trigger, notifying manager of timeout
+11:13:02.850 aniccaiosUITests-Runner[40951:105998] Remote query evaluation failed with error: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1001 "Interrupted by waiter." UserInfo={NSLocalizedDescription=Interrupted by waiter.}
+11:13:02.856 aniccaiosUITests-Runner[40951:105998] <XCTWaiter: 0x600000d380c0> reporting timed out failure with Expect predicate `hittable == 1 AND enabled == 1` for object "onboarding-welcome-cta" Button
+11:13:08.759 aniccaiosUITests-Runner[40951:105998] <XCTWaiter: 0x600000d30d80> entering wait loop for 10.00s with expectations: `flushing telemetry`

@@ -31,6 +31,8 @@ final class OnboardingTapE2ETests: XCTestCase {
         app.launch()
 
         tap(app.buttons["onboarding-welcome-cta"], x: tapX)
+        XCTAssertTrue(app.buttons["onboarding-goal-calm"].waitForExistence(timeout: 30),
+                      "A single normal welcome tap must advance to goal selection")
         select(app.buttons["onboarding-goal-calm"], in: app, x: tapX)
         tap(app.buttons["onboarding-goal-continue"], x: tapX)
         answer("focus_categories", "anxiety", in: app, x: tapX)
@@ -147,10 +149,22 @@ final class OnboardingTapE2ETests: XCTestCase {
     private func tap(_ element: XCUIElement, x: CGFloat,
                      file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(element.waitForExistence(timeout: 30), "Missing \(element)", file: file, line: line)
-        let ready = NSPredicate(format: "hittable == true AND enabled == true")
-        let expectation = XCTNSPredicateExpectation(predicate: ready, object: element)
-        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 10), .completed,
-                       "CTA never became tappable", file: file, line: line)
+        // The cold simulator in run 44509771791 computed a valid hit point,
+        // then the 10s outer waiter interrupted the next AX query. Avoid the
+        // element-backed predicate's diagnostic description work during polling
+        // and allow the same 30s readiness budget as waitForExistence above.
+        let ready = NSPredicate { _, _ in
+            element.exists && element.isEnabled && element.isHittable
+        }
+        let expectation = XCTNSPredicateExpectation(predicate: ready, object: nil)
+        guard XCTWaiter.wait(for: [expectation], timeout: 30) == .completed else {
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "untappable-cta"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            XCTFail("CTA never became tappable: \(element.debugDescription)", file: file, line: line)
+            return
+        }
         element.coordinate(withNormalizedOffset: CGVector(dx: x, dy: 0.5)).tap()
     }
 }
