@@ -36,7 +36,7 @@ jobs:
             echo "ONBOARDING_SIM_RUNTIME=$RUNTIME" >> "$GITHUB_ENV"
           fi
           if [ -z "${ONBOARDING_SIM_DEVICE_TYPE:-}" ]; then
-            DEVICE=$(xcrun simctl list devicetypes --json | python3 -c "import json,sys; ds=[d for d in json.load(sys.stdin)['devicetypes'] if d['name'].startswith('iPhone')]; print(ds[-1]['identifier'])")
+            DEVICE=$(xcrun simctl list devicetypes --json | python3 -c "import json,sys,re; ds=json.load(sys.stdin)['devicetypes']; cands=sorted((int(m.group(1)), d['name'], d['identifier']) for d in ds for m in [re.match(r'iPhone (\d+)', d['name'])] if m); print(cands[-1][2])")
             echo "ONBOARDING_SIM_DEVICE_TYPE=$DEVICE" >> "$GITHUB_ENV"
           fi
           echo "runtime=${ONBOARDING_SIM_RUNTIME:-auto} device=${ONBOARDING_SIM_DEVICE_TYPE:-auto}"
