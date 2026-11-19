@@ -115,14 +115,27 @@ final class OnboardingTapE2ETests: XCTestCase {
     @MainActor
     private func select(_ element: XCUIElement, in app: XCUIApplication, x: CGFloat) {
         XCTAssertTrue(element.waitForExistence(timeout: 30))
-        // Scroll only to expose a row; never repeat its tap to mask a missed touch.
+        // Require the entire row inside the actual viewport, not an extra margin:
+        // ThemePickerView has 16pt padding and its single free-theme row cannot
+        // scroll far enough to satisfy the old artificial 20pt inset.
         let scroll = app.scrollViews.firstMatch
-        for scrollAttempt in 0..<8 {
-            let visible = scroll.frame.intersection(app.frame).insetBy(dx: 0, dy: 20)
-            if element.isHittable && visible.contains(element.frame) { break }
-            if element.frame.midY < visible.midY { scroll.swipeDown() }
+        XCTAssertTrue(scroll.waitForExistence(timeout: 10))
+        for scrollAttempt in 0...8 {
+            let visible = scroll.frame.intersection(app.frame)
+            let row = element.frame
+            if !visible.isEmpty && !row.isEmpty && visible.contains(row) && element.isHittable { break }
+            // Check again after the eighth swipe before reporting failure.
+            guard scrollAttempt < 8 else {
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "unexposed-\(element.identifier)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                XCTFail("Could not expose the complete row: \(element.identifier); row=\(row), viewport=\(visible), hittable=\(element.isHittable)")
+                return
+            }
+            // Scroll only to expose a row; never repeat its tap to mask a missed touch.
+            if row.midY < visible.midY { scroll.swipeDown() }
             else { scroll.swipeUp() }
-            if scrollAttempt == 7 { XCTFail("Could not expose the complete row: \(element)") }
         }
         tap(element, x: x)
         let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: element)
