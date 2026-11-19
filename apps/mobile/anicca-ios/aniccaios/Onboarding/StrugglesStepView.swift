@@ -83,6 +83,7 @@ struct StrugglesStepView: View {
             }
             .padding(18)
             .selectionCard(isSelected: isSelected)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("onboarding-struggle-\(option.id)")

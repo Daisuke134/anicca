@@ -271,6 +271,7 @@ struct ThemePickerView: View {
                         // The checkmark and stroke morph with the shared
                         // selection token instead of cutting (AppMotion).
                         .animation(AppMotion.selection, value: themeStore.selected)
+                        .contentShape(Rectangle())
                     }
                     .accessibilityIdentifier("theme-\(theme.rawValue)")
                     .accessibilityLabel(theme.displayName)

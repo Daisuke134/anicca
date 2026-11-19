@@ -44,6 +44,9 @@ echo "Configuration: ${CONFIGURATION}"
 echo "Upload to App Store: ${UPLOAD}"
 echo ""
 
+# Full onboarding must pass before producing an App Store archive.
+bash "${PROJECT_DIR}/scripts/onboarding-ship-gate.sh"
+
 # Step 1: Clean build
 echo -e "${YELLOW}[1/5]${NC} Cleaning build..."
 cd "${PROJECT_DIR}"

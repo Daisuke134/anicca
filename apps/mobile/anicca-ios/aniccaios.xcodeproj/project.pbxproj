@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1911001C0FFEE0000000002 /* OnboardingTapE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1911001C0FFEE0000000001 /* OnboardingTapE2ETests.swift */; };
 		F63CE0022F14A00100000002 /* Anicca.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F63CE0012F14A00100000001; };
 		F62CE0022F14A00100000002 /* OnboardingWinnerE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */; };
 		F61CE0022F14A00100000002 /* OnboardingWinnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F61CE0012F14A00100000001 /* OnboardingWinnerTests.swift */; };
@@ -91,6 +92,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A1911001C0FFEE0000000001 /* OnboardingTapE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTapE2ETests.swift; sourceTree = "<group>"; };
 		F63CE0012F14A00100000001 /* Anicca.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../aniccaios/Anicca.storekit; sourceTree = "<group>"; };
 		F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWinnerE2ETests.swift; sourceTree = "<group>"; };
 		F61CE0012F14A00100000001 /* OnboardingWinnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWinnerTests.swift; sourceTree = "<group>"; };
@@ -234,6 +236,7 @@
 				E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */,
 				F63CE0012F14A00100000001 /* Anicca.storekit */,
 				AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */,
+				A1911001C0FFEE0000000001 /* OnboardingTapE2ETests.swift */,
 				F62CE0012F14A00100000001 /* OnboardingWinnerE2ETests.swift */,
 			);
 			path = aniccaiosUITests;
@@ -556,6 +559,7 @@
 			files = (
 				E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */,
 				BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */,
+				A1911001C0FFEE0000000002 /* OnboardingTapE2ETests.swift in Sources */,
 				F62CE0022F14A00100000002 /* OnboardingWinnerE2ETests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -692,7 +696,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -704,7 +708,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -726,7 +730,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -738,7 +742,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -760,7 +764,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -772,7 +776,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -794,7 +798,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
@@ -806,7 +810,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -963,7 +967,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -987,7 +991,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1015,7 +1019,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1039,7 +1043,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1134,7 +1138,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1158,7 +1162,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1246,7 +1250,7 @@
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDistribution.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1270,7 +1274,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1291,7 +1295,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1303,7 +1307,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1322,7 +1326,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1334,7 +1338,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1353,7 +1357,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1365,7 +1369,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1384,7 +1388,7 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 831;
+				CURRENT_PROJECT_VERSION = 836;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
@@ -1396,7 +1400,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10.0;
+				MARKETING_VERSION = 1.10.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

@@ -98,8 +98,8 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertNotIn("Locale.preferredLanguages", self.source)
 
     def test_retry_and_timeout_recheck_storefront_eligibility(self):
-        retry = self.source.split('Button(String(localized: "paywall_b_retry"))', 1)[1].split(
-            'Button(String(localized: "paywall_plan_restore"))', 1
+        retry = self.source.split("private var loadingContent:", 1)[1].split(
+            "private var legalLinks:", 1
         )[0]
         self.assertIn("let loaded = await refreshStorefrontEligibility()", retry)
         self.assertIn("trackOfferingLoadResult(loaded)", retry)

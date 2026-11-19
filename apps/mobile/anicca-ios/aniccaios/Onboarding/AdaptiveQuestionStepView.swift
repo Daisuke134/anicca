@@ -44,7 +44,11 @@ struct AdaptiveQuestionStepView: View {
                 PrimaryButton(title: String(localized: "common_continue"), isEnabled: isValid) { save(skipped: false) }
                     .accessibilityIdentifier("onboarding-\(question.rawValue)-continue")
                 if question == .birthContext {
-                    Button(String(localized: "adaptive_skip")) { save(skipped: true) }
+                    Button { save(skipped: true) } label: {
+                        Text(String(localized: "adaptive_skip"))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
                         .accessibilityIdentifier("onboarding-birth_context-skip")
                 }
@@ -75,6 +79,7 @@ struct AdaptiveQuestionStepView: View {
                     }
                     .padding(18)
                     .selectionCard(isSelected: selected.contains(option))
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("onboarding-\(question.rawValue)-\(option)")

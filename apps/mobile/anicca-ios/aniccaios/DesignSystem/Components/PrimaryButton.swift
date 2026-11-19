@@ -37,6 +37,7 @@ struct PrimaryButton: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
             .frame(minHeight: 56)
+            .contentShape(Rectangle())
         }
         .foregroundStyle(foregroundColor)
         .background(

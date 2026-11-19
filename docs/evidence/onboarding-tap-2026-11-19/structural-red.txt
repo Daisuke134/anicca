@@ -1,0 +1,54 @@
+test_background_cannot_receive_input (test_onboarding_ship_gate.OnboardingShipGateContracts.test_background_cannot_receive_input) ... FAIL
+test_flow_uses_coordinates_without_long_press_or_retries (test_onboarding_ship_gate.OnboardingShipGateContracts.test_flow_uses_coordinates_without_long_press_or_retries) ... FAIL
+test_gate_is_in_compiled_target_and_active_test_plan (test_onboarding_ship_gate.OnboardingShipGateContracts.test_gate_is_in_compiled_target_and_active_test_plan) ... FAIL
+test_primary_shape_is_inside_label_after_sizing (test_onboarding_ship_gate.OnboardingShipGateContracts.test_primary_shape_is_inside_label_after_sizing) ... FAIL
+test_result_gate_rejects_missing_skipped_failed_or_empty_runs (test_onboarding_ship_gate.OnboardingShipGateContracts.test_result_gate_rejects_missing_skipped_failed_or_empty_runs) ... ok
+test_versions_are_consistent_across_targets (test_onboarding_ship_gate.OnboardingShipGateContracts.test_versions_are_consistent_across_targets) ... FAIL
+
+======================================================================
+FAIL: test_background_cannot_receive_input (test_onboarding_ship_gate.OnboardingShipGateContracts.test_background_cannot_receive_input)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hatch/workspace/anicca-wt-tap-fix-1100-port/apps/mobile/anicca-ios/scripts/tests/test_onboarding_ship_gate.py", line 50, in test_background_cannot_receive_input
+    self.assertIn('.allowsHitTesting(false)', source)
+AssertionError: '.allowsHitTesting(false)' not found in 'import SwiftUI\n\nstruct AppBackground: View {\n    var useOpacity: Bool = false\n\n    var body: some View {\n        LinearGradient(\n            colors: [AppTheme.Colors.background,\n                     Color(light: Color(hex: "#E3E9DA"), dark: Color(hex: "#26392D"))],\n            startPoint: .topTrailing,\n            endPoint: .bottomLeading\n        )\n        .opacity(useOpacity ? 0.99 : 1)\n        .ignoresSafeArea()\n    }\n}\n'
+
+======================================================================
+FAIL: test_flow_uses_coordinates_without_long_press_or_retries (test_onboarding_ship_gate.OnboardingShipGateContracts.test_flow_uses_coordinates_without_long_press_or_retries)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hatch/workspace/anicca-wt-tap-fix-1100-port/apps/mobile/anicca-ios/scripts/tests/test_onboarding_ship_gate.py", line 40, in test_flow_uses_coordinates_without_long_press_or_retries
+    self.assertIn(marker, test)
+AssertionError: 'goal-continue' not found in 'import XCTest\n\n/// Ship gate: real touch coordinates, exactly one tap per action, no long press or retry.\n/// Run on a fresh dedicated simulator; never use a screenshot/deep-link shortcut.\nfinal class OnboardingTapE2ETests: XCTestCase {\n    override func setUpWithError() throws {\n        continueAfterFailure = false\n    }\n\n    @MainActor\n    func testFullOnboardingCenterTaps() {\n        completeOnboarding(tapX: 0.5)\n    }\n\n    @MainActor\n    func testFullOnboardingLeadingPaddingTaps() {\n        completeOnboarding(tapX: 0.12)\n    }\n\n    @MainActor\n    func testFullOnboardingTrailingPaddingTaps() {\n        completeOnboarding(tapX: 0.88)\n    }\n\n    @MainActor\n    private func completeOnboarding(tapX: CGFloat) {\n        let app = XCUIApplication()\n        app.launchArguments = ["-resetOnLaunch", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]\n        app.launch()\n\n        tap(app.buttons["onboarding-welcome-cta"], x: tapX)\n        tap(app.buttons["onboarding-goal-break_habit"], x: tapX)\n        let next = app.buttons["onboarding-struggles-next"]\n        XCTAssertTrue(next.waitForExistence(timeout: 10))\n        XCTAssertFalse(next.isEnabled, "Pain points must require a selection")\n        tap(app.buttons["onboarding-struggle-putting_off"], x: tapX)\n        tap(next, x: tapX)\n        tap(app.buttons["onboarding-depth-daily"], x: tapX)\n        tap(app.buttons["onboarding-nudge-morning"], x: tapX)\n        tap(app.buttons["onboarding-nudge-next"], x: tapX)\n        XCTAssertTrue(app.staticTexts["onboarding-processing-title"].waitForExistence(timeout: 5),\n                      "Processing must actually be visited")\n        tap(app.buttons["onboarding-insight-cta"], x: tapX)\n        tap(app.buttons["onboarding-comparison-next"], x: tapX)\n        tap(app.buttons["onboarding-notifications-allow"], x: tapX)\n\n        // The ship runner creates a fresh simulator for every case.\n        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")\n        let deny = springboard.buttons.matching(NSPredicate(format: "label IN %@", ["Don\'t Allow", "Don’t Allow"])).firstMatch\n        XCTAssertTrue(deny.waitForExistence(timeout: 10), "Fresh install must request notification permission")\n        deny.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()\n\n        // The container starts at planSelection, not the retired primer screen.\n        XCTAssertTrue(app.buttons["paywall-plan-cta"].waitForExistence(timeout: 60),\n                      "Real paywall products must load; a spinner/empty shell is not a pass")\n        tap(app.buttons["paywall-close-button"], x: 0.5)\n        XCTAssertTrue(app.scrollViews["feed-scroll"].waitForExistence(timeout: 20),\n                      "Paywall close must finish onboarding without a purchase")\n        XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)\n        let screenshot = XCTAttachment(screenshot: app.screenshot())\n        screenshot.name = "completed-onboarding-tap-x-\\(tapX)"\n        screenshot.lifetime = .keepAlways\n        add(screenshot)\n\n        app.terminate()\n        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]\n        app.launch()\n        XCTAssertTrue(app.scrollViews["feed-scroll"].waitForExistence(timeout: 20),\n                      "Completion must persist across a normal relaunch")\n    }\n\n    @MainActor\n    private func tap(_ element: XCUIElement, x: CGFloat,\n                     file: StaticString = #filePath, line: UInt = #line) {\n        XCTAssertTrue(element.waitForExistence(timeout: 30), "Missing \\(element)", file: file, line: line)\n        let ready = NSPredicate(format: "hittable == true AND enabled == true")\n        let expectation = XCTNSPredicateExpectation(predicate: ready, object: element)\n        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 10), .completed,\n                       "CTA never became tappable", file: file, line: line)\n        // Coordinate tap exercises hit testing, including blank padding, rather than accessibility activation.\n        element.coordinate(withNormalizedOffset: CGVector(dx: x, dy: 0.5)).tap()\n    }\n}\n'
+
+======================================================================
+FAIL: test_gate_is_in_compiled_target_and_active_test_plan (test_onboarding_ship_gate.OnboardingShipGateContracts.test_gate_is_in_compiled_target_and_active_test_plan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hatch/workspace/anicca-wt-tap-fix-1100-port/apps/mobile/anicca-ios/scripts/tests/test_onboarding_ship_gate.py", line 17, in test_gate_is_in_compiled_target_and_active_test_plan
+    self.assertEqual(project.count('A1911001C0FFEE0000000001 /* OnboardingTapE2ETests.swift */'), 3)
+AssertionError: 0 != 3
+
+======================================================================
+FAIL: test_primary_shape_is_inside_label_after_sizing (test_onboarding_ship_gate.OnboardingShipGateContracts.test_primary_shape_is_inside_label_after_sizing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hatch/workspace/anicca-wt-tap-fix-1100-port/apps/mobile/anicca-ios/scripts/tests/test_onboarding_ship_gate.py", line 45, in test_primary_shape_is_inside_label_after_sizing
+    self.assertIn('.contentShape(Rectangle())', label)
+AssertionError: '.contentShape(Rectangle())' not found in '\n            HStack(spacing: 8) {\n                if isLoading {\n                    ProgressView().progressViewStyle(.circular)\n                } else if let icon {\n                    Image(systemName: icon)\n                }\n                Text(title)\n                    .font(.headline)\n                    .multilineTextAlignment(.center)\n                    .fixedSize(horizontal: false, vertical: true)\n            }\n            .frame(maxWidth: .infinity)\n            .padding(.horizontal, 16)\n            .padding(.vertical, 16)\n            .frame(minHeight: 56)'
+
+======================================================================
+FAIL: test_versions_are_consistent_across_targets (test_onboarding_ship_gate.OnboardingShipGateContracts.test_versions_are_consistent_across_targets)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hatch/workspace/anicca-wt-tap-fix-1100-port/apps/mobile/anicca-ios/scripts/tests/test_onboarding_ship_gate.py", line 54, in test_versions_are_consistent_across_targets
+    self.assertEqual(set(re.findall(r'MARKETING_VERSION = ([^;]+);', project)), {'1.10.1'})
+AssertionError: Items in the first set but not the second:
+'1.10.0'
+Items in the second set but not the first:
+'1.10.1'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.268s
+
+FAILED (failures=5)

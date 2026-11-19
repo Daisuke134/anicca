@@ -37,6 +37,7 @@ struct StruggleDepthStepView: View {
                         }
                         .padding(18)
                         .selectionCard(isSelected: selected == option.key)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("onboarding-depth-\(option.key)")

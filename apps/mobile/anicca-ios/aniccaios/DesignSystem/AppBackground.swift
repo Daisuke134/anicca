@@ -12,5 +12,7 @@ struct AppBackground: View {
         )
         .opacity(useOpacity ? 0.99 : 1)
         .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
