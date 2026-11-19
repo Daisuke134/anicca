@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   onboarding-normal-taps:
-    # Owner's existing Mac only: no paid cloud device/testing service.
-    # Do not execute untrusted pull_request code on a signing/build machine.
-    runs-on: [self-hosted, macOS, anicca-ios]
+    # GitHub-hosted macOS runner (owner directive 2026-11-19: no local Mac).
+    # workflow_dispatch / push to main only: never pull_request code.
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       ONBOARDING_SIM_RUNTIME: ${{ vars.ONBOARDING_SIM_RUNTIME }}
@@ -24,8 +24,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Materialize private build configuration
         env:
-          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_PRODUCTION_XCCONFIG_B64 }}
+          # Same mapping as the maestro job in anicca-ios-build.yml: the
+          # repository secret is ANICCA_E2E_XCCONFIG_B64; ci_post_clone.sh
+          # reads it under the production env name.
+          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_E2E_XCCONFIG_B64 }}
         run: bash apps/mobile/anicca-ios/ci_scripts/ci_post_clone.sh
+      - name: Select simulator runtime and device type
+        run: |
+          if [ -z "${ONBOARDING_SIM_RUNTIME:-}" ]; then
+            RUNTIME=$(xcrun simctl list runtimes available --json | python3 -c "import json,sys; rs=[r for r in json.load(sys.stdin)['runtimes'] if r['name'].startswith('iOS')]; print(rs[-1]['identifier'])")
+            echo "ONBOARDING_SIM_RUNTIME=$RUNTIME" >> "$GITHUB_ENV"
+          fi
+          if [ -z "${ONBOARDING_SIM_DEVICE_TYPE:-}" ]; then
+            DEVICE=$(xcrun simctl list devicetypes --json | python3 -c "import json,sys; ds=[d for d in json.load(sys.stdin)['devicetypes'] if d['name'].startswith('iPhone')]; print(ds[-1]['identifier'])")
+            echo "ONBOARDING_SIM_DEVICE_TYPE=$DEVICE" >> "$GITHUB_ENV"
+          fi
+          echo "runtime=${ONBOARDING_SIM_RUNTIME:-auto} device=${ONBOARDING_SIM_DEVICE_TYPE:-auto}"
       - name: Full onboarding with single normal taps
         run: bash apps/mobile/anicca-ios/scripts/onboarding-ship-gate.sh
       - name: Preserve results including failures
