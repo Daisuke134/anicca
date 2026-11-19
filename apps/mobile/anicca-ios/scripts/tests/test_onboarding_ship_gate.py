@@ -38,8 +38,27 @@ class OnboardingShipGateContracts(unittest.TestCase):
                        'tone', 'life_context', 'routine_anchors', 'prior_attempts',
                        'prior_helpfulness', 'start_reason', 'quiet_hours', 'theme-continue',
                        'icon-continue', 'widget-interested', 'first-continue', 'reminder-continue',
-                       'notifications-allow', 'paywall-plan-cta', 'paywall-close-button', 'feed-scroll']:
+                       'notifications-allow', 'paywall-plan-cta', 'paywall-close-button', 'feed-today']:
             self.assertIn(marker, test)
+
+    def test_close_and_relaunch_assert_the_real_home_pager(self):
+        test = (APP / 'aniccaiosUITests/OnboardingTapE2ETests.swift').read_text()
+        home = (APP / 'aniccaios/Views/Feed/FeedRootView.swift').read_text()
+        # Catch drift between the release gate destination and the shipped home.
+        identifiers = set(re.findall(r'accessibilityIdentifier\("([^"\n]+)"\)', home))
+        after_close = test.split('tap(app.buttons["paywall-close-button"], x: 0.5)', 1)[1]
+        arrival, relaunch = after_close.split('app.terminate()', 1)
+        for stage in (arrival, relaunch):
+            with self.subTest(stage='relaunch' if stage == relaunch else 'close'):
+                targets = re.findall(
+                    r'XCTAssertTrue\(app.descendants\(matching: \.any\)'
+                    r'\.matching\(identifier: "([^"]+)"\)\.firstMatch'
+                    r'\.waitForExistence\(timeout: 20\)', stage)
+                self.assertEqual(targets, ['feed-today'])
+                self.assertTrue(set(targets) <= identifiers)
+                self.assertIn('XCTAssertFalse(app.buttons["paywall-close-button"].exists)', stage)
+                self.assertIn('XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)', stage)
+        self.assertNotIn('feed-scroll', test)
 
     def test_primary_shape_is_inside_label_after_sizing(self):
         source = (APP / 'aniccaios/DesignSystem/Components/PrimaryButton.swift').read_text()

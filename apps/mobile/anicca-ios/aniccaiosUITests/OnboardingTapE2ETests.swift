@@ -93,8 +93,10 @@ final class OnboardingTapE2ETests: XCTestCase {
         XCTAssertTrue(purchase.waitForExistence(timeout: 60), "Configured paywall products must load")
         XCTAssertTrue(purchase.isEnabled, "An unloaded product is not a passing gate")
         tap(app.buttons["paywall-close-button"], x: 0.5)
-        XCTAssertTrue(app.scrollViews["feed-scroll"].waitForExistence(timeout: 20),
+        // The home deck is a UIPageViewController; do not assume its AX element type.
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "feed-today").firstMatch.waitForExistence(timeout: 20),
                       "Paywall close must finish onboarding without a purchase")
+        XCTAssertFalse(app.buttons["paywall-close-button"].exists)
         XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "completed-onboarding-tap-x-\(tapX)"
@@ -104,8 +106,10 @@ final class OnboardingTapE2ETests: XCTestCase {
         app.terminate()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        XCTAssertTrue(app.scrollViews["feed-scroll"].waitForExistence(timeout: 20),
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "feed-today").firstMatch.waitForExistence(timeout: 20),
                       "Completion must persist across a normal relaunch")
+        XCTAssertFalse(app.buttons["paywall-close-button"].exists)
+        XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)
     }
 
     @MainActor
