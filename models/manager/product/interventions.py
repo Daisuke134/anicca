@@ -119,7 +119,12 @@ class ChatLLMGenerator:
         request = urllib.request.Request(self.base_url + '/chat/completions',
             data=json.dumps({'model': self.model,
                              'messages': [{'role': 'user', 'content': prompt}],
-                             'max_tokens': 700}).encode(),
+                             # Reasoning models (e.g. DeepSeek V4.1 Flash) spend
+                             # completion tokens on reasoning before any content;
+                             # at 700 the budget was fully consumed by reasoning
+                             # and content came back null. 4000 leaves headroom
+                             # for reasoning plus the candidates JSON.
+                             'max_tokens': 4000}).encode(),
             headers=headers)
         with urllib.request.urlopen(request, timeout=self.timeout) as response:
             result = json.load(response)
