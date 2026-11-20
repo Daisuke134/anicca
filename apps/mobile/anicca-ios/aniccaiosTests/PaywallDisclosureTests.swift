@@ -79,11 +79,10 @@ final class PaywallDisclosureTests: XCTestCase {
     // The home card states why the word is there (user rule, 2026-11-15:
     // the simulation's effect must be visible). The chosen intervention
     // and notification deliveries say they were chosen from the person's
-    // answers; further deck words say they were picked the same way.
+    // answers. Unselected model candidates are never exposed as deck cards.
     func testHomeDeckCaptionKeysByOrigin() {
         let quote = Quote(id: "q1", text: "x")
         XCTAssertEqual(HomeDeckCard(quote: quote, origin: .selectedIntervention, deliveryId: nil).selectionCaptionKey, "feed_chosen_from_answers")
         XCTAssertEqual(HomeDeckCard(quote: quote, origin: .notification, deliveryId: nil).selectionCaptionKey, "feed_chosen_from_answers")
-        XCTAssertEqual(HomeDeckCard(quote: quote, origin: .exploration, deliveryId: nil).selectionCaptionKey, "feed_picked_from_answers")
     }
 }
