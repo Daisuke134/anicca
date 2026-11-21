@@ -1,6 +1,7 @@
 import Foundation
 
-/// A complete assignment and its measured responses. No message text or raw profile enters this row.
+/// A complete assignment and measured responses. Generated words and model provenance
+/// stay in the private journal; raw profile fields never enter this row.
 struct ManagerBenchCase: Codable, Equatable {
     var schemaVersion = 1
     var personId: String
@@ -33,10 +34,12 @@ struct ManagerBenchCase: Codable, Equatable {
         var policyVersion: String
         var candidateIDs: [String]? = nil
         var selectionReason: String? = nil
+        var text: String? = nil
+        var generatorModel: String? = nil
 
         private enum CodingKeys: String, CodingKey {
             case messageId, category, tags, scheduledAt, deliveredAt
-            case treatmentAssigned, assignedProbability, policyVersion, selectionReason
+            case treatmentAssigned, assignedProbability, policyVersion, selectionReason, text, generatorModel
             case candidateIDs = "candidateIds"
         }
 
@@ -52,6 +55,8 @@ struct ManagerBenchCase: Codable, Equatable {
             try container.encode(policyVersion, forKey: .policyVersion)
             try container.encodeIfPresent(candidateIDs, forKey: .candidateIDs)
             try container.encodeIfPresent(selectionReason, forKey: .selectionReason)
+            try container.encodeIfPresent(text, forKey: .text)
+            try container.encodeIfPresent(generatorModel, forKey: .generatorModel)
         }
     }
 

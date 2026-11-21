@@ -34,3 +34,30 @@ The Express mount uses existing requireAuth, also requiring unexpired JWTs. Inco
 subject headers are discarded; only the verified account subject is forwarded.
 Missing configuration, timeout, invalid upstream JSON and redirects fail closed.
 Existing /api routes and APNs scheduling are unchanged.
+
+## Model words and ManagerBench (2026-11-20)
+
+The default configured-credit engine is now OpenRouter
+`https://openrouter.ai/api/v1`, `deepseek/deepseek-v4.1-flash-1017`, using only
+`MANAGER_LLM_API_KEY` or `OPENROUTER_API_KEY`. No OPENAI_API_KEY fallback.
+Explicit MANAGER_LLM_BASE_URL/MODEL overrides remain for existing deployments
+and local fixture endpoints. With no key or explicit endpoint, fail closed.
+This supersedes the historical OpenAI-key recommendation above.
+
+App `/decisions` context may carry `synthetic_user: {answer_ids, answer_version}`.
+The sender's existing `push_state.profile.personalization.answerIds` is normalized
+to the same conditioning shape. Unrelated metadata and raw reaction payloads do
+not reach the LLM. Invalid context/output or an unavailable provider suppresses.
+
+Every new SQLite case atomically includes `managerbench_case`, with chosen text,
+generator model, categorical situation, candidate IDs and the actual conditional
+selection propensity. An assignment is not delivery: response remains unknown.
+Export private JSONL for ManagerBench with:
+
+```
+python -m models.manager.product.export_cases /private/cases.db > /private/cases.jsonl
+```
+
+Only measured in-window observations become positive response fields. Missing
+observations stay unknown; old rows without the new projection are skipped.
+The export is read-only, and account deletion removes the source rows.

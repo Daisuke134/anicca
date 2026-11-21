@@ -18,9 +18,6 @@ struct HomeDeckCard: Identifiable {
     enum Origin: String {
         /// The intervention the Manager chose for this person today.
         case selectedIntervention
-        /// A further word from the same ranked candidate list, explored by
-        /// swiping or by the home advancing on its own.
-        case exploration
         /// The words a tapped notification delivered.
         case notification
     }
@@ -31,16 +28,10 @@ struct HomeDeckCard: Identifiable {
 
     var id: String { quote.id }
 
-    /// Why this word is on screen, shown on the card itself so the
-    /// personalization is felt, not just logged (user rule, 2026-11-15:
-    /// the simulation's effect must be visible in the experience). Every
-    /// deck card comes out of the same ranked, profile-based selection —
-    /// the first card is the intervention chosen for this person, the
-    /// rest are further words from that same ranking.
+    /// The card is the sampled intervention or an opened notification.
     var selectionCaptionKey: String {
         switch origin {
         case .selectedIntervention, .notification: return "feed_chosen_from_answers"
-        case .exploration: return "feed_picked_from_answers"
         }
     }
 }
@@ -50,10 +41,7 @@ struct HomeDeckCard: Identifiable {
 /// pager to rebuild the page.
 final class HomeDeckModel: ObservableObject {
     @Published var cards: [HomeDeckCard] = []
-    /// Size of the ranked candidate list the deck was built from; the
-    /// assignment probability of an explored card is 1 / candidateCount.
-    var candidateCount: Int = 1
-    var candidateIDs: [String] = []
+
 }
 
 /// Idle auto-advance for the living home. The user rejected the old 3s recording
@@ -131,6 +119,7 @@ struct FeedRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var currentIndex: Int = 0
+    @State private var wordRequest: UUID?
     @State private var navigationRevision: Int = 0
     @State private var displayedIndex: Int?
     @State private var displayedAt: Date?
@@ -255,11 +244,14 @@ struct FeedRootView: View {
                     beginDisplay(at: currentIndex)
                 }
             case .background:
+                wordRequest = nil
                 endDisplay(cause: .appClosed)
             default:
                 break
             }
         }
+        .onChange(of: appState.authStatus.userId) { _ in refreshToday() }
+        .onChange(of: appState.syntheticUser.answerSnapshot.values) { _ in refreshToday() }
         .onChange(of: appState.effectiveLanguage) { _ in refreshToday() }
         .onChange(of: quoteNavigation.pendingRequest) { _ in applyPendingQuoteNavigation() }
         .sheet(isPresented: $showSaved, onDismiss: sheetDismissed) {
@@ -308,7 +300,8 @@ struct FeedRootView: View {
 
     private func returnToTodaysWords() {
         lastInteractionAt = Date()
-        guard currentIndex != 0, !deckModel.cards.isEmpty else { return }
+        if deckModel.cards.isEmpty { refreshToday(); return }
+        guard currentIndex != 0 else { return }
         pendingEndCause = .userSwipe
         currentIndex = 0 // VerticalPager owns the transition (see auto-advance).
     }
@@ -317,51 +310,32 @@ struct FeedRootView: View {
         let now = Date()
         appState.refreshSyntheticUserIfNeeded(now: now)
         let language = appState.effectiveLanguage
-        let presentation = DailyAffirmationStore.shared.todayAffirmation(language: language.rawValue, now: now) {
-            let user = appState.syntheticUser
-            let catalog = QuoteProvider.shared.all(preferredLanguage: language)
-            let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: now))
-            guard let selection = PersonalizedNudgeSelector.select(
-                user: user, pool: catalog,
-                shownAt: user.shownTimestamps, now: now, band: band
-            ) else {
-                guard let quote = catalog.first else { return nil }
-                let fallback = PersonalizedNudgeSelector.Selection(
-                    quote: quote, reason: "home_catalog_fallback", candidateCount: 1,
-                    candidateIDs: [quote.id], assignedProbability: 1,
-                    policyVersion: PersonalizedNudgeSelector.policyVersion
-                )
-                let deliveryId = DecisionPointRecorder.shared.recordDecision(selection: fallback, syntheticUser: user, source: "daily_home")
-                return .init(quote: quote, deliveryId: deliveryId)
-            }
-            let origin = DecisionPointRecorder.shared.recordDecision(selection: selection, syntheticUser: user, source: "daily_home")
-            return .init(quote: selection.quote, deliveryId: origin)
-        }
-        if let presentation, deckModel.cards.first?.quote.id != presentation.quote.id {
-            buildDeck(selected: presentation, language: language, now: now)
-        }
+        let request = UUID()
+        wordRequest = request
+        let user = appState.syntheticUser
+        endDisplay(cause: .replaced)
+        deckModel.cards = []
         applyPendingQuoteNavigation()
+        guard wordRequest == request else { return }
+        Task { @MainActor in
+            do {
+                let decision = try await ModelWordsService.shared.today(user: user, language: language.rawValue, now: now)
+                guard wordRequest == request, appState.syntheticUser.personId == user.personId,
+                      appState.effectiveLanguage == language else { return }
+                if let quote = decision.quote {
+                    buildDeck(selected: .init(quote: quote, deliveryId: decision.deliveryID), language: language, now: now)
+                }
+            } catch {
+                // An unavailable engine suppresses the intervention. Never rotate
+                // a catalog word or reuse a previous person's cached selection.
+            }
+            if wordRequest == request { applyPendingQuoteNavigation() }
+        }
     }
 
-    /// Deck order: today's chosen intervention first, then the selector's
-    /// ranked candidates in rank order.
     private func buildDeck(selected presentation: DailyAffirmationStore.Presentation, language: LanguagePreference, now: Date, firstOrigin: HomeDeckCard.Origin = .selectedIntervention) {
         endDisplay(cause: .replaced)
-        let user = appState.syntheticUser
-        let catalog = QuoteProvider.shared.all(preferredLanguage: language)
-        let band = PersonalizedNudgeSelector.TimeBand.band(forHour: Calendar.current.component(.hour, from: now))
-        let ranked = PersonalizedNudgeSelector.rankedCandidates(
-            user: user, pool: catalog,
-            shownAt: user.shownTimestamps, now: now, band: band
-        )
-        deckModel.candidateCount = max(ranked.count, 1)
-        deckModel.candidateIDs = ranked.map(\.id)
-        var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
-        for quote in ranked where quote.id != presentation.quote.id {
-            cards.append(HomeDeckCard(quote: quote, origin: .exploration, deliveryId: nil))
-            if cards.count >= 12 { break }
-        }
-        deckModel.cards = cards
+        deckModel.cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
         currentIndex = 0
         navigationRevision += 1
         lastInteractionAt = Date()
@@ -375,6 +349,7 @@ struct FeedRootView: View {
         }
         let notificationDeliveryId = quoteNavigation.pendingRequest?.deliveryId
         guard let destination = quoteNavigation.resolveQuote(in: catalog) else { return }
+        wordRequest = nil // A notification tap wins over any in-flight home request.
         DailyAffirmationStore.shared.seed(destination, language: appState.effectiveLanguage.rawValue, deliveryId: notificationDeliveryId)
         AnalyticsManager.shared.track(.notificationDestinationResolved, properties: ["quote_id": destination.id, "result": "displayed"])
         buildDeck(
@@ -400,23 +375,6 @@ struct FeedRootView: View {
         guard deckModel.cards.indices.contains(index), displayedIndex != index else { return }
         displayedIndex = index
         displayedAt = Date()
-        // An explored word becomes an intervention case the moment it is
-        // actually displayed — never before — with the uniform probability
-        // of its position in the ranked candidate list.
-        if deckModel.cards[index].origin == .exploration, deckModel.cards[index].deliveryId == nil {
-            let card = deckModel.cards[index]
-            let selection = PersonalizedNudgeSelector.Selection(
-                quote: card.quote,
-                reason: "home_deck_exploration",
-                candidateCount: deckModel.candidateCount,
-                candidateIDs: deckModel.candidateIDs,
-                assignedProbability: 1.0 / Double(deckModel.candidateCount),
-                policyVersion: PersonalizedNudgeSelector.policyVersion
-            )
-            deckModel.cards[index].deliveryId = DecisionPointRecorder.shared.recordDecision(
-                selection: selection, syntheticUser: appState.syntheticUser, source: "home_deck"
-            )
-        }
         // Older cached presentations have no assignment ID or propensity.
         if deckModel.cards[index].deliveryId == nil {
             deckModel.cards[index].deliveryId = UUID().uuidString

@@ -10,15 +10,77 @@ import secrets
 import sqlite3
 import time
 import urllib.request
+import re
+from datetime import datetime, timezone
 
 VOCABULARY = {
     'time_band': {'morning', 'day', 'evening', 'night'},
     'language': {'en', 'ja', 'de', 'es', 'fr', 'pt-BR'},
-    'desired_state': {'calm', 'confidence', 'focus', 'self_love', 'unknown'},
+    'desired_state': {'calm', 'confidence', 'focus', 'self_love', 'letting_go', 'unknown'},
     'source': {'notification', 'daily_home', 'onboarding_first_intervention'},
 }
 KINDS = {'reflection', 'humor', 'question', 'teaching', 'breathing', 'action', 'none'}
 EVENTS = {'notification_delivered', 'notification_opened', 'app_opened', 'responded', 'skipped', 'saved', 'shared'}
+
+# Matches the categorical SyntheticUser.answerSnapshot boundary, never raw profile data.
+ANSWER_AXES = set(('age_band birth_context life_context desired_state focus_categories pain_points '
+    'mood_baseline struggle_frequency belief_themes stress_trigger anxiety_target self_criticism '
+    'avoidance_task sleep_reason routine_anchors bedtime wake_time reminder_slots daily_frequency '
+    'quiet_hours start_reason tone prior_attempts prior_helpfulness notification_permission theme '
+    'app_icon widget_interest micro_preview_reaction birthday_season name_status '
+    'legacy_goal_categories legacy_problem_categories legacy_liked_categories legacy_recent_message_ids').split())
+
+
+def validate_synthetic_user(user):
+    if not isinstance(user, dict) or set(user) != {'answer_ids', 'answer_version'}:
+        raise ValueError('invalid synthetic user')
+    answers = user['answer_ids']
+    if (type(user['answer_version']) is not int or not 1 <= user['answer_version'] <= 4
+            or not isinstance(answers, dict) or not set(answers) <= ANSWER_AXES):
+        raise ValueError('invalid answer snapshot')
+    for values in answers.values():
+        if not isinstance(values, list) or len(values) > 30 or any(
+                not isinstance(v, str) or not re.fullmatch(r'[a-zA-Z0-9_:-]{1,80}', v) for v in values):
+            raise ValueError('expected bounded categorical IDs')
+
+
+def generation_context(context):
+    """One conditioning shape for app and sender; discard unrelated profile metadata."""
+    clean = {k: context[k] for k in VOCABULARY}
+    user = context.get('synthetic_user')
+    if user is None and 'push_state' in context:
+        profile = context['push_state']['profile'].get('personalization', {})
+        if not isinstance(profile, dict):
+            raise ValueError('invalid personalization')
+        user = {'answer_ids': profile.get('answerIds', {}), 'answer_version': profile.get('answerVersion', 4)}
+    if user is not None:
+        validate_synthetic_user(user)
+        clean['synthetic_user'] = user
+        desired = user['answer_ids'].get('desired_state', ['unknown'])
+        if desired and desired[0] in VOCABULARY['desired_state']:
+            clean['desired_state'] = desired[0]
+    return clean
+
+
+def managerbench_case(subject, decision):
+    context = decision['generation_context']
+    user = context.get('synthetic_user', {'answer_ids': {}, 'answer_version': 4})
+    chosen = decision['chosen']
+    message_id = 'generated:' + decision['delivery_id'] + ':' + chosen['id']
+    date = datetime.fromtimestamp(decision['decision_point_at'], timezone.utc)
+    return dict(schema_version=1, person_id=subject, delivery_id=decision['delivery_id'],
+        decision_point_at=date.isoformat(timespec='seconds'), source=context['source'], outcome_window_sec=1800,
+        backend=decision['backend'], fallback=False,
+        situation=dict(answer_snapshot=user['answer_ids'], answer_version=user['answer_version'],
+            scheduled_time_band=context['time_band'], weekday='unknown',
+            notification_permission='unknown'),
+        stimulus=dict(message_id=message_id, category=chosen['kind'], tags=[],
+            text=chosen['text'], generator_model=decision['generator_model'],
+            scheduled_at=date.isoformat(timespec='seconds'), delivered_at=None,
+            treatment_assigned=message_id if decision['send'] else 'do_not_send',
+            assigned_probability=decision['assigned_probability'], policy_version=decision['policy_version'],
+            candidate_ids=['generated:' + decision['delivery_id'] + ':' + c['id'] for c in decision['candidates']],
+            selection_reason='model_generated_weighted_draw'), response={})
 
 
 def validate_context(context):
@@ -155,11 +217,12 @@ class InterventionStore:
         return self.decide(subject, decision_id, dict(context, push_state=push_state))
 
     def decide(self, subject, decision_id, context):
+        validate_context({k: v for k, v in context.items() if k not in {'push_state', 'synthetic_user'}})
+        if 'synthetic_user' in context:
+            validate_synthetic_user(context['synthetic_user'])
         if 'push_state' in context:
-            validate_context({k: v for k, v in context.items() if k != 'push_state'})
             validate_push_state(context['push_state'])
-        else:
-            validate_context(context)
+        conditioning = generation_context(context)
         if not isinstance(decision_id, str) or len(decision_id) != 36:
             raise ValueError('decision ID must be a UUID')
         import uuid
@@ -175,7 +238,7 @@ class InterventionStore:
                 if result['context'] != context:
                     raise ValueError('idempotency conflict')
                 return result
-            candidates = self.generate(context)
+            candidates = self.generate(conditioning)
             validate_candidates(candidates)
             u, cumulative = self.draw(), 0
             if not 0 <= u < 1:
@@ -188,10 +251,12 @@ class InterventionStore:
                     break
             now = self.clock()
             result = dict(delivery_id=decision_id, decision_point_at=now, context=context,
+                generation_context=conditioning,
                 candidates=candidates, chosen=chosen, assigned_probability=chosen['probability'],
                 send=chosen['kind'] != 'none', backend='manager-v1', policy_version='manager-generated-v1',
                 generator_model=getattr(self.generate, 'model', 'manager-v1'),
                 outcome_window_sec=1800, outcome_window_end=now + 1800, observations=[])
+            result['managerbench_case'] = managerbench_case(subject, result)
             db.execute('INSERT INTO cases VALUES (?,?,?)', (subject, decision_id, json.dumps(result)))
             return result
 

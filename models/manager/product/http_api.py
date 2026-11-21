@@ -32,6 +32,8 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes, authent
             raise HTTPException(422, 'invalid decision or model output')
         except PermissionError:
             raise HTTPException(410, 'subject deleted')
+        except OSError:
+            raise HTTPException(503, 'generation unavailable')
 
     @api.post('/push-decisions')
     async def push_decisions(request: Request):
@@ -56,6 +58,8 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes, authent
             raise HTTPException(422, 'invalid push decision or model output')
         except PermissionError:
             raise HTTPException(410, 'subject deleted')
+        except OSError:
+            raise HTTPException(503, 'generation unavailable')
 
     @api.post('/observations')
     async def observe(request: Request):
@@ -137,11 +141,15 @@ def create_app(path, pseudonym_key, service_token, generator=None, sender_token=
 def app_from_env():
     import os
     generator = None
-    if os.environ.get('MANAGER_LLM_BASE_URL') and os.environ.get('MANAGER_LLM_MODEL'):
+    base_url = os.environ.get('MANAGER_LLM_BASE_URL', 'https://openrouter.ai/api/v1')
+    model = os.environ.get('MANAGER_LLM_MODEL', 'deepseek/deepseek-v4.1-flash-1017')
+    key = os.environ.get('MANAGER_LLM_API_KEY')
+    if not key and base_url.rstrip('/') == 'https://openrouter.ai/api/v1':
+        key = os.environ.get('OPENROUTER_API_KEY')
+    # A missing existing credit/key remains unavailable; never use another paid account.
+    if key or (os.environ.get('MANAGER_LLM_BASE_URL') and os.environ.get('MANAGER_LLM_MODEL')):
         from .interventions import ChatLLMGenerator
-        generator = ChatLLMGenerator(
-            os.environ['MANAGER_LLM_BASE_URL'], os.environ['MANAGER_LLM_MODEL'],
-            api_key=os.environ.get('MANAGER_LLM_API_KEY') or os.environ.get('OPENAI_API_KEY'))
+        generator = ChatLLMGenerator(base_url, model, api_key=key)
     return create_app(os.environ['MANAGER_STORE_PATH'],
                       os.environ['MANAGER_PSEUDONYM_KEY'].encode(),
                       os.environ['MANAGER_SERVICE_TOKEN'],
