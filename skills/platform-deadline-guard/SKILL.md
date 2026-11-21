@@ -130,3 +130,13 @@ python3 ~/workspace/tools/platform-deadline-watchdog/deadline_watchdog.py --days
 3. 仮払い・当選・選定は受注ではない。仮払い確認まで売上・受注に数えない（既存ルール）。
 4. 期限の数字は一次資料でのみ更新する。このスキルの表が古くなったら、通知と公式ヘルプで実測して直す。
 5. 落とした案件に気づいたら、原因（所有者不在・期限管理不在）を仕組みに書き戻す。個人の注意に依存する再発防止は禁止。
+
+## Verification (mandatory, added 2026-11-17)
+
+Work done under this skill is verified against these invariants before it is reported as handled. Structure follows the house verification block (invariants / grader / E2E / oracle).
+
+1. **Invariants.** (a) Every open deadline item has a named owner and a deadline recorded in the handover; no item leaves the handover until a closing event (acceptance completed, escrow funded, auto-cancel confirmed, evaluation submitted) is confirmed. (b) An acceptance or agreement counts as done only when the button press and the resulting screen state are confirmed on the platform itself — a reply message saying "we accept" is not completion. (c) Deadline figures in the tables above come only from primary sources (official help or the platform's own notification, marked [公式] / [実測]); a [未確認] item is never restated as a confirmed deadline. (d) A watchdog blank means "not detectable by email", never "no deadline exists".
+2. **Grader.** The lane that owns the platform item is not its only checker: red items (`期限切れ・未処理の疑い`, `期限間近・未処理`) are re-read on the platform by a different lane, or by the fast-response sweep's next pass, before being reported closed.
+3. **E2E evidence.** The watchdog is run end to end over the real Gmail window and its output file is read in full; for each red item, the platform's own page (approval page, contract screen, talk room) is opened and its current state recorded.
+4. **Differential oracle.** The platform's live state is the oracle. Email notifications are detection signals only; whenever email and platform state disagree, the platform state wins and the discrepancy is written into the handover.
+5. **Repeat failures.** If the same platform drops an item twice for the same reason, the cause is written back into this skill's tables or the watchdog's patterns the same day — not left as a note in a log.
