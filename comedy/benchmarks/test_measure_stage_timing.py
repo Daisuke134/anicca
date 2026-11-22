@@ -320,5 +320,55 @@ class TimingAuditTests(unittest.TestCase):
             self.assertEqual(fail.returncode, 1)
 
 
+    def test_ai_turn_duration_is_reported_without_default_failure(self):
+        report = measure(good())
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual([v["duration_ms"] for v in report["ai_turn_duration_ms"]],
+                         [1100, 4000, 1000])
+        self.assertEqual(report["ai_turn_duration_max_ms"], 4000)
+        self.assertIsNone(report["thresholds_ms"]["max_ai_turn_duration_ms"])
+        self.assertEqual(report["voice_delivery_quality"], "NOT_MEASURED")
+
+    def test_ai_turn_duration_strict_boundary(self):
+        self.assertEqual(measure(good(), max_ai_turn_duration_ms=4000)["gate"], "PASS")
+        report = measure(good(), max_ai_turn_duration_ms=3999)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(report["timing_violations"],
+                         [{"event": 3, "reason": "ai_turn_exceeds_duration_target",
+                           "duration_ms": 4000}])
+
+    def test_ai_turn_duration_zero_and_invalid_thresholds(self):
+        for bad in (-1, True, False, "4000", 0.5):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                measure(good(), max_ai_turn_duration_ms=bad)
+        self.assertEqual(measure(good(), max_ai_turn_duration_ms=0)["timing_gate"], "FAIL")
+
+    def test_long_ai_one_sentence_detected_without_period_heuristic(self):
+        events = good()
+        # One long single-sentence AI turn, which the punctuation-count proxy misses.
+        events[5]["end_ms"] = 10900
+        report = measure(events, max_ai_turn_duration_ms=1500)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertIn({"event": 5, "reason": "ai_turn_exceeds_duration_target",
+                       "duration_ms": 1600}, report["timing_violations"])
+
+    def test_cli_strict_ai_turn_duration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "turn-budget.json", Path(tmp) / "report.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-ai-turn-budget",
+                                       "provenance": "synthetic", "events": good()},
+                                      ensure_ascii=False), encoding="utf-8")
+            cmd = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                   "--input", str(src), "--output", str(dest), "--strict",
+                   "--max-ai-turn-duration-ms"]
+            failed = subprocess.run(cmd + ["3999"], capture_output=True, text=True)
+            self.assertEqual(failed.returncode, 1, failed.stderr)
+            self.assertEqual(json.loads(dest.read_text())["ai_turn_duration_max_ms"], 4000)
+            passed = subprocess.run(cmd + ["4000"], capture_output=True, text=True)
+            self.assertEqual(passed.returncode, 0, passed.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

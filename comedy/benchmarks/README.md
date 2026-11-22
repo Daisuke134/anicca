@@ -152,3 +152,10 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 - `measure_stage_timing.py` に `second_ai_onset_ms` と任意の `--max-second-ai-onset-ms N` を追加。Daisの開演合図から第2AI発声の開始までを測る。N超過のみタイミングFAIL、境界はPASS。実機の30秒ルールを自動設定しない。
 - **初めてのボケまでの時刻の代理指標**であり、病名そのものの発声開始や観客の笑い・理解は未測定。合成の3900msケースで閾値3899 FAIL / 3900 PASSを実行確認。時刻単体テスト33/33 PASS、オリジナル8題×2候補の形式判定16/16 PASS。
 - 固定ベンチは未使用、モデル間公平比較・Voice実演・観客笑いは未実測。[研究ログ](../research/2026-11-22-2155-jst-second-ai-onset.md)。
+
+
+### 2026-11-22 22:55 JST：AI独演の尺（手動タイムコード／任意閾値）
+- `measure_stage_timing.py` はすべてのAI音声イベントの `end_ms-start_ms` を `ai_turn_duration_ms` に記録し、最大値を `ai_turn_duration_max_ms` で返す。`--max-ai-turn-duration-ms N` を**明示した場合のみ**、Nを超える各AI発話に `ai_turn_exceeds_duration_target` を記録してstrict FAIL。等号はPASSで、未指定時は報告のみ。値は非負整数のみ。
+- 既存の句点数による長話検知の補完であり、「ダイスのリアクション余白を確保できるか」の**計測基盤**。音声に直接効く制御機能ではない。5000ms等は合成テストの閾値であり、実演での適切な基準値は未測定。
+- 合成注釈で第3AI発話6000ms：閾値未指定ではtiming PASS、5000ms指定でtiming FAIL（終了コード1）。回帰テスト81/81 PASS、新作オリジナル開発8題×2候補=16の形式検査16/16 PASS。固定ベンチは未使用、Grok/Muse未実行、人間の笑い・Voiceの明瞭度・設定理解は未測定。
+- [研究ログ](../research/2026-11-22-2255-jst-ai-turn-budget.md)。外部投稿はOFF。
