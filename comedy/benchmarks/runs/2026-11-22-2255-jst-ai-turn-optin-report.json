@@ -1,0 +1,73 @@
+{
+  "gate": "FAIL",
+  "text_gate": "PASS",
+  "text_violations": [],
+  "timing_gate": "FAIL",
+  "timing_violations": [
+    {
+      "event": 5,
+      "reason": "ai_turn_exceeds_duration_target",
+      "duration_ms": 6000
+    }
+  ],
+  "reply_gap_ms": [
+    {
+      "ai_event": 1,
+      "dais_event": 0,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 3,
+      "dais_event": 2,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 5,
+      "dais_event": 4,
+      "gap_ms": 300
+    }
+  ],
+  "reply_gap_median_ms": 200,
+  "reply_gap_p95_nearest_rank_ms": 300,
+  "ai_overlap_dais_count": 0,
+  "dais_overlap_ai_events": [],
+  "stage_duration_ms": 16200,
+  "second_ai_onset_ms": 3900,
+  "ai_turn_duration_ms": [
+    {
+      "ai_event": 1,
+      "duration_ms": 1100
+    },
+    {
+      "ai_event": 3,
+      "duration_ms": 4000
+    },
+    {
+      "ai_event": 5,
+      "duration_ms": 6000
+    }
+  ],
+  "ai_turn_duration_max_ms": 6000,
+  "second_ai_onset_is_laughter": "NOT_MEASURED",
+  "ai_audio_after_end_total_ms": 0,
+  "ai_audio_after_end_event_count": 0,
+  "annotated_audience_laughter_events": 0,
+  "ai_laughter_overlaps": [],
+  "ai_laughter_overlap_total_ms": 0,
+  "ai_entries_during_laughter": 0,
+  "thresholds_ms": {
+    "max_reply_gap_ms": null,
+    "min_duration_ms": null,
+    "max_duration_ms": null,
+    "max_ai_entry_laughter_ms": null,
+    "max_second_ai_onset_ms": null,
+    "max_ai_turn_duration_ms": 5000
+  },
+  "scope": "annotated_timestamps_and_text_only",
+  "raw_audio_verified": false,
+  "audience_laughter": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED",
+  "voice_delivery_quality": "NOT_MEASURED",
+  "scenario_id": "synthetic-long-third-ai-turn",
+  "input_provenance": "synthetic"
+}
