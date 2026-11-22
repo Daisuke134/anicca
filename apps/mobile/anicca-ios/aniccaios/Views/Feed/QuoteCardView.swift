@@ -11,12 +11,21 @@ struct QuoteCardView: View {
     /// Why this word was chosen, when the surface knows (the living home
     /// passes it; other surfaces leave it nil and stay unchanged).
     var selectionCaption: String? = nil
+    var onSharePresentationChange: (Bool) -> Void = { _ in }
 
     @EnvironmentObject var themeStore: ThemeStore
     @EnvironmentObject var likedStore: LikedQuotesStore
     @Environment(\.requestReview) private var requestReview
 
-    @State private var showShareSheet = false
+    private struct ShareSession: Identifiable {
+        let content: WordShareContent
+        let image: UIImage
+        let deliveryId: String?
+        let branded: Bool
+        var id: String { content.id }
+    }
+    @State private var shareSession: ShareSession?
+    @State private var shareRenderFailed = false
     @State private var copyFlashOpacity: Double = 0
     @ScaledMetric(relativeTo: .title) private var quoteFontSize: CGFloat = 32
 
@@ -42,6 +51,18 @@ struct QuoteCardView: View {
                 .frame(width: max(120, pageWidth - 64))
                 .accessibilityIdentifier("quote-text")
 
+            if WordShareContent.isEnabled() {
+                Button(action: beginShare) {
+                    Label(String(localized: "quote_share_action"), systemImage: "square.and.arrow.up")
+                        .font(.callout)
+                        .foregroundStyle(themeStore.selected.foregroundColor)
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .accessibilityIdentifier("quote-share")
+            }
+
             actionRow
 
             if copyFlashOpacity > 0 {
@@ -58,24 +79,50 @@ struct QuoteCardView: View {
             Spacer().frame(height: 32)
         }
         .frame(width: pageWidth)
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: [
-                ShareImageRenderer.render(
-                    quote: quote,
-                    background: themeStore.selected
-                ),
-                "aniccaai.com"
-            ], onComplete: {
-                DecisionPointRecorder.shared.recordQuoteResponse(messageId: quote.id, deliveryId: deliveryId, event: .shared)
-                AnalyticsManager.shared.track(.affirmationShared, properties: ["quote_id": quote.id, "category": quote.categoryID])
+        .sheet(item: $shareSession, onDismiss: { onSharePresentationChange(false) }) { session in
+            ShareSheet(items: [session.image, session.branded ? session.content.caption : "aniccaai.com"], onComplete: {
+                DecisionPointRecorder.shared.recordQuoteResponse(messageId: session.content.quote.id, deliveryId: session.deliveryId, event: .shared)
+                AnalyticsManager.shared.track(.affirmationShared, properties: ["quote_id": session.content.quote.id, "category": session.content.quote.categoryID])
+                if session.branded { trackShare(.screenshotShareCompleted, session: session) }
+            }, onPresented: {
+                if session.branded { trackShare(.screenshotShareOpened, session: session) }
             })
         }
+        .alert(String(localized: "quote_share_failed"), isPresented: $shareRenderFailed) {
+            Button(String(localized: "common_close"), role: .cancel) {}
+        }
+    }
+
+    private func beginShare() {
+        guard shareSession == nil else { return }
+        let content = WordShareContent(quote: quote)
+        let branded = WordShareContent.isEnabled()
+        let image = branded
+            ? ShareImageRenderer.render(content: content, background: themeStore.selected)
+            : ShareImageRenderer.render(quote: quote, background: themeStore.selected)
+        guard let image, image.size.width > 0 else {
+            shareRenderFailed = true
+            return
+        }
+        onSharePresentationChange(true)
+        shareSession = ShareSession(content: content, image: image, deliveryId: deliveryId, branded: branded)
+    }
+
+    private func trackShare(_ event: AnalyticsEvent, session: ShareSession) {
+        AnalyticsManager.shared.track(event, properties: [
+            "share_id": session.id,
+            "share_day_jst": session.content.dayJST,
+            "quote_id": session.content.quote.id,
+            "delivery_id": session.deliveryId ?? "none",
+            "source": selectionCaption == nil ? "saved" : "home",
+            "asset_version": "word-card-v1"
+        ])
     }
 
     private var actionRow: some View {
         HStack(spacing: 40) {
-            actionButton(systemName: "square.and.arrow.up", identifier: "quote-share") {
-                showShareSheet = true
+            if !WordShareContent.isEnabled() {
+                actionButton(systemName: "square.and.arrow.up", identifier: "quote-share", action: beginShare)
             }
 
             actionButton(
@@ -124,12 +171,27 @@ struct QuoteCardView: View {
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     var onComplete: (() -> Void)? = nil
+    var onPresented: (() -> Void)? = nil
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        controller.completionWithItemsHandler = { _, completed, _, _ in
-            if completed { Task { @MainActor in onComplete?() } }
+        let controller = PresentedShareController(activityItems: items, applicationActivities: nil)
+        controller.onPresented = onPresented
+        controller.completionWithItemsHandler = { _, completed, _, error in
+            if completed && error == nil { Task { @MainActor in onComplete?() } }
         }
         return controller
     }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+
+/// UIKit calls this only when the sheet actually appears, once per share attempt.
+private final class PresentedShareController: UIActivityViewController {
+    var onPresented: (() -> Void)?
+    private var didRecordPresentation = false
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !didRecordPresentation else { return }
+        didRecordPresentation = true
+        onPresented?()
+    }
 }

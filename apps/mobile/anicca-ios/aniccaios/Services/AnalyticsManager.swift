@@ -382,6 +382,8 @@ enum AnalyticsEvent: String {
     case affirmationDisplayEnded = "affirmation_display_ended"
     case affirmationLiked = "affirmation_liked"
     case affirmationUnliked = "affirmation_unliked"
+    case screenshotShareOpened = "screenshot_share_opened"
+    case screenshotShareCompleted = "screenshot_share_completed"
     case affirmationShared = "affirmation_shared"
     case notificationOpened = "notification_opened"
     case notificationReceived = "notification_received"

@@ -1557,3 +1557,8 @@
 "winner_widget_instructions" = "Écran d'accueil : touche longuement un espace vide, choisis Modifier, puis Ajouter un widget. Cherche Anicca.\n\nÉcran verrouillé : touche longuement l'écran, choisis Personnaliser, puis Ajouter des widgets et Anicca.";
 "winner_widget_add" = "Je l'ajouterai après la configuration";
 "winner_widget_later" = "Peut-être plus tard";
+
+// Branded word sharing
+"quote_share_action" = "Partager ces mots";
+"quote_share_promise" = "Une app pour les jours difficiles et les envies de rire.";
+"quote_share_failed" = "Impossible de créer l’image. Veuillez réessayer.";

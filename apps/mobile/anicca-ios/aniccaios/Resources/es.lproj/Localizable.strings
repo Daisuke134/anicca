@@ -2841,3 +2841,8 @@
 "winner_widget_instructions" = "Pantalla de inicio: mantén presionado un espacio vacío, elige Editar y luego Añadir widget. Busca Anicca.\n\nPantalla bloqueada: mantén presionada la pantalla, elige Personalizar, luego Añadir widgets y Anicca.";
 "winner_widget_add" = "Lo añadiré después de la configuración";
 "winner_widget_later" = "Quizás más tarde";
+
+// Branded word sharing
+"quote_share_action" = "Compartir estas palabras";
+"quote_share_promise" = "Una app para los días difíciles y cuando necesitas reír.";
+"quote_share_failed" = "No se pudo crear la imagen. Inténtalo de nuevo.";
