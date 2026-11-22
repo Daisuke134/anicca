@@ -1,0 +1,41 @@
+{
+  "gate": "PASS",
+  "text_gate": "PASS",
+  "text_violations": [],
+  "timing_gate": "PASS",
+  "timing_violations": [],
+  "reply_gap_ms": [
+    {
+      "ai_event": 1,
+      "dais_event": 0,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 3,
+      "dais_event": 2,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 5,
+      "dais_event": 4,
+      "gap_ms": 300
+    }
+  ],
+  "reply_gap_median_ms": 200,
+  "reply_gap_p95_nearest_rank_ms": 300,
+  "ai_overlap_dais_count": 0,
+  "dais_overlap_ai_events": [],
+  "stage_duration_ms": 11200,
+  "thresholds_ms": {
+    "max_reply_gap_ms": 500,
+    "min_duration_ms": null,
+    "max_duration_ms": null
+  },
+  "scope": "annotated_timestamps_and_text_only",
+  "raw_audio_verified": false,
+  "audience_laughter": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED",
+  "voice_delivery_quality": "NOT_MEASURED",
+  "scenario_id": "1755-synthetic-good",
+  "input_provenance": "synthetic"
+}

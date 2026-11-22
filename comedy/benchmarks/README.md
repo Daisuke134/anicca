@@ -93,3 +93,16 @@ validate_stage_dialogue.py に任意のイベント属性 "kind": "speech" | "la
 - 対話テストが2分実演正本からAI第一声・第二声を抽出し、台本チェック、対話検証器、AGENTS、Comedy Skill、Voice用最小指示の**文字列完全一致**を継続検査する。
 - 修正以前は3つの指示文だけが架空の病名を『…』と表記し、2分台本・検証器の「…」とずれていた。意図は同じでも、完全一致評価の再現性を損なうため、**台本は変更せず指示文の表記を修正**。
 - これは静的なドキュメント整合性検証であり、音声モデルの出力文字、発声、観客理解、実際の笑いを測るものではない。[研究記録](../research/2026-11-22-1653-jst-voice-contract.md)。
+
+
+### 2026-11-22 17:55 JST — timestamp付き舞台対話の遅延・被り計測（録音は未測定）
+新規 `measure_stage_timing.py` は **手動で作成した時刻注釈付き対話**を `validate_stage_dialogue.py` の全文一致・話者ゲートで検査したうえで、応答の間と発話の被りを別項目として計算する。音声ファイルの認識・スピーカー分離・会場の音量は**行わない**。合成入力の数値を「実測Voiceレイテンシ」や「笑い」だと報告しない。
+
+- 入力は `{"scenario_id":"...", "provenance":"synthetic", "events":[...]}`。各イベントに従来の `speaker` / `text` / `cue` / `kind` と、**録音先頭を0とした整数ミリ秒** `start_ms` と `end_ms` を付ける。`start_ms <= end_ms`。全イベントは開始時刻の昇順。イベントのタイムスタンプを付与するアノテーション方法・録音環境・許諾は別途記録する。
+- AIの新しい返答を直前の**新しい**ダイス発話にのみ紐づけ、`AI.start_ms - Dais.end_ms` を符号付き応答間隔とする。負値はAIがダイスの発話中に開始したことを示し、`ai_overlaps_dais_speech` でFAIL。ダイスがAIを遮った事象は `dais_overlap_ai_events` として**記録だけ**する（演技上有効な場合がある）。第三者発話の割り込みは既存の**要確認フラグ**を維持し、因果を証明したとは見なさない。
+- 出力はペア数、間隔一覧、中央値、最近順位法のp95、合図開始〜終演までの時刻差、文字列ゲートとタイミングゲート、未測定項目。時刻の欠落・型不正・順序の逆転は入力エラーで停止する。
+- `--max-reply-gap-ms` / `--min-duration-ms` / `--max-duration-ms` は**オプション**。指定しなければAIの返答を遅すぎると判定しない。閾値を後から勝手に合わせないよう稽古前に設定・記録し、通常の会話研究の平均値を舞台AIの普遍的合格基準とみなさない。
+- 実行例：`python3 comedy/benchmarks/measure_stage_timing.py --input comedy/benchmarks/runs/1755-timing-synthetic-good.json --output /tmp/comedy-timing-check.json --max-reply-gap-ms 500 --strict`。**500 msは合成単体テストを通すための試験値で、実機Voiceの達成目標ではない。** 不合格時に `--strict` は終了コード1。
+- `python3 comedy/benchmarks/test_measure_stage_timing.py` は合成データのみの回帰試験。今回のログ：[研究記録](../research/2026-11-22-1755-jst-timing-audit.md)。匿名化した音声／時刻注釈の収集、音量、第三者の声への反応、笑いの再現性、金子さんの講評の改善効果は `NOT_MEASURED`。
+
+背景参考：Stivers et al. (2009), *PNAS*, https://doi.org/10.1073/pnas.0903616106 は日常会話の発話交代における重なりと沈黙を検討した研究。舞台上の演技・AI回線の閾値は提供していないため、ここでは測定対象の選択の参考に限る。
