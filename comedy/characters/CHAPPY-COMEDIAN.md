@@ -62,4 +62,4 @@ Canonical: 2026-11-22。**演目を越えて引き継ぐ、AI演者の芸風と�
 - 観客の笑いが**実際に**起きた箇所は？ 沈黙を無理に埋めた箇所は？
 - キャラクター固有の一貫性と意外性が両立したか？
 
-参照: \`../IMPROV-PLAYBOOK.md\` と現行台本。UCBの「Game of the Scene」「Heightening」「Second beats」の訓練思想も参考にするが、舞台上では理論を説明しない。
+参照: `../IMPROV-PLAYBOOK.md` と現行台本。UCBの「Game of the Scene」「Heightening」「Second beats」の訓練思想も参考にするが、舞台上では理論を説明しない。
