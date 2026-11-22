@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -51,7 +52,7 @@ def prepare(tasks: list[dict], responses: list[dict], seed: str) -> dict:
         failures = score(tasks_by_id[task_id], answer)
         if failures:
             raise ValueError(f"{task_id}/{idx}: hard gate FAIL: {failures}")
-        if not isinstance(row.get("skill_blob_sha"), str) or len(row["skill_blob_sha"]) != 40:
+        if not isinstance(row.get("skill_blob_sha"), str) or not re.fullmatch(r"[0-9a-f]{40}", row["skill_blob_sha"]):
             raise ValueError(f"{task_id}/{idx}: missing Skill blob SHA")
         pairs[task_id][idx] = row
     if set(pairs) != set(tasks_by_id) or any(set(pairs[k]) != {1, 2} for k in tasks_by_id):
@@ -66,6 +67,8 @@ def prepare(tasks: list[dict], responses: list[dict], seed: str) -> dict:
         one, two = pairs[task_id][1], pairs[task_id][2]
         if one["skill_blob_sha"] != two["skill_blob_sha"]:
             raise ValueError(f"{task_id}: unequal Skill SHA")
+        if one["response"] == two["response"]:
+            raise ValueError(f"{task_id}: identical candidate text")
         task = tasks_by_id[task_id]
         first, second = (one, two) if i % 2 == 0 else (two, one)
         for variant, left, right in (
