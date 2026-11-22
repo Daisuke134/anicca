@@ -263,6 +263,47 @@ class TimingAuditTests(unittest.TestCase):
             self.assertEqual(subprocess.run(cmd[:-1] + ["150"], capture_output=True,
                                             text=True).returncode, 0)
 
+    def test_second_ai_onset_is_observable_proxy_not_a_laugh(self):
+        report = measure(good())
+        self.assertEqual(report["second_ai_onset_ms"], 3900)
+        self.assertEqual(report["second_ai_onset_is_laughter"], "NOT_MEASURED")
+        self.assertEqual(report["thresholds_ms"]["max_second_ai_onset_ms"], None)
+
+    def test_second_ai_onset_target_is_opt_in_and_strict_boundary(self):
+        self.assertEqual(measure(good(), max_second_ai_onset_ms=3900)["gate"], "PASS")
+        report = measure(good(), max_second_ai_onset_ms=3899)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(report["timing_violations"][0]["reason"], "second_ai_onset_exceeds_target")
+        self.assertEqual(report["timing_violations"][0]["onset_ms"], 3900)
+
+    def test_missing_second_ai_turn_is_not_fabricated(self):
+        events = [good()[0], good()[1], good()[-1]]
+        report = measure(events, max_second_ai_onset_ms=30000)
+        self.assertIsNone(report["second_ai_onset_ms"])
+        self.assertEqual(report["text_gate"], "FAIL")
+        self.assertEqual(report["gate"], "FAIL")
+
+    def test_invalid_second_ai_onset_limits_rejected(self):
+        for bad in (-1, True, "30000", 0.5):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                measure(good(), max_second_ai_onset_ms=bad)
+
+    def test_cli_strict_second_ai_onset_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "onset.json", Path(tmp) / "result.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-second-onset",
+                                       "provenance": "synthetic", "events": good()},
+                                      ensure_ascii=False), encoding="utf-8")
+            command = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                       "--input", str(src), "--output", str(dest), "--strict",
+                       "--max-second-ai-onset-ms"]
+            fail = subprocess.run(command + ["3899"], capture_output=True, text=True)
+            self.assertEqual(fail.returncode, 1, fail.stderr)
+            self.assertEqual(json.loads(dest.read_text())["second_ai_onset_ms"], 3900)
+            ok = subprocess.run(command + ["3900"], capture_output=True, text=True)
+            self.assertEqual(ok.returncode, 0, ok.stderr)
+
     def test_cli_strict_exit_and_report_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
