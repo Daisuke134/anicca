@@ -41,7 +41,8 @@ def _merged_interval_ms(intervals: list[tuple[int, int]]) -> int:
 def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             min_duration_ms: int | None = None,
             max_duration_ms: int | None = None,
-            max_ai_entry_laughter_ms: int | None = None) -> dict:
+            max_ai_entry_laughter_ms: int | None = None,
+            max_second_ai_onset_ms: int | None = None) -> dict:
     """Measure annotated turn gaps/overlap; no default timing threshold is imposed.
 
     The caller supplies recording-relative start_ms/end_ms for every event.
@@ -52,6 +53,7 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     min_duration_ms = _optional_limit("min_duration_ms", min_duration_ms)
     max_duration_ms = _optional_limit("max_duration_ms", max_duration_ms)
     max_ai_entry_laughter_ms = _optional_limit("max_ai_entry_laughter_ms", max_ai_entry_laughter_ms)
+    max_second_ai_onset_ms = _optional_limit("max_second_ai_onset_ms", max_second_ai_onset_ms)
     if min_duration_ms is not None and max_duration_ms is not None and min_duration_ms > max_duration_ms:
         raise ValueError("min_duration_ms must not exceed max_duration_ms")
     if not isinstance(events, list) or not events:
@@ -65,6 +67,8 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     active = False
     pending_dais = None
     last_ai_end = None
+    second_ai_onset_ms = None  # First expected absurd diagnosis, NOT a measured laugh.
+    ai_turn_count = 0
     reply_gaps = []
     dais_overlaps_ai = []
     violations = []
@@ -98,6 +102,12 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             dais_overlaps_ai.append({"event": idx, "overlap_ms": min(end, last_ai_end) - start})
 
         if speaker == "ai" and kind == "speech" and event["text"].strip():
+            ai_turn_count += 1
+            if ai_turn_count == 2 and stage_start is not None:
+                second_ai_onset_ms = start - stage_start
+                if max_second_ai_onset_ms is not None and second_ai_onset_ms > max_second_ai_onset_ms:
+                    violations.append({"event": idx, "reason": "second_ai_onset_exceeds_target",
+                                       "onset_ms": second_ai_onset_ms})
             if active and pending_dais is not None:
                 dais_idx, dais_end = pending_dais
                 gap = start - dais_end
@@ -190,6 +200,8 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         "ai_overlap_dais_count": sum(r["reason"] == "ai_overlaps_dais_speech" for r in violations),
         "dais_overlap_ai_events": dais_overlaps_ai,
         "stage_duration_ms": duration,
+        "second_ai_onset_ms": second_ai_onset_ms,
+        "second_ai_onset_is_laughter": "NOT_MEASURED",
         "ai_audio_after_end_total_ms": _merged_interval_ms(post_end_ai_audio),
         "ai_audio_after_end_event_count": len(post_end_ai_audio),
         "annotated_audience_laughter_events": len(laughter),
@@ -200,6 +212,7 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             "max_reply_gap_ms": max_reply_gap_ms, "min_duration_ms": min_duration_ms,
             "max_duration_ms": max_duration_ms,
             "max_ai_entry_laughter_ms": max_ai_entry_laughter_ms,
+            "max_second_ai_onset_ms": max_second_ai_onset_ms,
         },
         "scope": "annotated_timestamps_and_text_only",
         "raw_audio_verified": False,
@@ -218,6 +231,8 @@ def main() -> int:
     parser.add_argument("--max-duration-ms", type=int)
     parser.add_argument("--max-ai-entry-laughter-ms", type=int,
                         help="Opt-in max ms of existing audience laughter at AI entry; unset=report-only")
+    parser.add_argument("--max-second-ai-onset-ms", type=int,
+                        help="Opt-in deadline for the second AI turn onset (proxy, not laughter)")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
     try:
@@ -228,6 +243,7 @@ def main() -> int:
             payload["events"], max_reply_gap_ms=args.max_reply_gap_ms,
             min_duration_ms=args.min_duration_ms, max_duration_ms=args.max_duration_ms,
             max_ai_entry_laughter_ms=args.max_ai_entry_laughter_ms,
+            max_second_ai_onset_ms=args.max_second_ai_onset_ms,
         )
         report["scenario_id"] = payload.get("scenario_id")
         report["input_provenance"] = payload.get("provenance", "UNDECLARED")
