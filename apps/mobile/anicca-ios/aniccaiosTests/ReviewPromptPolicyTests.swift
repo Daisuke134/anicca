@@ -132,10 +132,12 @@ final class ReviewPromptPolicyTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
 
+        var events: [AnalyticsEvent] = []
         let coordinator = ReviewPromptCoordinator(
             defaults: defaults,
             openDaysKey: "openDays",
-            lastRequestKey: "lastRequest"
+            lastRequestKey: "lastRequest",
+            track: { event, _ in events.append(event) }
         )
 
         var requestCount = 0
@@ -155,6 +157,7 @@ final class ReviewPromptPolicyTests: XCTestCase {
             request: request
         ))
 
+        XCTAssertTrue(events.isEmpty)
         coordinator.recordAppOpen(now: date(2026, 10, 3), calendar: calendar)
         XCTAssertTrue(coordinator.requestReviewIfAppropriate(
             now: date(2026, 10, 3),
@@ -162,6 +165,7 @@ final class ReviewPromptPolicyTests: XCTestCase {
             request: request
         ))
         XCTAssertEqual(requestCount, 1)
+        XCTAssertEqual(events.map(\.rawValue), ["rating_store_review_requested", "rating_prompt_shown"])
 
         // Same day / within cooldown: no second ask
         XCTAssertFalse(coordinator.requestReviewIfAppropriate(
@@ -170,6 +174,7 @@ final class ReviewPromptPolicyTests: XCTestCase {
             request: request
         ))
         XCTAssertEqual(requestCount, 1)
+        XCTAssertEqual(events.map(\.rawValue), ["rating_store_review_requested", "rating_prompt_shown"])
 
         // After cooldown
         XCTAssertTrue(coordinator.requestReviewIfAppropriate(
@@ -178,5 +183,6 @@ final class ReviewPromptPolicyTests: XCTestCase {
             request: request
         ))
         XCTAssertEqual(requestCount, 2)
+        XCTAssertEqual(events.filter { $0 == .ratingPromptShown }.count, 2)
     }
 }

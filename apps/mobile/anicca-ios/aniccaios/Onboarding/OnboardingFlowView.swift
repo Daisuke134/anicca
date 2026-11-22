@@ -1,12 +1,14 @@
 import SwiftUI
+import StoreKit
 import RevenueCat
 import RevenueCatUI
 import UserNotifications
 
-/// v8 onboarding: 10 steps + 2-step SOFT paywall (no in-flow rating prompt).
+/// v8 onboarding: 10 steps + 2-step SOFT paywall (review eligible after insight).
 /// Paywall presented via .fullScreenCover + .interactiveDismissDisabled (スワイプ離脱は防止)。
 /// 右上の × (paywall-close-button) タップでのみ課金せずメイン画面へ遷移する。
 struct OnboardingFlowView: View {
+    @Environment(\.requestReview) private var requestReview
     @EnvironmentObject private var appState: AppState
     @State private var step: OnboardingStep = .welcome
     @State private var showPaywall: Bool = false
@@ -83,6 +85,12 @@ struct OnboardingFlowView: View {
 
     private func advance() {
         AnalyticsManager.shared.track(.onboardingStepAdvanced, properties: ["step": step.analyticsName])
+
+        if step == .planReveal {
+            ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
+                requestReview()
+            }
+        }
 
         if step == .notifications {
             appState.markOnboardingQuestionsCompleted()

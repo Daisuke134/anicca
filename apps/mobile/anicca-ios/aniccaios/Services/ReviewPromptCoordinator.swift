@@ -7,6 +7,7 @@ import UIKit
 final class ReviewPromptCoordinator {
     static let shared = ReviewPromptCoordinator()
 
+    private let track: (AnalyticsEvent, [String: String]) -> Void
     private let defaults: UserDefaults
     private let openDaysKey: String
     private let lastRequestKey: String
@@ -14,8 +15,12 @@ final class ReviewPromptCoordinator {
     init(
         defaults: UserDefaults = .standard,
         openDaysKey: String = "com.anicca.review.openDays",
-        lastRequestKey: String = "com.anicca.review.lastRequestAt"
+        lastRequestKey: String = "com.anicca.review.lastRequestAt",
+        track: @escaping (AnalyticsEvent, [String: String]) -> Void = { event, properties in
+            AnalyticsManager.shared.track(event, properties: properties)
+        }
     ) {
+        self.track = track
         self.defaults = defaults
         self.openDaysKey = openDaysKey
         self.lastRequestKey = lastRequestKey
@@ -67,7 +72,9 @@ final class ReviewPromptCoordinator {
         // Record before presenting so a suppressed Apple dialog still counts toward cooldown.
         defaults.set(now.timeIntervalSince1970, forKey: lastRequestKey)
         AppState.shared.markReviewRequested()
-        AnalyticsManager.shared.track(.ratingStoreReviewRequested)
+        track(.ratingStoreReviewRequested, [:])
+        // Legacy funnel metric: a request, not proof Apple displayed its dialog.
+        track(.ratingPromptShown, ["presentation": "storekit_request"])
 
         if let request {
             request()

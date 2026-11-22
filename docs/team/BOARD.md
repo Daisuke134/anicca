@@ -320,3 +320,5 @@
 - home-codex task a28e9fa3（継続）: PR9161旧headのCI15件成功を公式確認。mainのNaive完了記録を保ってBOARD競合を解消。Decimal再計算/source-boundary/diff PASS、本人GETは5pending/受注0、remote差分0。次: 同PRの新head必要CI→main。納品/再応募/会計/投稿/送金0。
 
 - home-codex task e204c5: PR9161公式MERGED/main9f930f5c・必要CI15件/3成果物byte一致を確認し、古いCI待ちcursorを訂正。本人NEAR5pending/受注0、remote差分0（parent除外）。売上/費用は既存collectorの観測時刻/期間を保持し利益未確定。親PR/運用/effect変更0。次: 本訂正の必要CI→main、受注時納品/本人修復receiptの元ID照合。証拠 docs/evidence/hq-continuation-e204c5.json。
+
+- 2026-11-22 / Codex #9400: rating_prompt_shown送信断線を復旧、insight完了時に既存レビュー判定接続（初回禁止・3日・120日維持）。Python 22 PASS/1 skip、XCTest追加・Swift/Xcode不在で未実行。競合#9082は本修正へ一本化する候補としてPRに明記。次: Mac CI・レビュー・統合・本番計測読み戻し。
