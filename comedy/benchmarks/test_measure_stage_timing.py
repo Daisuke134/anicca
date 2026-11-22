@@ -416,5 +416,67 @@ class TimingAuditTests(unittest.TestCase):
             self.assertEqual(passed.returncode, 0, passed.stderr)
 
 
+class DaisReentryGapTests(unittest.TestCase):
+    """Timestamp-only proxy for room before Dais's next spoken reaction."""
+
+    def test_reports_gap_without_automatic_stage_policy(self):
+        r = measure(good())
+        self.assertEqual([x["gap_ms"] for x in r["dais_reentry_gap_ms"]], [100, 200])
+        self.assertEqual(r["dais_reentry_gap_median_ms"], 150)
+        self.assertEqual(r["dais_reentry_is_physical_acting"], "NOT_MEASURED")
+        self.assertEqual(r["gate"], "PASS")
+        self.assertIsNone(r["thresholds_ms"]["min_dais_reentry_gap_ms"])
+
+    def test_opt_in_boundary_uses_strict_below_not_equal(self):
+        self.assertEqual(measure(good(), min_dais_reentry_gap_ms=100)["gate"], "PASS")
+        r = measure(good(), min_dais_reentry_gap_ms=101)
+        self.assertEqual(r["text_gate"], "PASS")
+        self.assertEqual(r["timing_gate"], "FAIL")
+        self.assertEqual([x["reason"] for x in r["timing_violations"]],
+                         ["dais_reentry_below_opt_in_target"])
+        self.assertEqual(r["timing_violations"][0]["gap_ms"], 100)
+
+    def test_overlapping_dais_reply_is_negative_gap_not_default_failure(self):
+        events = good()
+        events[2]["start_ms"] = 2500
+        r = measure(events)
+        self.assertEqual(r["dais_reentry_gap_ms"][0]["gap_ms"], -400)
+        self.assertEqual(r["timing_gate"], "PASS")
+        self.assertEqual(measure(events, min_dais_reentry_gap_ms=0)["timing_gate"], "FAIL")
+
+    def test_laughter_is_not_a_dais_reply(self):
+        events = good()
+        events.insert(2, event("audience", "笑い", 2920, 2980, kind="laughter"))
+        r = measure(events)
+        self.assertEqual([x["gap_ms"] for x in r["dais_reentry_gap_ms"]], [100, 200])
+        self.assertEqual(len(r["dais_reentry_gap_ms"]), 2)
+
+    def test_final_end_cue_excluded(self):
+        r = measure(good())
+        self.assertEqual(len(r["dais_reentry_gap_ms"]), 2)
+        self.assertNotIn(700, [x["gap_ms"] for x in r["dais_reentry_gap_ms"]])
+
+    def test_minimum_validation(self):
+        for bad in (-1, True, 1.2, "100"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    measure(good(), min_dais_reentry_gap_ms=bad)
+
+    def test_cli_opt_in_strict_exit_and_readback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "input.json", Path(tmp) / "out.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-reentry",
+                                       "provenance": "synthetic", "events": good()},
+                                      ensure_ascii=False), encoding="utf-8")
+            cmd = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                   "--input", str(src), "--output", str(dest),
+                   "--min-dais-reentry-gap-ms", "101", "--strict"]
+            p = subprocess.run(cmd, capture_output=True, text=True)
+            self.assertEqual(p.returncode, 1, p.stderr)
+            report = json.loads(dest.read_text(encoding="utf-8"))
+            self.assertEqual(report["dais_reentry_gap_median_ms"], 150)
+            self.assertEqual(report["timing_gate"], "FAIL")
+
+
 if __name__ == "__main__":
     unittest.main()

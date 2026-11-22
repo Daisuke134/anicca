@@ -1,0 +1,8 @@
+{"id":"orig-reentry-01","kind":"generation","category":"大喜利","prompt":"図書館の「しおり」が受付職員になった。いちばん困る勤務態度は？","rights":"original_internal_draft","max_chars":135,"max_questions":0}
+{"id":"orig-reentry-02","kind":"generation","category":"大喜利","prompt":"忘れ物を必ず返してくれるホテル。しかしレビューが最悪。受付のひと言は？","rights":"original_internal_draft","max_chars":135,"max_questions":0}
+{"id":"orig-reentry-03","kind":"generation","category":"大喜利","prompt":"天気予報が毎回一日遅れる街。予報士はどう言い訳する？","rights":"original_internal_draft","max_chars":135,"max_questions":0}
+{"id":"orig-reentry-04","kind":"generation","category":"大喜利","prompt":"人の小さな秘密を一つ暴露する改札機。最も余計なアナウンスは？","rights":"original_internal_draft","max_chars":135,"max_questions":0}
+{"id":"orig-reentry-05","kind":"generation","category":"舞台即興","prompt":"ダイス「救急車の運転手が僕より先に入院してる！」。電話先AIが既出の運転手を回収して次の手配へ進める。","rights":"original_internal_draft","max_chars":135,"max_questions":0,"any_of":["右折田まっすぐ"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-reentry-06","kind":"generation","category":"舞台即興","prompt":"ダイス「病院の玄関が移動してるんだけど！」。電話先AIとして、既出病院の異常な手配を一つ進める。","rights":"original_internal_draft","max_chars":135,"max_questions":0,"any_of":["たぶん治る総合病院"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-reentry-07","kind":"generation","category":"舞台即興","prompt":"ダイス「豆腐田さんの車から招待状が二枚出てきた！」。電話先AIとして短い回収を一つ。","rights":"original_internal_draft","max_chars":135,"max_questions":0,"any_of":["豆腐田プル男"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-reentry-08","kind":"generation","category":"舞台即興","prompt":"ダイス「おもち34号が電話を切ってきた！」。電話先AIとして短く具体的に報告する。","rights":"original_internal_draft","max_chars":135,"max_questions":0,"any_of":["おもち34号"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}

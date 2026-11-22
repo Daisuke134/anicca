@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T15:54:58.799441+00:00",
+  "taskset": "comedy/benchmarks/runs/2026-11-23-0051-reentry-tasks.jsonl",
+  "responses": "comedy/benchmarks/runs/2026-11-23-0051-reentry-responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-05",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-05",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-06",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-06",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-07",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-07",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-08",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0051-chatgpt-gpt6-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "orig-reentry-08",
+      "category": "舞台即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}
