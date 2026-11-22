@@ -102,5 +102,18 @@ class CounterbalanceTests(unittest.TestCase):
         self.assertFalse(report["publish_enabled"])
 
 
+    def test_identical_candidate_text_rejected(self):
+        tasks, rows = example(1)
+        rows[1]["response"] = rows[0]["response"]
+        with self.assertRaisesRegex(ValueError, "identical candidate"):
+            prepare(tasks, rows, "s")
+
+    def test_nonhex_skill_sha_rejected(self):
+        tasks, rows = example(1)
+        rows[0]["skill_blob_sha"] = "z" * 40
+        with self.assertRaisesRegex(ValueError, "missing Skill"):
+            prepare(tasks, rows, "s")
+
+
 if __name__ == "__main__":
     unittest.main()
