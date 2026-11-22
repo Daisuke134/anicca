@@ -40,6 +40,32 @@ class ComedyBenchmarkTests(unittest.TestCase):
         self.assertIn("forbidden_phrase:吸って", issues)
         self.assertIn("forbidden_phrase:吐いて", issues)
 
+    def test_exact_line_rejects_appended_triage(self):
+        line = "はい、救急指令センターです。火事ですか、救急ですか？"
+        task = {"kind": "opening", "expected_prefix": line, "expected_exact": line}
+        response = line + "住所を教えてください。"
+        self.assertEqual(validator.score(task, response), ["script_exact_response_mismatch"])
+
+    def test_exact_second_line_rejects_truncation(self):
+        line = "救急ですね。声で分かりました。右ひざがご実家に帰られています。"
+        task = {"kind": "continuation", "expected_exact": line}
+        self.assertIn("script_exact_response_mismatch", validator.score(task, line[:-1]))
+
+    def test_exact_line_accepts_identical_full_turn(self):
+        line = "救急ですね。声で分かりました。右ひざがご実家に帰られています。"
+        self.assertEqual(validator.score({"kind": "continuation", "expected_exact": line}, line), [])
+
+    def test_exact_contract_requires_nonempty_string(self):
+        for value in ("", True, 0, []):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    validator.score({"kind": "opening", "expected_exact": value}, "はい")
+
+    def test_prefix_only_contract_preserved(self):
+        line = "はい、救急指令センターです。火事ですか、救急ですか？"
+        self.assertEqual(validator.score({"kind": "opening", "expected_prefix": line},
+                                         line + "（ここから余分な台詞）"), [])
+
     def test_spectator_requires_silence(self):
         self.assertEqual(validator.score({"kind": "silence"}, ""), [])
         self.assertEqual(validator.score({"kind": "silence"}, "  "), [])
