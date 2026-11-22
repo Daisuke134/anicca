@@ -16,6 +16,13 @@ AI × 人間のお笑いプロジェクトの正本（Single Source of Truth）�
 - 舞台での呼吸コーチングや通常の医療相談への脱線はしない。台本とキャラに従い、「会いたい」等は自然に拾う。現実の危険が示された場合のみ安全を優先。
 - **注意**：人物シートができてもAIモデルが永久学習したわけではない。新しい会話や別のAIではGitHubを再取得して読ませる。音声の話者判別は100%保証できない。
 
+## 2026-11-22：金子さんの改善点と共通Comedy Agent Skill
+- [**金子さんのネタ見せフィードバック・適用状況**](./feedback/KANEKO-2026-11-15.md)：声の正体／人間の演技／音量／偶発の笑い／再現性。適用設計済みと舞台未実証を分ける。
+- [**「痛い痛い！」v8の舞台導入**](./stage/INJURY-PHONE-INTRO.md)：採用は**電話先のAI救急指令員**。ダイス「痛い！ 痛い痛い！ もしもし！」→AIは既存v8の第一声そのまま。
+- [**Comedy Agent Skill v0.1**](../skills/comedy-agent/SKILL.md)：他のAIが共通で読み、上演と研究／評価を別モードで運用する。
+- [**Benchmark v1**](./benchmarks/README.md)：Oogiri-Master理解、AAAI 2026大喜利生成六軸、HumorBench音声、独自の舞台開始・アドリブテスト。
+- [**内部毎時ループ**](./COMEDY-AGENT-LOOP.md) と [**Muse/Grokへ一度で渡すプロンプト**](./prompts/MUSE-GROK-ONE-SHOT.md)。いずれも**設計資料**で、接続・自動実行・外部投稿の開始を意味しない。
+
 ## 全AI・全セッション共通の開始手順
 1. `AGENTS.md`：開始条件と第三者音声ルール。
 2. `HANDOVER.md`と`README.md`：進捗と現行の演目。
