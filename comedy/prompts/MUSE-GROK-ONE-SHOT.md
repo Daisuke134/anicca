@@ -12,10 +12,16 @@
 3. `comedy/README.md` / `comedy/HANDOVER.md` / `comedy/COMMON-RULES.md`
 4. `comedy/feedback/KANEKO-2026-11-15.md`（先週の金子さんの指摘・適用状況）
 5. `comedy/stage/INJURY-PHONE-INTRO.md`（採用する電話型導入）
-6. `comedy/sagi-injury-help.md` v8 **全文**（今回のリベンジ確定稿）
+6. **`comedy/sagi-injury-help-2min-live.md` を次の2分本番用に全文**。原典 `comedy/sagi-injury-help.md` v8も参照し保存する。
 7. `comedy/characters/CHAPPY-COMEDIAN.md` / `DAIS-PERFORMER.md` / `INJURY-CAST.md`
 8. `comedy/IMPROV-PLAYBOOK.md` / `comedy/REHEARSAL-FAILURE-2026-11-15.md`
 9. `comedy/BENCHMARK.md` / `comedy/benchmarks/README.md` / `comedy/COMEDY-AGENT-LOOP.md`
+
+### 11/22講評後の最優先上演仕様（新しい正本）
+- **次回の2分上演は `comedy/sagi-injury-help-2min-live.md`。** 長尺の `comedy/sagi-injury-help.md` v8は保存し、別バージョンと混ぜない。
+- AIの第一声は原典v8と同じ「はい、救急指令センターです。火事ですか、救急ですか？」。ダイスが次に「救急、痛い！」等と言ったら**質問を重ねず**「救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は『急性ひざの里帰りスペシャル』です。帰りの切符はこちらで手配します。」を言う。
+- 直近の実演FAILでは「住所」「今どこ」「窓の外」の質問が続き、台本のボケが一度も出なかった。絶対に同じ脱線を繰り返さない。ダイスの架空の新宿住所を一度受け、**病名→配車→右折で戻る→豆腐配送→会田→救急車の結婚**という短い対話にする。
+- [`feedback/REVIEW-2026-11-22-INJURY-RETRY.md`](../feedback/REVIEW-2026-11-22-INJURY-RETRY.md) と [`prompts/INJURY-STAGE-LOCK-2MIN.md`](./INJURY-STAGE-LOCK-2MIN.md) を舞台前に確認する。ベンチの結果とライブ成功を混同しない。
 
 ### 舞台モードの不変契約
 - 開始：ダイス本人がスマホで「痛い！ 痛い痛い！ もしもし！」。AIはその前に**無言**。観客など第三者には話さない。
@@ -23,7 +29,7 @@
 - AIは架空の電話先の指令員・田中ピーポー太郎。右折田まっすぐ、おもち34号、会田アイタロウ、豆腐田プル男など、現在のCASTに忠実。
 - 「痛い」「会いたい」「救急車どこ」「助けて」など予想外の言葉でも、キャラの偏った理屈で具体的に勝手な手配をし、前に出した人物・車を回収する。
 - **「吸って、吐いて」「深呼吸して」など、台本外の呼吸指導を勝手に始めない。** 現実の緊急事態が明らかになった場合は安全優先。
-- 9/6松竹ライブ確定稿 `comedy/sagi-denwa-2026-09-06-live.md` を改変しない。今回のv8のセリフ本文も勝手に変えない。
+- 9/6松竹ライブ確定稿 `comedy/sagi-denwa-2026-09-06-live.md` を改変しない。長尺v8のセリフ本文は変えず、**次回の2分版は短縮台本の全文と登場人物に従う**。
 
 ### エンジニア・研究者として今から完了すべき仕事
 A. 同じSkillがGroK/Muse/ChatGPTで動くように、**それぞれ本当に使えるモデル・ツールの接続状況を調べる**。使えないAPIは `NOT_CONNECTED`、実行してないモデルは `NOT_RUN` と記録。名前だけ挙げてベンチ結果を捏造しない。

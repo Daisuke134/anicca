@@ -1,5 +1,9 @@
 # Life Manager project instructions
 
+## Comedy Stage v8 two-minute cut — 2026-11-22 follow-up
+After the second failed voice performance, the **next rehearsal's primary script** is `comedy/sagi-injury-help-2min-live.md`. The previous `comedy/sagi-injury-help.md` v8 is preserved, not overwritten. Read the latest `comedy/feedback/REVIEW-2026-11-22-INJURY-RETRY.md` and `comedy/prompts/INJURY-STAGE-LOCK-2MIN.md`. The AI's first two lines must match v8 exactly; **do not fall into repeated location/window questions**. The stage dialogue must progress from fictional diagnosis to concrete dispatch errors and human reactions. This is not a guarantee of live Voice compliance; test the actual device before stage. Follow `skills/comedy-agent/SKILL.md` v0.2.
+
+
 ## Comedy Agent Skill — shared by ChatGPT / Grok / Muse / Codex
 Use [`skills/comedy-agent/SKILL.md`](skills/comedy-agent/SKILL.md) as the cross-model implementation and comparison contract. The `comedy/` folder contains character bibles, Kaneko feedback, the selected phone-to-AI stage framing, objective gate tests and an internal development loop. Current stage sketch remains "痛い痛い!" v8; the spoken script is unchanged. External X/contest auto-posting is not enabled merely by writing a skill. Read usage policies and verify appropriate account authority before any external effects.
 
