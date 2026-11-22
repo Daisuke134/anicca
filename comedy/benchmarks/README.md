@@ -193,3 +193,10 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 - `temperature` の真偽値・非数値、`max_output_tokens=0` のような無効な生成設定は `invalid_generation_setting` として検出する。ただし検査はメタデータの自己申告だけで、実際のモデル版やAPIレシートの真正性を保証しない。
 - 合成の4負例で**修正前14件中4件FAIL、修正後14/14 PASS**。新規オリジナル開発8題×2案=16件の形式検査16/16 PASS、比較出自は**NOT_COMPARABLE**。今回の固定ベンチは未使用、Grok/Muse未実行、実録Voice・観客笑いは未測定。
 - [研究報告](../research/2026-11-23-0352-jst-provenance-sample-integrity.md)、[形式結果](./runs/2026-11-23-0352-format-report.json)、[出自監査結果](./runs/2026-11-23-0352-provenance-report.json)。外部への自動投稿・返信はOFF。
+
+### 2026-11-23 04:55 JST：出自監査の空回答・沈黙課題ゲート
+- `audit_comparison_provenance.py` はタスクの `kind` を読み、`silence` に発話がある場合 `unexpected_silence_response`、それ以外に空白だけの回答がある場合 `empty_non_silence_response` を記録し、`NOT_COMPARABLE` とする。舞台前の第三者への沈黙と、実際の応答取得を区別するための比較入力監査で、音声認識や面白さを判定するものではない。
+- 合成メタデータ18テストは修正前15/18（新規3 FAIL）→修正後18/18 PASS。新規4件のうち沈黙正解の正常系も検証した。
+- 新規オリジナル開発8題（大喜利4、電話先AIアドリブ4）×2案=16テキスト候補：形式ゲート16/16 PASS、出自監査 `NOT_COMPARABLE`、文字3-gram監査は過去16回答に対し要確認フラグ0。固定ベンチ未使用。
+- ChatGPT GPT-6のチャット内生成のみ。Grok/MuseはReason Networkの3接続が409 `agent_network_offline`、独立API比較は未実施。実録Voice・客席笑い・金子さんの導入効果は未測定。外部投稿 `publish_enabled=false`、自動返信 `auto_reply_enabled=false`。
+- [今回の研究ログ](../research/2026-11-23-0455-jst-silence-provenance.md) と [監査結果](./runs/2026-11-23-0455-provenance-report.json)。
