@@ -1,0 +1,11 @@
+{
+  "scenario_id": "audience-laughter-control",
+  "gate": "PASS",
+  "violations": [],
+  "ai_turns": 2,
+  "dais_turns": 2,
+  "scope": "annotated_text_transcript_only",
+  "laughter": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED"
+}

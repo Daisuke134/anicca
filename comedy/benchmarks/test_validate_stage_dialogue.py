@@ -10,10 +10,12 @@ validator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validator)
 
 
-def e(speaker, text, cue=None):
+def e(speaker, text, cue=None, kind=None):
     value = {"speaker": speaker, "text": text}
     if cue:
         value["cue"] = cue
+    if kind:
+        value["kind"] = kind
     return value
 
 
@@ -86,6 +88,44 @@ class StageDialogueTests(unittest.TestCase):
     def test_cues_must_be_dais(self):
         with self.assertRaises(ValueError):
             validator.validate([e("audience", "痛い", "start")])
+
+    def test_crowd_speech_between_dais_and_ai_is_review_flag(self):
+        events = good()
+        events.insert(2, e("audience", "火事ですか？"))
+        self.assertIn("ambiguous_third_party_speech_between_dais_and_ai", self.reasons(events))
+
+    def test_staff_speech_between_second_cue_and_ai_is_review_flag(self):
+        events = good()
+        events.insert(4, e("staff", "救急ですね"))
+        self.assertIn("ambiguous_third_party_speech_between_dais_and_ai", self.reasons(events))
+
+    def test_audience_laughter_between_dais_and_ai_does_not_flag(self):
+        events = good()
+        events.insert(2, e("audience", "笑い声", kind="laughter"))
+        self.assertEqual(validator.validate(events)["gate"], "PASS")
+
+    def test_staff_noise_between_dais_and_ai_does_not_flag(self):
+        events = good()
+        events.insert(2, e("staff", "物音", kind="noise"))
+        self.assertEqual(validator.validate(events)["gate"], "PASS")
+
+    def test_new_dais_turn_clears_third_party_risk(self):
+        events = good()
+        events.insert(2, e("audience", "もしもし"))
+        events.insert(3, e("dais", "ねえ、聞いてる？"))
+        self.assertEqual(validator.validate(events)["gate"], "PASS")
+
+    def test_invalid_kind_rejected(self):
+        events = good()
+        events.insert(2, e("audience", "話し声", kind="singing"))
+        with self.assertRaises(ValueError):
+            validator.validate(events)
+
+    def test_unhashable_kind_rejected_without_crashing(self):
+        events = good()
+        events[0]["kind"] = []
+        with self.assertRaises(ValueError):
+            validator.validate(events)
 
     def test_real_emergency_is_outside_scope(self):
         self.assertEqual(validator.validate(good())["scope"], "annotated_text_transcript_only")
