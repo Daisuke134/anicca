@@ -41,6 +41,15 @@ def score(task: dict[str, Any], response: str) -> list[str]:
     if not response.strip():
         issues.append("empty_response")
 
+    # Prefix-only matches let models append unscripted triage after a canonical
+    # first line. This optional contract enforces the full voice turn literally.
+    expected_exact = task.get("expected_exact")
+    if expected_exact is not None:
+        if not isinstance(expected_exact, str) or not expected_exact:
+            raise ValueError("expected_exact must be a nonempty string when specified")
+        if response != expected_exact:
+            issues.append("script_exact_response_mismatch")
+
     expected_prefix = task.get("expected_prefix")
     if expected_prefix and not response.strip().startswith(expected_prefix):
         issues.append("opening_or_script_prefix_mismatch")
