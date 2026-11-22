@@ -112,10 +112,57 @@ class RepeatabilityAuditTests(unittest.TestCase):
         self.assertEqual(report["voice_reproducibility"], "AUDIO_ANNOTATION_ONLY_NOT_VERIFIED")
         self.assertFalse(report["runs"][0]["audio_verified_by_tool"])
 
+    def test_duplicate_recording_ref_invalidates_repeatability(self):
+        fixture = data()
+        for item in fixture["runs"]:
+            item.update(source_type="audio_annotated", audio_profile="phone",
+                        recording_ref="private:recording-one", annotator_id="annotator")
+        report = audit(fixture)
+        self.assertEqual(report["repeatability_comparison"], "NOT_COMPARABLE")
+        self.assertEqual(report["recording_uniqueness"], "DUPLICATE_DECLARED_RECORDING_EVIDENCE")
+        self.assertIn("reused_recording_ref", str(report["provenance_issues"]))
+        self.assertEqual(report["groups"][0]["passed"], 2)  # text gates remain separate
+
+    def test_distinct_recording_refs_are_only_self_reported(self):
+        fixture = data()
+        for index, item in enumerate(fixture["runs"]):
+            item.update(source_type="audio_annotated", audio_profile="phone",
+                        recording_ref=f"private:recording-{index}", annotator_id="annotator")
+        report = audit(fixture)
+        self.assertEqual(report["repeatability_comparison"], "SAME_DECLARED_CONDITIONS_ONLY")
+        self.assertEqual(report["recording_uniqueness"], "UNIQUE_SELF_REPORTED_REFERENCES_ONLY")
+        self.assertFalse(report["runs"][0]["audio_verified_by_tool"])
+
+    def test_same_recording_hash_different_name_invalidates(self):
+        fixture = data()
+        for index, item in enumerate(fixture["runs"]):
+            item.update(source_type="audio_annotated", audio_profile="phone",
+                        recording_ref=f"private:renamed-{index}", annotator_id="annotator",
+                        recording_sha256=("AB" * 32 if index == 0 else "ab" * 32))
+        report = audit(fixture)
+        self.assertEqual(report["repeatability_comparison"], "NOT_COMPARABLE")
+        self.assertIn("reused_recording_sha256", str(report["provenance_issues"]))
+        self.assertNotIn("reused_recording_ref", str(report["provenance_issues"]))
+
+    def test_bad_recording_hash_rejected(self):
+        fixture = data()
+        fixture["runs"][0].update(
+            source_type="audio_annotated", recording_ref="private:one",
+            annotator_id="annotator", recording_sha256="not-real"
+        )
+        with self.assertRaisesRegex(ValueError, "recording_sha256"):
+            audit(fixture)
+
+    def test_synthetic_cannot_claim_recording_hash(self):
+        fixture = data()
+        fixture["runs"][0]["recording_sha256"] = "a" * 64
+        with self.assertRaisesRegex(ValueError, "recording evidence"):
+            audit(fixture)
+
     def test_synthetic_cannot_claim_recording(self):
         fixture = data()
         fixture["runs"][0]["recording_ref"] = "fabricated"
-        with self.assertRaisesRegex(ValueError, "must not claim recording_ref"):
+        with self.assertRaisesRegex(ValueError, "must not claim recording evidence"):
             audit(fixture)
 
     def test_invalid_sha_rejected(self):
