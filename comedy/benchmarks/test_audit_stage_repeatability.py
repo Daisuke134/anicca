@@ -29,7 +29,7 @@ def events():
 def run(run_id):
     return {
         "run_id": run_id, "stage_id": "injury-2min",
-        "model_id": "GPT-6", "model_version": "exact_build_unavailable",
+        "model_id": "synthetic-fixture-not-a-model", "model_version": "not_applicable",
         "skill_blob_sha": SHA_SKILL, "script_blob_sha": SHA_SCRIPT,
         "input_profile": "same-annotated-script",
         "audio_profile": "none-text-fixture", "source_type": "synthetic",
