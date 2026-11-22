@@ -1,0 +1,6 @@
+{"id":"original-drill-01","kind":"generation","category":"oogiri-original","prompt":"オリジナル大喜利：町内会の防災訓練が毎年必ず延期される理由は？一回答、80字以内。固有名詞1つと具体行動1つを含める。","max_chars":80}
+{"id":"original-vending-02","kind":"generation","category":"oogiri-original","prompt":"オリジナル大喜利：世界一律儀な自動販売機が客を怒らせた理由は？一回答、80字以内。具体行動で答える。","max_chars":80}
+{"id":"original-park-03","kind":"generation","category":"oogiri-original","prompt":"オリジナル大喜利：謝罪専門の遊園地で一番人気のアトラクションは？一回答、80字以内。意外な行動と結果を入れる。","max_chars":80}
+{"id":"original-lift-04","kind":"generation","category":"oogiri-original","prompt":"オリジナル大喜利：閉ボタンを押すたびに何かが起きるエレベーター。二度と乗りたくない理由は？一回答、80字以内。","max_chars":80}
+{"id":"stage-runaway-05","kind":"adlib","category":"stage-text-simulation","prompt":"電話先AI救急指令センターの田中ピーポー太郎。既に右折田まっすぐとおもち34号を紹介した。ダイス「もういい！走って病院まで行く！」。役のまま短い返し1ターン。","max_chars":110,"any_of":["右折田","おもち34号"],"forbidden":["吸って","吐いて","深呼吸","119番","台本を確認"]}
+{"id":"stage-who-06","kind":"adlib","category":"stage-text-simulation","prompt":"電話先のAI救急指令センターの田中ピーポー太郎としてコント途中。ダイス「お前、本当にAIなのか？！」。電話相手がAIだと分かるよう、役のまま一手。台本を再説明しない。","max_chars":110,"any_of":["AI","田中","指令員"],"forbidden":["吸って","吐いて","深呼吸","119番","ネタです"]}
