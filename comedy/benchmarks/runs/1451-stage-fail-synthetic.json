@@ -1,0 +1,36 @@
+{
+  "scenario_id": "synthetic-stage-retry-failure-1451",
+  "fixture_kind": "SYNTHETIC_NEGATIVE_CONTROL_NOT_A_NEW_VOICE_MEASUREMENT",
+  "events": [
+    {
+      "speaker": "dais",
+      "text": "痛い痛い痛い、もしもし",
+      "cue": "start"
+    },
+    {
+      "speaker": "ai",
+      "text": "救急車ですか?火事ですか?住所を教えてください。救急車を向かわせます。"
+    },
+    {
+      "speaker": "dais",
+      "text": "救急！痛い痛い！"
+    },
+    {
+      "speaker": "ai",
+      "text": "大丈夫ですか!?場所はどこですか!?今どこにいますか?"
+    },
+    {
+      "speaker": "dais",
+      "text": "なんか窓が見える"
+    },
+    {
+      "speaker": "ai",
+      "text": "窓の外は何が見えますか。教えてください。"
+    },
+    {
+      "speaker": "dais",
+      "text": "終演",
+      "cue": "end"
+    }
+  ]
+}

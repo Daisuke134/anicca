@@ -1,0 +1,28 @@
+{
+  "scenario_id": "synthetic-stage-retry-failure-1451",
+  "gate": "FAIL",
+  "violations": [
+    {
+      "event": 1,
+      "reason": "opening_not_exact"
+    },
+    {
+      "event": 3,
+      "reason": "second_not_exact"
+    },
+    {
+      "event": 3,
+      "reason": "interview_question_after_opening"
+    },
+    {
+      "event": 5,
+      "reason": "interview_question_after_opening"
+    }
+  ],
+  "ai_turns": 3,
+  "dais_turns": 4,
+  "scope": "annotated_text_transcript_only",
+  "laughter": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED"
+}

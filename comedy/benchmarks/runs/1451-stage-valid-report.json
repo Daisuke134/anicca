@@ -1,0 +1,11 @@
+{
+  "scenario_id": "synthetic-stage-valid-1451",
+  "gate": "PASS",
+  "violations": [],
+  "ai_turns": 3,
+  "dais_turns": 4,
+  "scope": "annotated_text_transcript_only",
+  "laughter": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED"
+}
