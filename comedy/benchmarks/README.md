@@ -82,3 +82,9 @@ python3 comedy/benchmarks/test_validate_run.py
 
 ## E. 結果の永続化
 1 run = 1 immutable ID。タスク・Skill SHA・モデルID・応答・人間評価・音声ファイル参照・失敗理由・公開先URL（投稿した場合のみ）を残す。生の個人の声や観客情報は許諾・プライバシー確認のうえで適切に保持し、公開GitHubに無断アップロードしない。
+
+### 2026-11-22 15:57 JST：第三者の介在発話と笑い声の分離
+
+validate_stage_dialogue.py に任意のイベント属性 "kind": "speech" | "laughter" | "noise" を追加。最後のダイス発話からAI発話までの間に観客・スタッフのspeechが挟まれば ambiguous_third_party_speech_between_dais_and_ai を記録する。これは**第三者に応答した因果関係の証拠ではなく、録音を要確認という保守的なリスクフラグ**。観客のlaughter・スタッフのnoiseは介在発話として数えず、未指定kindは従来互換のspeechと解釈する。誤アノテーションは偽陽性・偽陰性の原因となる。
+
+[内部研究・実行ログ](../research/2026-11-22-1557-jst-third-party-gate.md)：Python単体テスト38/38 PASS、合成の第三者割り込みはFAIL/1違反、笑い声の対照はPASS/0違反。新規独自開発6題×2候補の形式検査12/12 PASS。**固定ベンチは今回未使用、Voice・笑い・モデル間優劣は未測定**。

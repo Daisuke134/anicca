@@ -1,0 +1,16 @@
+{
+  "scenario_id": "interposed-audience-speech-risk",
+  "gate": "FAIL",
+  "violations": [
+    {
+      "event": 2,
+      "reason": "ambiguous_third_party_speech_between_dais_and_ai"
+    }
+  ],
+  "ai_turns": 2,
+  "dais_turns": 2,
+  "scope": "annotated_text_transcript_only",
+  "laughter": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED"
+}

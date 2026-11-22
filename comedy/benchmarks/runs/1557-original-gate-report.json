@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T07:01:10.630446+00:00",
+  "taskset": "comedy/benchmarks/runs/1557-original-tasks.jsonl",
+  "responses": "comedy/benchmarks/runs/1557-original-responses.jsonl",
+  "task_count": 6,
+  "run_summary": [
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "submitted": 6,
+      "passed": 6,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "submitted": 6,
+      "passed": 6,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-oogiri-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-improv-01",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-improv-01",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-1",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-improv-02",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1557-chatgpt-variant-2",
+      "model": "ChatGPT GPT-6 (this conversation)",
+      "task_id": "1557-improv-02",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}
