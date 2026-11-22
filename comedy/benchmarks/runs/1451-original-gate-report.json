@@ -1,0 +1,109 @@
+{
+  "run_id": "2026-11-22-1451-jst",
+  "evaluator": "local_equivalent_literal_checks_not_GitHub_validate_run.py",
+  "submitted": 12,
+  "pass": 12,
+  "fail": 0,
+  "items": [
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "original-minutes-01",
+      "gate": "PASS",
+      "char_count": 49,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "original-minutes-01",
+      "gate": "PASS",
+      "char_count": 46,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "original-clock-02",
+      "gate": "PASS",
+      "char_count": 42,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "original-clock-02",
+      "gate": "PASS",
+      "char_count": 42,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "original-certificate-03",
+      "gate": "PASS",
+      "char_count": 43,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "original-certificate-03",
+      "gate": "PASS",
+      "char_count": 39,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "original-ryokan-04",
+      "gate": "PASS",
+      "char_count": 39,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "original-ryokan-04",
+      "gate": "PASS",
+      "char_count": 38,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "stage-signal-05",
+      "gate": "PASS",
+      "char_count": 46,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "stage-signal-05",
+      "gate": "PASS",
+      "char_count": 52,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-1",
+      "task_id": "stage-siren-06",
+      "gate": "PASS",
+      "char_count": 54,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1451-jst-gpt6-candidate-2",
+      "task_id": "stage-siren-06",
+      "gate": "PASS",
+      "char_count": 48,
+      "issues": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "humor_score": "NOT_MEASURED",
+  "audience": "NOT_MEASURED",
+  "grok": "NOT_RUN",
+  "muse": "NOT_RUN"
+}
