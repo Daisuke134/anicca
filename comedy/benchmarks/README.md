@@ -3,6 +3,13 @@
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
+## 2026-11-23 07:55 JST：録音IDの重複を「別々の稽古」と誤集計しない
+
+- `audit_stage_repeatability.py` に `recording_ref` の再使用検出と、任意の `recording_sha256`（64桁の16進数）の再使用検出を追加。別の`run_id`でも同じ録音参照なら `NOT_COMPARABLE` とし、台詞のPASS/FAILと録音の出自不備を別欄で示す。
+- 合成メタデータの負例では台詞ゲート2/2 PASSでも、重複録音参照で比較は `NOT_COMPARABLE`、厳格CLIは期待どおり終了1。正例の異なる架空IDでは `SAME_DECLARED_CONDITIONS_ONLY`、ただし**音声・実録の真正性や独立性は未確認**。Python単体テスト19/19 PASS（新規5件）。
+- 新規**オリジナル開発題**8件（固定ベンチではない）×2テキスト回答。文字・設定のハードゲート **15/16 PASS、1/16 FAIL**（`st03`の1案で必須の「絹ごし3号」を欠落、元出力を保存）。モデル間出自監査は `NOT_COMPARABLE`。GPT-6製品ラベルの同一チャット内のみ、Grok・Muse未実行。観客笑いと実機Voiceは未測定。
+- [研究報告](../research/2026-11-23-0755-jst-recording-uniqueness.md)。外部投稿・自動返信OFF。
+
 ## 2026-11-23 07:00 JST：同一条件の稽古反復を監査する（合成のみ実行）
 
 - 新規 `audit_stage_repeatability.py` は、`validate_stage_dialogue.validate` を各回の**時刻なし注釈テキスト**に適用し、同一条件を申告した複数回のPASS/FAILを集約する。主目的はモデル版、Skill / 台本 Git blob SHA、入力・音声プロファイル、データ出自が異なる回を**一つの再現率に混ぜない**こと。1回だけでは反復比較を成立させない。
