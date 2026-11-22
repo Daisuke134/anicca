@@ -74,5 +74,24 @@ class ComedyBenchmarkTests(unittest.TestCase):
             self.assertEqual(report["items"][0]["funniness"], "NOT_MEASURED")
 
 
+    def test_max_chars_exact_limit_passes(self):
+        self.assertEqual(validator.score({"kind": "generation", "max_chars": 80}, "あ" * 80), [])
+
+    def test_max_chars_over_limit_fails(self):
+        self.assertEqual(
+            validator.score({"kind": "generation", "max_chars": 80}, "あ" * 81),
+            ["exceeds_max_chars"],
+        )
+
+    def test_max_chars_invalid_fails_closed(self):
+        for value in (0, True, "80"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    validator.score({"kind": "generation", "max_chars": value}, "あ")
+
+    def test_existing_generation_without_limit_unchanged(self):
+        self.assertEqual(validator.score({"kind": "generation"}, "あ" * 81), [])
+
+
 if __name__ == "__main__":
     unittest.main()
