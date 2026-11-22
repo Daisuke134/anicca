@@ -1,0 +1,8 @@
+{"id":"orig-2357-01","kind":"generation","category":"大喜利","prompt":"細かすぎるルールがある架空のエレベーター。入口の注意書きは？","max_chars":135,"max_questions":0}
+{"id":"orig-2357-02","kind":"generation","category":"大喜利","prompt":"忘れ物センターが受け取りを拒否した意外な落とし物は？","max_chars":135,"max_questions":0}
+{"id":"orig-2357-03","kind":"generation","category":"大喜利","prompt":"学校の反省会が進化しすぎた結果、何が起きた？","max_chars":135,"max_questions":0}
+{"id":"orig-2357-04","kind":"generation","category":"大喜利","prompt":"深夜コンビニで「温めますか？」を言うのを禁止された理由は？","max_chars":135,"max_questions":0}
+{"id":"orig-2357-05","kind":"generation","category":"舞台即興","prompt":"ダイス「救急車より先に紙吹雪だけ来た！」。電話先のAI救急係として短く返す。","max_chars":135,"max_questions":0,"any_of":["おもち34号"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-2357-06","kind":"generation","category":"舞台即興","prompt":"ダイス「運転手が地図に土下座してる！」。既出の運転手の欠点を使って短く返す。","max_chars":135,"max_questions":0,"any_of":["右折田まっすぐ"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-2357-07","kind":"generation","category":"舞台即興","prompt":"ダイス「会田アイタロウに会ったのに忘れられた！」。電話先AIとして次の異常な手配へ進める。","max_chars":135,"max_questions":0,"any_of":["会田アイタロウ"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
+{"id":"orig-2357-08","kind":"generation","category":"舞台即興","prompt":"ダイス「救急車がまた式場に戻った！」。同じ救急車を回収し具体的な失敗を短く報告する。","max_chars":135,"max_questions":0,"any_of":["おもち34号"],"forbidden":["深呼吸","吸って","吐いて","住所は","今どこ","台本を確認"]}
