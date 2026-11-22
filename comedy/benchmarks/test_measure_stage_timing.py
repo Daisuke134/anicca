@@ -369,6 +369,52 @@ class TimingAuditTests(unittest.TestCase):
             passed = subprocess.run(cmd + ["4000"], capture_output=True, text=True)
             self.assertEqual(passed.returncode, 0, passed.stderr)
 
+    def test_aggregate_talk_share_reports_without_default_gate(self):
+        report = measure(good())
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["ai_stage_speaking_ms"], 6100)
+        self.assertEqual(report["dais_stage_speaking_ms"], 3400)
+        self.assertAlmostEqual(report["ai_talk_share_percent"], 64.211, places=3)
+        self.assertIsNone(report["thresholds_ms"]["max_ai_talk_share_percent"])
+        self.assertEqual(report["ai_talk_share_is_laughter"], "NOT_MEASURED")
+
+    def test_many_short_ai_turns_collectively_dominate_despite_per_turn_pass(self):
+        # No AI turn exceeds 5s, but the total speaking-time share exceeds 60%.
+        report = measure(good(), max_ai_turn_duration_ms=5000, max_ai_talk_share_percent=60)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertIn("ai_dominates_speaking_time",
+                      [r["reason"] for r in report["timing_violations"]])
+        self.assertEqual(measure(good(), max_ai_talk_share_percent=65)["gate"], "PASS")
+
+    def test_ai_talk_share_excludes_post_end_audio_from_fraction(self):
+        events = good()
+        events[5]["end_ms"] = 11500
+        report = measure(events)
+        self.assertEqual(report["ai_audio_after_end_total_ms"], 300)
+        self.assertEqual(report["ai_stage_speaking_ms"], 7000)
+        self.assertEqual(report["dais_stage_speaking_ms"], 3400)
+
+    def test_invalid_ai_talk_share_limit_rejected(self):
+        for bad in (-1, True, False, "60", 60.5, 101):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                measure(good(), max_ai_talk_share_percent=bad)
+
+    def test_cli_strict_ai_talk_share_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "talk.json", Path(tmp) / "report.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-share",
+                                       "provenance": "synthetic", "events": good()},
+                                      ensure_ascii=False), encoding="utf-8")
+            command = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                       "--input", str(src), "--output", str(dest),
+                       "--strict", "--max-ai-talk-share-percent"]
+            fail = subprocess.run(command + ["64"], capture_output=True, text=True)
+            self.assertEqual(fail.returncode, 1, fail.stderr)
+            self.assertEqual(json.loads(dest.read_text())["ai_stage_speaking_ms"], 6100)
+            passed = subprocess.run(command + ["65"], capture_output=True, text=True)
+            self.assertEqual(passed.returncode, 0, passed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
