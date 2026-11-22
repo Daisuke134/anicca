@@ -17,6 +17,7 @@ CONDITION_FIELDS = (
 )
 SOURCE_TYPES = {"synthetic", "audio_annotated"}
 GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
+RECORDING_SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 def _nonempty(record: dict, field: str) -> str:
@@ -36,6 +37,9 @@ def audit(data: dict) -> dict:
         raise ValueError("runs must be a nonempty list")
 
     seen_ids: set[str] = set()
+    seen_recording_refs: dict[str, str] = {}
+    seen_recording_hashes: dict[str, str] = {}
+    provenance_issues: list[dict] = []
     groups: dict[tuple[str, ...], list[dict]] = defaultdict(list)
     item_results: list[dict] = []
 
@@ -55,17 +59,42 @@ def audit(data: dict) -> dict:
             if not GIT_SHA.fullmatch(attributes[key]):
                 raise ValueError(f"{run_id}: {key} must be a 40-digit Git SHA")
         evidence = run.get("recording_ref")
+        recording_hash = run.get("recording_sha256")
+        run_provenance_issues: list[dict] = []
         if attributes["source_type"] == "audio_annotated":
             if not isinstance(evidence, str) or not evidence.strip():
                 raise ValueError(f"{run_id}: audio_annotated requires recording_ref")
             _nonempty(run, "annotator_id")
-        elif evidence is not None:
-            raise ValueError(f"{run_id}: synthetic runs must not claim recording_ref")
+            # Different run IDs do not make the same recorded performance
+            # independent. This checks claims, not the recording bytes.
+            ref = evidence.strip()
+            if ref in seen_recording_refs:
+                run_provenance_issues.append({
+                    "run_id": run_id, "reason": "reused_recording_ref",
+                    "first_run_id": seen_recording_refs[ref],
+                })
+            else:
+                seen_recording_refs[ref] = run_id
+            if recording_hash is not None:
+                if not isinstance(recording_hash, str) or not RECORDING_SHA256.fullmatch(recording_hash):
+                    raise ValueError(f"{run_id}: recording_sha256 must be 64 hex characters")
+                digest = recording_hash.lower()
+                if digest in seen_recording_hashes:
+                    run_provenance_issues.append({
+                        "run_id": run_id, "reason": "reused_recording_sha256",
+                        "first_run_id": seen_recording_hashes[digest],
+                    })
+                else:
+                    seen_recording_hashes[digest] = run_id
+        elif evidence is not None or recording_hash is not None:
+            raise ValueError(f"{run_id}: synthetic runs must not claim recording evidence")
+        provenance_issues.extend(run_provenance_issues)
 
         result = validate_dialogue(run.get("events"))
         item = {
             "run_id": run_id, "source_type": attributes["source_type"],
             "gate": result["gate"], "violations": result["violations"],
+            "provenance_issues": run_provenance_issues,
             "audio_verified_by_tool": False,
             "laughter": "NOT_MEASURED",
             "phone_ai_comprehension": "NOT_MEASURED",
@@ -92,7 +121,7 @@ def audit(data: dict) -> dict:
             "run_ids": [item["run_id"] for item in items],
         })
 
-    homogeneous = len(groups) == 1 and len(runs) >= 2
+    homogeneous = len(groups) == 1 and len(runs) >= 2 and not provenance_issues
     has_audio_annotations = any(run["source_type"] == "audio_annotated" for run in item_results)
     return {
         "experiment_id": experiment_id,
@@ -106,12 +135,19 @@ def audit(data: dict) -> dict:
             else "NOT_MEASURED"
         ),
         "cross_model_comparison": "NOT_RUN",
+        "recording_uniqueness": (
+            "NOT_APPLICABLE_SYNTHETIC" if not has_audio_annotations
+            else "DUPLICATE_DECLARED_RECORDING_EVIDENCE" if provenance_issues
+            else "UNIQUE_SELF_REPORTED_REFERENCES_ONLY"
+        ),
+        "provenance_issues": provenance_issues,
         "runs": item_results,
         "groups": summaries,
         "limitations": (
             "Metadata and annotated text are self-reported. This script never listens to "
             "recordings, verifies speaker identity, measures loudness, or scores laughter. "
-            "Trial independence and identical real-world conditions are not established."
+            "Unique references and SHA-256 values are self-reported and cannot establish "
+            "file authenticity, trial independence, or identical real-world conditions."
         ),
     }
 
