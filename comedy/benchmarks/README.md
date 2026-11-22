@@ -3,6 +3,14 @@
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
+## 2026-11-23 07:00 JST：同一条件の稽古反復を監査する（合成のみ実行）
+
+- 新規 `audit_stage_repeatability.py` は、`validate_stage_dialogue.validate` を各回の**時刻なし注釈テキスト**に適用し、同一条件を申告した複数回のPASS/FAILを集約する。主目的はモデル版、Skill / 台本 Git blob SHA、入力・音声プロファイル、データ出自が異なる回を**一つの再現率に混ぜない**こと。1回だけでは反復比較を成立させない。
+- `source_type=synthetic` はテスト用の人工会話で、どの実モデルの発話とも扱わない。`audio_annotated` では録音参照と注釈者IDを必須にするが、**コードは録音を開かず照合しない**。宣言値を検査するだけなので、録音された本人・音量・笑い・観客が「電話先AI」と理解した割合・実機音声の再現性は未検証として返す。
+- 合成fixture `runs/2026-11-23-0700-stage-repeatability-synthetic.json` の4回では2件PASS、正しい第一声に余計な問診を足した1件と、第三者音声が介在した1件をFAILと検出。これは**意図して作った正負の入力**であり、Voice合格率50%などと解釈しない。厳格モードは期待どおり終了コード1。
+- 新規14件と既存舞台対話22件の単体テストは36/36 PASS。同回の**新しいオリジナル開発題8件（固定ベンチではない）×2案=16テキスト**の形式ゲートは16/16 PASS。ChatGPT製品ラベル GPT-6 の同一チャット内案だけで、独立API実行やGrok・Muse比較はない。
+- 実行：`python3 comedy/benchmarks/audit_stage_repeatability.py --input comedy/benchmarks/runs/2026-11-23-0700-stage-repeatability-synthetic.json --output /tmp/repeatability-report.json`。根拠：[研究ノート](../research/2026-11-23-0700-jst-repeatability-provenance.md)、[実行済みレポート](./runs/2026-11-23-0700-repeatability-report.json)。外部投稿OFF。
+
 ## 2026-11-23 05:55 JST：2分舞台の第一声・第二声を「完全一致」で検査
 
 - 既存の `expected_prefix` は先頭一致のみで、正しい第一声の後ろに「住所を教えてください」を付け足す誤答でもPASSし得る。**完全固定の舞台発話**だけに `expected_exact`（任意フィールド）を指定し、余計な語・途中切断・語尾違いも `script_exact_response_mismatch` とする。旧タスクは従来どおり先頭一致を維持。
