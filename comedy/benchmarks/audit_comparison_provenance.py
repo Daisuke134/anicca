@@ -52,11 +52,11 @@ def audit(tasks_path: Path, responses_path: Path) -> dict:
             reasons.add("duplicate_model_task_sample")
         seen.add(key)
         groups[row["model"]].append(row)
-        if any(not isinstance(row.get(k), str) or not row[k].strip() for k in ("model_version", "skill_commit", "skill_blob_sha")):
+        if any(not isinstance(row.get(k), str) or not row[k].strip() for k in ("model_version", "skill_commit", "skill_blob_sha")) or "NOT_AVAILABLE" in str(row.get("model_version")):
             reasons.add("missing_version_or_skill_sha")
         elif not SHA.fullmatch(row["skill_commit"]) or not SHA.fullmatch(row["skill_blob_sha"]):
             reasons.add("invalid_skill_sha")
-        if any(k not in row for k in SETTINGS):
+        if any(k not in row or row.get(k) is None or str(row.get(k)).startswith("NOT_") for k in SETTINGS):
             reasons.add("missing_generation_setting")
         if row.get("invocation_source") != "provider_api":
             reasons.add("no_verified_independent_invocation")
