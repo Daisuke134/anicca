@@ -126,6 +126,8 @@ struct FeedRootView: View {
     @State private var lastInteractionAt: Date = Date()
     @State private var pendingEndCause: HomeDisplayEndCause = .userSwipe
     @State private var backgroundDrift = false
+    @State private var showQuoteShare = false
+    @State private var refreshAfterShare = false
     @State private var showSettings = false
     @State private var showSaved = false
     @State private var showReminders = false
@@ -140,7 +142,7 @@ struct FeedRootView: View {
     }
 
     private var anySheetPresented: Bool {
-        showSettings || showSaved || showReminders || showThemes
+        showSettings || showSaved || showReminders || showThemes || showQuoteShare
     }
 
     private var displayedWordID: String? {
@@ -171,7 +173,7 @@ struct FeedRootView: View {
                 GeometryReader { contentGeometry in
                     if !deckModel.cards.isEmpty {
                         VerticalPager(count: deckModel.cards.count, currentIndex: $currentIndex, navigationRevision: navigationRevision, reduceMotion: reduceMotion) { index in
-                            HomeDeckPage(model: deckModel, index: index, pageWidth: geo.size.width)
+                            HomeDeckPage(model: deckModel, index: index, pageWidth: geo.size.width, onSharePresentationChange: sharePresentationChanged)
                                 .frame(width: contentGeometry.size.width, height: contentGeometry.size.height)
                                 .environmentObject(themeStore)
                                 .environmentObject(likedStore)
@@ -315,7 +317,24 @@ struct FeedRootView: View {
         currentIndex = 0 // VerticalPager owns the transition (see auto-advance).
     }
 
+    private func sharePresentationChanged(_ presented: Bool) {
+        showQuoteShare = presented
+        lastInteractionAt = Date()
+        guard !presented else { return }
+        if refreshAfterShare {
+            refreshAfterShare = false
+            refreshToday()
+        } else {
+            applyPendingQuoteNavigation()
+        }
+        if displayedIndex == nil, !deckModel.cards.isEmpty { beginDisplay(at: currentIndex) }
+    }
+
     private func refreshToday() {
+        guard !showQuoteShare else {
+            refreshAfterShare = true
+            return
+        }
         let now = Date()
         appState.refreshSyntheticUserIfNeeded(now: now)
         let language = appState.effectiveLanguage
@@ -331,6 +350,10 @@ struct FeedRootView: View {
                 let decision = try await ModelWordsService.shared.today(user: user, language: language.rawValue, now: now)
                 guard wordRequest == request, appState.syntheticUser.personId == user.personId,
                       appState.effectiveLanguage == language else { return }
+                guard !showQuoteShare else {
+                    refreshAfterShare = true
+                    return
+                }
                 if let quote = decision.quote {
                     buildDeck(selected: .init(quote: quote, deliveryId: decision.deliveryID), language: language, now: now)
                 }
@@ -352,6 +375,7 @@ struct FeedRootView: View {
     }
 
     private func applyPendingQuoteNavigation() {
+        guard !showQuoteShare else { return }
         var catalog = QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)
         if let first = deckModel.cards.first, !catalog.contains(where: { $0.id == first.quote.id }) {
             catalog.append(first.quote)
@@ -520,6 +544,7 @@ private struct HomeDeckPage: View {
     @ObservedObject var model: HomeDeckModel
     let index: Int
     let pageWidth: CGFloat
+    let onSharePresentationChange: (Bool) -> Void
 
     var body: some View {
         if model.cards.indices.contains(index) {
@@ -527,7 +552,8 @@ private struct HomeDeckPage: View {
                 quote: model.cards[index].quote,
                 pageWidth: pageWidth,
                 deliveryId: model.cards[index].deliveryId,
-                selectionCaption: NSLocalizedString(model.cards[index].selectionCaptionKey, comment: "Why this word was chosen for this person")
+                selectionCaption: NSLocalizedString(model.cards[index].selectionCaptionKey, comment: "Why this word was chosen for this person"),
+                onSharePresentationChange: onSharePresentationChange
             )
         }
     }

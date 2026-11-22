@@ -1557,3 +1557,8 @@
 "winner_widget_instructions" = "Home-Bildschirm: Berühre eine freie Stelle und halte sie gedrückt, wähle Bearbeiten und dann Widget hinzufügen. Suche nach Anicca.\n\nSperrbildschirm: Berühre den Bildschirm und halte ihn gedrückt, wähle Anpassen, dann Widgets hinzufügen und Anicca.";
 "winner_widget_add" = "Ich füge es nach der Einrichtung hinzu";
 "winner_widget_later" = "Vielleicht später";
+
+// Branded word sharing
+"quote_share_action" = "Diese Worte teilen";
+"quote_share_promise" = "Eine App für schwere Tage und Tage, an denen du lachen möchtest.";
+"quote_share_failed" = "Das Bild konnte nicht erstellt werden. Bitte versuche es erneut.";

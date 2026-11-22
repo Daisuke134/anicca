@@ -2939,3 +2939,8 @@
 "winner_widget_instructions" = "ホーム画面：空いている場所を長押しし、「編集」→「ウィジェットを追加」から Anicca を検索します。\n\nロック画面：画面を長押しし、「カスタマイズ」→「ウィジェットを追加」→ Anicca を選びます。";
 "winner_widget_add" = "設定後に追加する";
 "winner_widget_later" = "あとで";
+
+// Branded word sharing
+"quote_share_action" = "この言葉をシェア";
+"quote_share_promise" = "つらい日・笑いたい日に開くアプリ。";
+"quote_share_failed" = "画像を作成できませんでした。もう一度お試しください。";

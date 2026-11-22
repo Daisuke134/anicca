@@ -2923,3 +2923,8 @@
 "winner_widget_instructions" = "Home Screen: touch and hold an empty space, choose Edit, then Add Widget. Search for Anicca.\n\nLock Screen: touch and hold the screen, choose Customize, then Add Widgets and Anicca.";
 "winner_widget_add" = "I’ll add it after setup";
 "winner_widget_later" = "Maybe later";
+
+// Branded word sharing
+"quote_share_action" = "Share these words";
+"quote_share_promise" = "An app for hard days and days you need a laugh.";
+"quote_share_failed" = "Could not create the image. Please try again.";
