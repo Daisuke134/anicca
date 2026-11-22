@@ -43,7 +43,8 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             max_duration_ms: int | None = None,
             max_ai_entry_laughter_ms: int | None = None,
             max_second_ai_onset_ms: int | None = None,
-            max_ai_turn_duration_ms: int | None = None) -> dict:
+            max_ai_turn_duration_ms: int | None = None,
+            max_ai_talk_share_percent: int | None = None) -> dict:
     """Measure annotated turn gaps/overlap; no default timing threshold is imposed.
 
     The caller supplies recording-relative start_ms/end_ms for every event.
@@ -56,6 +57,9 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     max_ai_entry_laughter_ms = _optional_limit("max_ai_entry_laughter_ms", max_ai_entry_laughter_ms)
     max_second_ai_onset_ms = _optional_limit("max_second_ai_onset_ms", max_second_ai_onset_ms)
     max_ai_turn_duration_ms = _optional_limit("max_ai_turn_duration_ms", max_ai_turn_duration_ms)
+    max_ai_talk_share_percent = _optional_limit("max_ai_talk_share_percent", max_ai_talk_share_percent)
+    if max_ai_talk_share_percent is not None and max_ai_talk_share_percent > 100:
+        raise ValueError("max_ai_talk_share_percent must be between 0 and 100")
     if min_duration_ms is not None and max_duration_ms is not None and min_duration_ms > max_duration_ms:
         raise ValueError("min_duration_ms must not exceed max_duration_ms")
     if not isinstance(events, list) or not events:
@@ -191,6 +195,35 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         violations.append({"event": None, "reason": "stage_shorter_than_target", "duration_ms": duration})
     if duration is not None and max_duration_ms is not None and duration > max_duration_ms:
         violations.append({"event": None, "reason": "stage_longer_than_target", "duration_ms": duration})
+    # Clip speaking intervals to the annotated stage boundary. Union overlapping
+    # labels within each speaker so duplicate labels do not inflate speaking time.
+    # The denominator is AI + Dais speaking ms, NOT stage wall-clock duration.
+    ai_stage_speaking_ms = None
+    dais_stage_speaking_ms = None
+    ai_talk_share_percent = None
+    if stage_start is not None and stage_end is not None and stage_end >= stage_start:
+        def onstage_speech(speaker: str) -> list[tuple[int, int]]:
+            return [
+                (max(stage_start, e["start_ms"]), min(stage_end, e["end_ms"]))
+                for e in events
+                if e["speaker"] == speaker and e.get("kind", "speech") == "speech"
+                and e["text"].strip()
+            ]
+
+        ai_stage_speaking_ms = _merged_interval_ms(onstage_speech("ai"))
+        dais_stage_speaking_ms = _merged_interval_ms(onstage_speech("dais"))
+        total_speaking_ms = ai_stage_speaking_ms + dais_stage_speaking_ms
+        if total_speaking_ms:
+            ai_talk_share_percent = round(100 * ai_stage_speaking_ms / total_speaking_ms, 3)
+            # Compare the unrounded ratio so the strict gate is boundary-stable.
+            if (max_ai_talk_share_percent is not None
+                    and 100 * ai_stage_speaking_ms >
+                    max_ai_talk_share_percent * total_speaking_ms):
+                violations.append({
+                    "event": None, "reason": "ai_dominates_speaking_time",
+                    "ai_stage_speaking_ms": ai_stage_speaking_ms,
+                    "dais_stage_speaking_ms": dais_stage_speaking_ms,
+                })
     gaps = [row["gap_ms"] for row in reply_gaps]
     ordered = sorted(gaps)
     median = statistics.median(gaps) if gaps else None
@@ -211,6 +244,10 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         "second_ai_onset_ms": second_ai_onset_ms,
         "ai_turn_duration_ms": ai_turn_durations,
         "ai_turn_duration_max_ms": max((x["duration_ms"] for x in ai_turn_durations), default=None),
+        "ai_stage_speaking_ms": ai_stage_speaking_ms,
+        "dais_stage_speaking_ms": dais_stage_speaking_ms,
+        "ai_talk_share_percent": ai_talk_share_percent,
+        "ai_talk_share_is_laughter": "NOT_MEASURED",
         "second_ai_onset_is_laughter": "NOT_MEASURED",
         "ai_audio_after_end_total_ms": _merged_interval_ms(post_end_ai_audio),
         "ai_audio_after_end_event_count": len(post_end_ai_audio),
@@ -224,6 +261,7 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             "max_ai_entry_laughter_ms": max_ai_entry_laughter_ms,
             "max_second_ai_onset_ms": max_second_ai_onset_ms,
             "max_ai_turn_duration_ms": max_ai_turn_duration_ms,
+            "max_ai_talk_share_percent": max_ai_talk_share_percent,
         },
         "scope": "annotated_timestamps_and_text_only",
         "raw_audio_verified": False,
@@ -246,6 +284,8 @@ def main() -> int:
                         help="Opt-in deadline for the second AI turn onset (proxy, not laughter)")
     parser.add_argument("--max-ai-turn-duration-ms", type=int,
                         help="Opt-in AI single-turn speech duration limit; unset=measure-only")
+    parser.add_argument("--max-ai-talk-share-percent", type=int,
+                        help="Opt-in upper bound on AI share of AI+Dais speaking time (0-100)")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
     try:
@@ -258,6 +298,7 @@ def main() -> int:
             max_ai_entry_laughter_ms=args.max_ai_entry_laughter_ms,
             max_second_ai_onset_ms=args.max_second_ai_onset_ms,
             max_ai_turn_duration_ms=args.max_ai_turn_duration_ms,
+            max_ai_talk_share_percent=args.max_ai_talk_share_percent,
         )
         report["scenario_id"] = payload.get("scenario_id")
         report["input_provenance"] = payload.get("provenance", "UNDECLARED")
