@@ -42,6 +42,7 @@ def audit(tasks_path: Path, responses_path: Path) -> dict:
     tasks = read_jsonl(tasks_path)
     responses = read_jsonl(responses_path)
     task_ids = [row.get("id") for row in tasks]
+    task_by_id = {row.get("id"): row for row in tasks}
     if not task_ids or any(not isinstance(x, str) or not x for x in task_ids) or len(set(task_ids)) != len(task_ids):
         raise ValueError("task IDs must be distinct nonempty strings")
     reasons = set()
@@ -52,8 +53,15 @@ def audit(tasks_path: Path, responses_path: Path) -> dict:
         for key in ("task_id", "model", "run_id", "response", "sample_index"):
             if key not in row:
                 raise ValueError(f"missing required response field: {key}")
-        if row["task_id"] not in task_ids or not isinstance(row["response"], str):
+        if row["task_id"] not in task_by_id or not isinstance(row["response"], str):
             raise ValueError("unknown task or non-string response")
+        # A provider receipt cannot compensate for a missing creative answer.
+        # Silence is the *correct* answer only for explicit silence tasks.
+        if task_by_id[row["task_id"]].get("kind") == "silence":
+            if row["response"].strip():
+                reasons.add("unexpected_silence_response")
+        elif not row["response"].strip():
+            reasons.add("empty_non_silence_response")
         if not isinstance(row["model"], str) or not row["model"].strip():
             raise ValueError("invalid model name")
         if type(row["sample_index"]) is not int or row["sample_index"] < 1:

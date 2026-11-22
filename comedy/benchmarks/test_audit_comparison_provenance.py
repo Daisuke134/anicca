@@ -18,11 +18,11 @@ def record(model, task, sample, receipt):
 
 
 class ProvenanceTests(unittest.TestCase):
-    def evaluate(self, records):
+    def evaluate(self, records, tasks_text=None):
         with tempfile.TemporaryDirectory() as tmp:
             tasks = Path(tmp) / "tasks.jsonl"
             responses = Path(tmp) / "responses.jsonl"
-            tasks.write_text('{"id":"t1"}\n{"id":"t2"}\n', encoding="utf-8")
+            tasks.write_text(tasks_text or '{"id":"t1"}\n{"id":"t2"}\n', encoding="utf-8")
             responses.write_text("".join(json.dumps(row, ensure_ascii=False)+"\n" for row in records),
                                  encoding="utf-8")
             return audit(tasks, responses)
@@ -115,6 +115,34 @@ class ProvenanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.evaluate(rows)
 
+
+    def test_non_silence_empty_output_is_not_comparable(self):
+        rows = self.paired()
+        rows[0]["response"] = ""
+        result = self.evaluate(rows)
+        self.assertEqual(result["comparison_setup"], "NOT_COMPARABLE")
+        self.assertIn("empty_non_silence_response", result["reasons"])
+
+    def test_non_silence_whitespace_output_is_not_comparable(self):
+        rows = self.paired()
+        rows[0]["response"] = " 　\t"
+        self.assertIn("empty_non_silence_response", self.evaluate(rows)["reasons"])
+
+    def test_silence_task_zero_output_is_valid(self):
+        rows = self.paired()
+        for row in rows:
+            if row["task_id"] == "t2":
+                row["response"] = ""
+        tasks = '{"id":"t1","kind":"oogiri"}\n{"id":"t2","kind":"silence"}\n'
+        result = self.evaluate(rows, tasks)
+        self.assertEqual(result["comparison_setup"], "COMPARISON_INPUTS_AUDITED")
+
+    def test_silence_task_speaking_is_not_comparable(self):
+        rows = self.paired()
+        tasks = '{"id":"t1","kind":"oogiri"}\n{"id":"t2","kind":"silence"}\n'
+        result = self.evaluate(rows, tasks)
+        self.assertEqual(result["comparison_setup"], "NOT_COMPARABLE")
+        self.assertIn("unexpected_silence_response", result["reasons"])
 
 if __name__ == "__main__":
     unittest.main()
