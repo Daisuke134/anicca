@@ -23,6 +23,12 @@
 - ソース：[`IMPROV-PLAYBOOK.md`](./IMPROV-PLAYBOOK.md)、[`characters/README.md`](./characters/README.md)、[`REHEARSAL-FAILURE-2026-11-15.md`](./REHEARSAL-FAILURE-2026-11-15.md)。
 - これらの実測データは**2026-11-22時点で未計測**。勝手に満点と書かない。
 
+## 2026-11-22：公開の標準ベンチと舞台ベンチを分離
+- [`benchmarks/README.md`](./benchmarks/README.md) にベンチ目的の違いを明記。**Oogiri-Masterは理解力（600問）**、AAAI 2026の6軸は回答生成、HumorBench（speech）は音声演技。これらを混ぜて単一の「面白さランキング」としない。
+- 同条件の15題の固定サンプル `benchmarks/taskset-v1.jsonl` と Pythonの `benchmarks/validate_run.py` で第一声・発話禁止・キャラ語句などの客観的チェックを実施する。実際の応答取得・テストコード実行が未確認なら結果は `NOT_RUN`。
+- 金子さんの指摘に対応し、**観客がAIを電話先の声だと理解した割合、音声の明瞭度、ダイスの演技による笑い、アクシデント依存度、再現性**を別項目として舞台後に記録する。現時点で舞台実測は `NOT_MEASURED`。
+- Grok/Muse/ChatGPTの結果は実際に取得できたモデルだけ。Skillの更新と学習済みモデルの重み更新は別物。
+
 ## 評価項目（各1〜5点）
 1. 初速 — 冒頭30秒で観客を引き込めるか。
 2. 笑い密度 — 1分あたりに笑いが起きる箇所が十分あるか。

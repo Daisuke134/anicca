@@ -1,5 +1,10 @@
 # Life Manager project instructions
 
+## Comedy Agent Skill — shared by ChatGPT / Grok / Muse / Codex
+Use [`skills/comedy-agent/SKILL.md`](skills/comedy-agent/SKILL.md) as the cross-model implementation and comparison contract. The `comedy/` folder contains character bibles, Kaneko feedback, the selected phone-to-AI stage framing, objective gate tests and an internal development loop. Current stage sketch remains "痛い痛い!" v8; the spoken script is unchanged. External X/contest auto-posting is not enabled merely by writing a skill. Read usage policies and verify appropriate account authority before any external effects.
+
+
+
 ## Comedy live performance (all AI performers, mandatory)
 
 For any comedy sketch, rehearsal, stage event or voice performance under `comedy/`, read **[`comedy/AGENTS.md`](comedy/AGENTS.md)** first, then `comedy/HANDOVER.md`, `comedy/README.md`, the selected script, **[`comedy/characters/README.md`](comedy/characters/README.md)**, the AI + human performer sheets and the selected CAST sheet, and `comedy/IMPROV-PLAYBOOK.md`. The goal is to develop funny performers who can improvise in character, not only memorize scripts. **Dais speaks first; AI stays silent before his cue.** During the sketch, respond only to Dais, not to audience/staff/ambient speech. These are performance instructions, not a guarantee of speaker-verification technology. See the local Comedy protocol for exceptions and details. This section applies to Comedy only.

@@ -2,6 +2,15 @@
 
 Gitのコミット履歴を正式な過去版として保持する。過去稿を削除しない。
 
+## 2026-11-22 — 金子さんFB実装設計／Comedy Agent Skill／比較ベンチ
+- 先週の金子さんのネタ見せの会話を `feedback/KANEKO-2026-11-15.md` に8項目で整理（帰属が曖昧な文字起こしは逐語引用にしない）。既対応、演出設計、舞台未測定を明記。
+- 役割の曖昧さを解決する案として `stage/INJURY-PHONE-INTRO.md` を新設。「痛い痛い！」v8の声は**電話先のAI救急指令員**。ダイスの「痛い！ 痛い痛い！ もしもし！」を許し、AI第一声は台本通り。スマホ画面／台の「AI救急受付」表示と音量・人間の演技・再現性の確認を記録。**本番未検証**。
+- `skills/comedy-agent/SKILL.md` v0.1新設。演技モード・研究モード・モデル比較・外部投稿の適正な境界を全AI共通化。
+- `benchmarks/README.md`, `taskset-v1.jsonl`, `response-schema.md`, `validate_run.py` を新設。Oogiri-Master／AAAI 2026 6軸／HumorBench音声を区別し、15題の舞台・大喜利テストと定型の検査を用意。**各モデル実測はまだない**。
+- `COMEDY-AGENT-LOOP.md` に毎時内部生成・毎日比較・毎週舞台検証の案を記録。X等への外部大量自動投稿は許認可・アカウント・規約により停止したまま。
+- `prompts/MUSE-GROK-ONE-SHOT.md` を新設。他AIへ一括で渡せる実装プロンプト。
+- `AGENTS.md`, `HANDOVER.md`, `README.md`, `BENCHMARK.md`, `IMPROV-PLAYBOOK.md`, `characters/INJURY-CAST.md` を同期。**「痛い痛い！」v8の台詞自体と9/6の確定稿は未改稿**。
+
 ## 2026-11-22 — 面白いAI・面白い人間／全演目キャラクター・バイブルと即興訓練
 - **新しい最上位目標**：台本を量産する以上に、二人とも役柄の内面と関係性で即興的に笑いを生める「面白い存在」へ。AI独演は将来の研究目標であり、現行のダイス先行の開演ルールは変更しない。
 - `characters/README.md` を新設し、AI演者`CHAPPY-COMEDIAN.md`、人間演者`DAIS-PERFORMER.md`、痛いv8`INJURY-CAST.md`、グミ詐欺`GUMMY-SCAM-CAST.md`、残高`BALANCE-CAST.md`、面接`GUMMY-JOB-CAST.md`、9/6上演史料用`SEPT06-SCAM-CAST.md` の人物設定を整備。

@@ -2,6 +2,13 @@
 
 この `comedy/` が、お笑いプロジェクトの正本（Single Source of Truth）。ChatGPT、Claude、Codex、その他すべてのAIは、セッション開始時に必ずGitHub mainから最新版を確認する。
 
+## 2026-11-22：他AI／全セッションへの最新引き継ぎ
+1. 金子さんの指摘と反映状況は `feedback/KANEKO-2026-11-15.md`。舞台での解決は「Alexa風」単独ではなく、**ダイスが電話をかける→電話先はAI救急センター**という役割を観客に示す。
+2. 今回の「痛い痛い！」はv8のセリフ全文を維持。ダイスの「痛い！ 痛い痛い！ もしもし！」という追加アドリブで始めても、**AIの最初の台詞は「はい、救急指令センターです。火事ですか、救急ですか？」**。
+3. `stage/INJURY-PHONE-INTRO.md`を本番前に読み、音量・人間のリアクション・観客から見た声の役割を確かめる。本番はまだ未計測。
+4. `../skills/comedy-agent/SKILL.md` が全AI共通Skillの正本。 `benchmarks/README.md`、`COMEDY-AGENT-LOOP.md`、`prompts/MUSE-GROK-ONE-SHOT.md` が評価と研究の引き継ぎ。
+5. 外部サイトへの自動応募やXへの自動返信はプラットフォームの条件と適切な接続を満たすまで**実施しない**。現在は内部研究用に設計中、モデル間の実測結果はない。
+
 ## ★ 新しい目標：「面白いAI」と「面白い人間」を育てる（2026-11-22）
 - 最重要なのは**面白い存在としての二人の即興能力**。台本の量ではなく、初見の一言からキャラの目線と既存の設定で笑いを生み、ダイス自身の演技も生かすこと。
 - まず選択台本、`characters/README.md`、`characters/CHAPPY-COMEDIAN.md`、`characters/DAIS-PERFORMER.md`、演目別の人物シート、`IMPROV-PLAYBOOK.md` を読み、上演中は説明をせず役として会話する。
