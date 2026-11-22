@@ -27,7 +27,7 @@
 
 ## 実際に走ったモデル・比較条件
 - ChatGPT GPT-6（現チャットのテキスト生成）のみ16候補。正確なデプロイビルド、temperature、effort、max_output_tokens、API実行レシートは取得不能。記録上 `invocation_source=chat_session`、`model_version=GPT-6 ChatGPT UI; exact deployment build NOT_AVAILABLE`、Skill commitとblobを各行に記録。**独立API反復ではなく、同じチャット内で候補を作成**。
-- Grok / Muse：今回、同条件で独立に呼び出すプロバイダ経路を確認・実行できず **NOT_RUN**（過去のReason Networkの409ログを今回の生接続試験として再利用しない）。
+- Grok / Muse：本サイクル中にReason Networkの **Primary・DAISUKE・MKの3接続で直接 `list_team` を試行**。全てHTTP **409 `agent_network_offline`**（ローカルReason CLI relayがオフライン）。したがってGrok/Museへの同条件生成は **NOT_RUN**。これは接続失敗の生試験であり、モデルの生成結果ではない。
 - `audit_comparison_provenance.py` の実行結果は **`NOT_COMPARABLE`**（`fewer_than_two_models`、`no_verified_independent_invocation`、`missing_provider_receipt`、`missing_version_or_skill_sha`、`missing_generation_setting`、`invalid_generation_setting`）。モデル順位・Skill改善効果は出さない。
 - Model performance: `NOT_MEASURED`、実際の客席の笑い `NOT_MEASURED`、音声モデルの再現性 `NOT_MEASURED`、金子さんの導入設計の実舞台効果 `NOT_MEASURED`。
 
