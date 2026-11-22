@@ -71,6 +71,12 @@ class ProvenanceTests(unittest.TestCase):
         rows[-1]["temperature"] = 0.9
         self.assertIn("generation_settings_mismatch", self.evaluate(rows)["reasons"])
 
+    def test_uncontrolled_generation_settings_are_not_comparable(self):
+        rows = self.paired()
+        rows[0]["effort"] = "NOT_CONTROLLED"
+        rows[0]["temperature"] = None
+        self.assertIn("missing_generation_setting", self.evaluate(rows)["reasons"])
+
     def test_unknown_task_raises(self):
         rows = self.paired()
         rows[-1]["task_id"] = "unknown"
