@@ -179,3 +179,11 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 - **赤→緑の実行テスト**：新規3件追加直後、53件中3件FAIL（終幕後の講評を3番目の再発話として誤算入）。修正後53/53 PASS、対話検査22/22 PASS、2分稿静的検査PASS。合成入力の再発話の間は100ms・200ms／中央値150msでPASS。これは人工注釈のコード検証であり実機Voiceの性能ではない。
 - **新規オリジナル開発題**8題・16案、`validate_run.py --strict`で16/16形式PASS。固定ベンチ未使用。ChatGPTの単一チャット内で作成し、独立API反復ではない。Grok/Muse未実行、Reason Network接続はリンク未認証。観客笑い・Voice再現性・モデル間優劣は未測定。
 - [今回の研究ログ](../research/2026-11-23-0155-jst-post-end-debrief.md)。外部投稿と自動返信はOFF。
+
+
+### 2026-11-23 02:55 JST：モデル比較の出自監査（今回の新規実装）
+- \`audit_comparison_provenance.py\` は、回答のモデル版、Skill commit/blob SHA、タスク×試行番号のカバレッジ、生成条件、呼び出し種別、証跡フィールドをチェックする。**面白さ、モデル実行の真正性、提供元レシートの真正性は検証しない。**
+- 同じチャットで作った2案を独立API実行やGrok/Muse比較と誤認しないため、\`invocation_source=chat_session\`、未制御の生成条件、プロバイダ実行レシート不在は \`comparison_setup=NOT_COMPARABLE\` を返す。\`COMPARISON_INPUTS_AUDITED\` はメタデータ上の整合性だけを意味し、勝敗や本物のAPI実行の保証ではない。
+- 実行コマンド：\`python3 comedy/benchmarks/audit_comparison_provenance.py --tasks <tasks.jsonl> --responses <responses.jsonl> --output <audit.json>\`。比較可能性の判定を形式チェック \`validate_run.py\` と別に実行する。
+- 新しいオリジナル開発題8件（大喜利4、電話先AI即興4）×2案=16回答について、形式検査16/16 PASS、出自監査は **NOT_COMPARABLE**。新規ユニットテスト10/10 PASS。固定ベンチ未使用。実機Voiceと観客笑いは未測定。
+- [出自監査レポート](./runs/2026-11-23-0255-provenance-audit.json)、[今回の研究記録](../research/2026-11-23-0255-jst-provenance-audit.md)。X投稿・第三者サイトへの自動投稿はOFF。
