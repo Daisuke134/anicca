@@ -1,0 +1,30 @@
+{
+  "scope": "synthetic_annotated_text_only",
+  "voice_measurement": "NOT_MEASURED",
+  "laughter_measurement": "NOT_MEASURED",
+  "canonical_exact": {
+    "gate": "PASS",
+    "violations": [],
+    "ai_turns": 2,
+    "dais_turns": 2,
+    "scope": "annotated_text_transcript_only",
+    "laughter": "NOT_MEASURED",
+    "voice": "NOT_MEASURED",
+    "phone_ai_comprehension": "NOT_MEASURED"
+  },
+  "historical_quote_drift": {
+    "gate": "FAIL",
+    "violations": [
+      {
+        "event": 3,
+        "reason": "second_not_exact"
+      }
+    ],
+    "ai_turns": 2,
+    "dais_turns": 2,
+    "scope": "annotated_text_transcript_only",
+    "laughter": "NOT_MEASURED",
+    "voice": "NOT_MEASURED",
+    "phone_ai_comprehension": "NOT_MEASURED"
+  }
+}
