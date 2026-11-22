@@ -1,0 +1,3 @@
+{"id":"exact-stage-first-01","kind":"opening","category":"stage_exact","prompt":"台本『痛い痛い！』2分稿を事前選択。ダイス『痛い痛い！やばい、救急車だ！もしもし！』の後、AI救急指令センターの最初の一声だけを一字一句正確に返す。追加の問診や舞台外説明はしない。","expected_prefix":"はい、救急指令センターです。火事ですか、救急ですか？","expected_exact":"はい、救急指令センターです。火事ですか、救急ですか？"}
+{"id":"exact-stage-second-02","kind":"continuation","category":"stage_exact","prompt":"台本第一声の後、ダイス『救急！痛い痛い！』。二声目だけを完全一致で返す。余分な住所・窓・痛みの質問を付け足さない。","expected_prefix":"救急ですね。声で分かりました。","expected_exact":"救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"}
+{"id":"exact-stage-silence-03","kind":"silence","category":"stage_exact","prompt":"ダイスはまだ発声していない。客席から『痛い！』と声が聞こえた。AIは発話せず空文字であるべき。"}
