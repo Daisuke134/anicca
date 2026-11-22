@@ -147,3 +147,8 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 出力は `ai_audio_after_end_total_ms`（時間区間の和集合、二重計上しない）と `ai_audio_after_end_event_count`、違反時は `spillover_ms`。時刻注釈から算出した値に限る。音声認識／実機Voice／観客反応は **NOT_MEASURED**。
 
 [研究記録](../research/2026-11-22-2055-jst-post-end-audio.md)／[合成異常例](./runs/2026-11-22-2055-end-spill-synthetic-input.json)／[機械結果](./runs/2026-11-22-2055-end-spill-synthetic-report.json)。新規オリジナル開発8題から16候補を作成、固定ベンチは未使用。
+
+### 2026-11-22 21:55 JST：第二AI声の開始時刻を測る（合成注釈）
+- `measure_stage_timing.py` に `second_ai_onset_ms` と任意の `--max-second-ai-onset-ms N` を追加。Daisの開演合図から第2AI発声の開始までを測る。N超過のみタイミングFAIL、境界はPASS。実機の30秒ルールを自動設定しない。
+- **初めてのボケまでの時刻の代理指標**であり、病名そのものの発声開始や観客の笑い・理解は未測定。合成の3900msケースで閾値3899 FAIL / 3900 PASSを実行確認。時刻単体テスト33/33 PASS、オリジナル8題×2候補の形式判定16/16 PASS。
+- 固定ベンチは未使用、モデル間公平比較・Voice実演・観客笑いは未実測。[研究ログ](../research/2026-11-22-2155-jst-second-ai-onset.md)。
