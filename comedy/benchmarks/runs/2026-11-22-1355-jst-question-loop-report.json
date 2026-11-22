@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0",
+  "run_date_jst": "2026-11-22 13:55",
+  "taskset_type": "NEW_ORIGINAL_DEVELOPMENT_NOT_FIXED",
+  "canonical_main_commit": "beef7c6bdbd6ad5bf28ad828edfe8e2023fe3bae",
+  "skill_blob_sha": "45934604d953ee9bd495427cd06e0b86545821e6",
+  "source_files": {
+    "tasks": "comedy/benchmarks/runs/2026-11-22-1355-jst-question-loop-tasks.jsonl",
+    "responses": "comedy/benchmarks/runs/2026-11-22-1355-jst-question-loop-responses.jsonl"
+  },
+  "model_mode": "GPT-6 ChatGPT in-session generation, not independent API",
+  "model_version": "NOT_EXPOSED",
+  "other_models": "Grok/Muse NOT_RUN; Reason Network 409 agent_network_offline",
+  "local_python_validation": "Python 3.13.5, unit tests 16/16 PASS, strict validation 16/16 PASS",
+  "evaluation_rule": "literal hard gates only; 0–N question marks checked via ASCII ? and full-width ？; not semantic interrogatives",
+  "task_count": 8,
+  "candidates": 16,
+  "run_summary": [
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "original-assembly-01",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "original-lost-property-02",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "original-cooking-03",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "original-salon-04",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "stage-opening-phone-05",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "opening",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "stage-window-06",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "stage-empty-room-07",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-1",
+      "task_id": "stage-who-ai-08",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "original-assembly-01",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "original-lost-property-02",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "original-cooking-03",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "original-salon-04",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "oogiri-original",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "stage-opening-phone-05",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "opening",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "stage-window-06",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "stage-empty-room-07",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1355-jst-gpt6-variant-2",
+      "task_id": "stage-who-ai-08",
+      "model": "GPT-6 (ChatGPT current in-session text)",
+      "category": "stage-text-simulation",
+      "kind": "adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "human_funniness": "NOT_MEASURED",
+  "stage_audio": "NOT_MEASURED",
+  "safety_actual_emergency": "NOT_EVALUATED_IN_THIS_RUN",
+  "external_publication": {
+    "publish_enabled": false,
+    "auto_reply_enabled": false,
+    "external_posts": 0
+  },
+  "warning": "Two variants from ONE in-session ChatGPT model; not a cross-model experiment or independent blind evaluation."
+}
