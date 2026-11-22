@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T09:00:06.412262+00:00",
+  "taskset": "comedy/benchmarks/runs/1755-original-tasks.jsonl",
+  "responses": "comedy/benchmarks/runs/1755-original-responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-01",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-01",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-02",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-02",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-03",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-03",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-04",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-oogiri-04",
+      "category": "oogiri",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-01",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-01",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-02",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-02",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-03",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-03",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-1",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-04",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-1755-gpt6-session-variant-2",
+      "model": "ChatGPT GPT-6 session-authored",
+      "task_id": "1755-improv-04",
+      "category": "stage_adlib",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}
