@@ -81,7 +81,7 @@ jobs:
       # were re-fetched from scratch on every run. Cache the cloned source
       # packages in a pinned directory, keyed on Package.resolved.
       - name: Cache Swift package dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: apps/mobile/anicca-ios/.spm-cache
           key: ${{ runner.os }}-spm-${{ hashFiles('apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
@@ -143,7 +143,7 @@ jobs:
       # tests used to run sequentially in one job (276s build + 370s test,
       # run 44003117641); they are independent, so they now run in parallel.
       - name: Cache Swift package dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: apps/mobile/anicca-ios/.spm-cache
           key: ${{ runner.os }}-spm-${{ hashFiles('apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
