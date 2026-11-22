@@ -7,6 +7,26 @@ import UIKit
 @MainActor
 struct QuoteNavigationCoordinatorTests {
 
+    @Test("The visible page adopts layout changes without changing its index")
+    func visiblePageRefreshesAfterInitialZeroSize() {
+        let binding = Binding.constant(0)
+        let pager = VerticalPager(count: 2, currentIndex: binding) { _ in
+            Text("Living words").frame(width: 0, height: 0)
+        }
+        let coordinator = pager.makeCoordinator()
+        let controller = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .vertical)
+        let first = coordinator.hosting(for: 0)
+        controller.setViewControllers([first], direction: .forward, animated: false)
+        coordinator.parent = VerticalPager(count: 2, currentIndex: binding) { _ in
+            Text("Living words").frame(width: 320, height: 480)
+        }
+        coordinator.synchronizeVisiblePage(controller)
+        #expect(controller.viewControllers?.first === first)
+        let size = first.sizeThatFits(in: CGSize(width: 320, height: 480))
+        #expect(size.width == 320)
+        #expect(size.height == 480)
+    }
+
     @Test("A SwiftUI refresh during a swipe must not restore the previous page")
     func refreshDuringInteractiveSwipeKeepsVisiblePage() {
         var index = 0

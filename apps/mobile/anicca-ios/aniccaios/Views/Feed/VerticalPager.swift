@@ -59,7 +59,12 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
             guard interactiveStartIndex == nil, parent.count > 0 else { return }
             let target = parent.clampedIndex(parent.currentIndex)
             let current = pvc.viewControllers?.first as? IndexedHosting
-            guard current?.index != target else { return }
+            if let current, current.index == target {
+                // Hosting controllers retain the original SwiftUI value. Refresh it
+                // when geometry or content changes even if selection stays put.
+                current.rootView = AnyView(parent.pageContent(target))
+                return
+            }
             let direction: UIPageViewController.NavigationDirection = (current?.index ?? 0) < target ? .forward : .reverse
             pvc.setViewControllers([hosting(for: target)], direction: direction, animated: false)
         }
