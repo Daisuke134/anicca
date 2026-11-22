@@ -656,19 +656,27 @@ struct PaywallFlowContainer: View {
                 )
             }
 
-            // ソフトペイウォール: 右上に平均サイズの × 。課金せずメイン画面へ。
-            // primer / planSelection どちらの段でも常に表示。
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityIdentifier("paywall-close-button")
-            .accessibilityLabel(Text(String(localized: "common_close")))
-            .padding(.trailing, 12)
-            .padding(.top, 8)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                Spacer()
+                closeButton
+            }
+            .padding(.horizontal, 12)
+            .background(AppBackground())
+        }
+    }
+
+    private var closeButton: some View {
+        Button(action: onDismiss) {
+            Image(systemName: "xmark")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityIdentifier("paywall-close-button")
+        .accessibilityLabel(Text(String(localized: "common_close")))
+        .buttonStyle(.plain)
     }
 }

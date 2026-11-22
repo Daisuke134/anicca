@@ -63,6 +63,18 @@ final class PaywallE2ETests: XCTestCase {
         XCTAssertFalse(app.staticTexts["3日間無料"].exists, "trial badge must be gone")
     }
 
+    /// Closing must work with a normal accessibility tap, even before products load.
+    @MainActor
+    func testClosePaywallWithoutPurchase() throws {
+        let app = launchPaywall(lang: "en", locale: "en_US")
+        let close = app.buttons["paywall-close-button"]
+        XCTAssertTrue(close.waitForExistence(timeout: 25))
+        XCTAssertTrue(close.isHittable)
+        close.tap()
+        XCTAssertTrue(app.scrollViews["feed-scroll"].waitForExistence(timeout: 15))
+        XCTAssertFalse(close.exists)
+    }
+
     /// ★ ハードペイウォール突破: 購入 → 解錠 ★
     @MainActor
     func testPurchaseUnlocksApp() throws {
