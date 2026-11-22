@@ -34,6 +34,14 @@ Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../ski
 python3 comedy/benchmarks/validate_run.py --tasks comedy/benchmarks/taskset-v1.jsonl --responses responses.jsonl --output comedy-benchmark-results.json
 ```
 
+単体テストは以下（`unittest`と標準ライブラリのみ）：
+
+```bash
+python3 comedy/benchmarks/test_validate_run.py
+```
+
+現時点ではGitHubにテストコードを保存した段階。**このチャットからのPython実行／実モデルに対する比較結果は未確認**。実行できる環境でコマンドと出力を保存する。
+
 **注意**：ファイルを置いただけではモデル比較を実行したことにならない。各モデルのAPI/コネクタが実際に使える環境で、同一のメッセージを送る。外部モデルの未取得結果を推測で埋めない。
 
 ## C. モデル比較の公平性
