@@ -22,9 +22,24 @@ def _optional_limit(name: str, value: object) -> int | None:
     return value
 
 
+def _merged_interval_ms(intervals: list[tuple[int, int]]) -> int:
+    """Union duration; multiple simultaneous laughter labels must not double-count."""
+    total = 0
+    right = None
+    for start, end in sorted((a, b) for a, b in intervals if b > a):
+        if right is None or start >= right:
+            total += end - start
+            right = end
+        else:
+            total += max(0, end - right)
+            right = max(right, end)
+    return total
+
+
 def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             min_duration_ms: int | None = None,
-            max_duration_ms: int | None = None) -> dict:
+            max_duration_ms: int | None = None,
+            max_ai_entry_laughter_ms: int | None = None) -> dict:
     """Measure annotated turn gaps/overlap; no default timing threshold is imposed.
 
     The caller supplies recording-relative start_ms/end_ms for every event.
@@ -34,6 +49,7 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     max_reply_gap_ms = _optional_limit("max_reply_gap_ms", max_reply_gap_ms)
     min_duration_ms = _optional_limit("min_duration_ms", min_duration_ms)
     max_duration_ms = _optional_limit("max_duration_ms", max_duration_ms)
+    max_ai_entry_laughter_ms = _optional_limit("max_ai_entry_laughter_ms", max_ai_entry_laughter_ms)
     if min_duration_ms is not None and max_duration_ms is not None and min_duration_ms > max_duration_ms:
         raise ValueError("min_duration_ms must not exceed max_duration_ms")
     if not isinstance(events, list) or not events:
@@ -91,6 +107,42 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             pending_dais = None
             last_ai_end = end
 
+    # Descriptive only unless a predeclared entry threshold is supplied.
+    # This examines time annotations, never audio waveforms or laughter intensity.
+    laughter = [
+        (idx, event["start_ms"], event["end_ms"])
+        for idx, event in enumerate(events)
+        if event["speaker"] == "audience" and event.get("kind", "speech") == "laughter"
+    ]
+    ai_laughter_overlaps = []
+    for ai_idx, ai in enumerate(events):
+        if ai["speaker"] != "ai" or ai.get("kind", "speech") != "speech" or not ai["text"].strip():
+            continue
+        start, end = ai["start_ms"], ai["end_ms"]
+        all_intersections = [(max(start, l_start), min(end, l_end))
+                             for _, l_start, l_end in laughter]
+        # Only laughter already underway when AI began can trigger the optional
+        # entry gate. Laughter starting mid-sentence is not an AI entry error.
+        entry_intersections = [(start, min(end, l_end))
+                               for _, l_start, l_end in laughter
+                               if l_start <= start < l_end]
+        overlap_ms = _merged_interval_ms(all_intersections)
+        entry_ms = _merged_interval_ms(entry_intersections)
+        if overlap_ms:
+            ai_laughter_overlaps.append({
+                "ai_event": ai_idx,
+                "overlap_ms": overlap_ms,
+                "entry_during_laughter_ms": entry_ms,
+                "laughter_events": [i for i, l_start, l_end in laughter
+                                   if max(start, l_start) < min(end, l_end)],
+            })
+        if max_ai_entry_laughter_ms is not None and entry_ms > max_ai_entry_laughter_ms:
+            violations.append({
+                "event": ai_idx,
+                "reason": "ai_enters_active_audience_laughter",
+                "entry_overlap_ms": entry_ms,
+            })
+
     duration = None if stage_start is None or stage_end is None else stage_end - stage_start
     if duration is not None and duration < 0:
         violations.append({"event": None, "reason": "negative_stage_duration"})
@@ -115,9 +167,14 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         "ai_overlap_dais_count": sum(r["reason"] == "ai_overlaps_dais_speech" for r in violations),
         "dais_overlap_ai_events": dais_overlaps_ai,
         "stage_duration_ms": duration,
+        "annotated_audience_laughter_events": len(laughter),
+        "ai_laughter_overlaps": ai_laughter_overlaps,
+        "ai_laughter_overlap_total_ms": sum(r["overlap_ms"] for r in ai_laughter_overlaps),
+        "ai_entries_during_laughter": sum(r["entry_during_laughter_ms"] > 0 for r in ai_laughter_overlaps),
         "thresholds_ms": {
             "max_reply_gap_ms": max_reply_gap_ms, "min_duration_ms": min_duration_ms,
             "max_duration_ms": max_duration_ms,
+            "max_ai_entry_laughter_ms": max_ai_entry_laughter_ms,
         },
         "scope": "annotated_timestamps_and_text_only",
         "raw_audio_verified": False,
@@ -134,6 +191,8 @@ def main() -> int:
     parser.add_argument("--max-reply-gap-ms", type=int)
     parser.add_argument("--min-duration-ms", type=int)
     parser.add_argument("--max-duration-ms", type=int)
+    parser.add_argument("--max-ai-entry-laughter-ms", type=int,
+                        help="Opt-in max ms of existing audience laughter at AI entry; unset=report-only")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
     try:
@@ -143,6 +202,7 @@ def main() -> int:
         report = measure(
             payload["events"], max_reply_gap_ms=args.max_reply_gap_ms,
             min_duration_ms=args.min_duration_ms, max_duration_ms=args.max_duration_ms,
+            max_ai_entry_laughter_ms=args.max_ai_entry_laughter_ms,
         )
         report["scenario_id"] = payload.get("scenario_id")
         report["input_provenance"] = payload.get("provenance", "UNDECLARED")

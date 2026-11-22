@@ -125,6 +125,76 @@ class TimingAuditTests(unittest.TestCase):
         self.assertEqual(measure(good()[1:])["gate"], "FAIL")
         self.assertEqual(measure(good()[:-1])["gate"], "FAIL")
 
+    def test_existing_laughter_when_ai_starts_is_opt_in_gate(self):
+        events = good()
+        events.insert(3, event("audience", "笑い", 3750, 4050, kind="laughter"))
+        report = measure(events)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["annotated_audience_laughter_events"], 1)
+        self.assertEqual(report["ai_laughter_overlap_total_ms"], 150)
+        self.assertEqual(report["ai_entries_during_laughter"], 1)
+        self.assertEqual(report["reply_gap_ms"][1]["gap_ms"], 200)
+        gated = measure(events, max_ai_entry_laughter_ms=100)
+        self.assertEqual(gated["timing_gate"], "FAIL")
+        self.assertEqual(gated["timing_violations"][0]["reason"],
+                         "ai_enters_active_audience_laughter")
+        self.assertEqual(gated["timing_violations"][0]["entry_overlap_ms"], 150)
+
+    def test_laughter_begins_after_ai_started_not_an_entry_failure(self):
+        events = good()
+        events.insert(4, event("audience", "笑い", 4000, 4300, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=0)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["ai_laughter_overlap_total_ms"], 300)
+        self.assertEqual(report["ai_entries_during_laughter"], 0)
+
+    def test_laughter_ending_at_ai_start_does_not_overlap(self):
+        events = good()
+        events.insert(3, event("audience", "笑い", 3800, 3900, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=0)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["ai_laughter_overlap_total_ms"], 0)
+
+    def test_overlapping_laughter_labels_are_not_double_counted(self):
+        events = good()
+        events.insert(3, event("audience", "笑い声一", 3700, 4100, kind="laughter"))
+        events.insert(4, event("audience", "笑い声二", 3800, 4300, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=400)
+        self.assertEqual(report["timing_gate"], "PASS")
+        self.assertEqual(report["ai_laughter_overlap_total_ms"], 400)
+        self.assertEqual(report["annotated_audience_laughter_events"], 2)
+        self.assertEqual(report["ai_entries_during_laughter"], 1)
+        self.assertEqual(measure(events, max_ai_entry_laughter_ms=399)["timing_gate"], "FAIL")
+
+    def test_staff_laughter_is_not_audience_laughter(self):
+        events = good()
+        events.insert(3, event("staff", "笑い", 3800, 4000, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=0)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["annotated_audience_laughter_events"], 0)
+
+    def test_invalid_laughter_entry_threshold_rejected(self):
+        for bad in (-1, True, 1.5, "100"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    measure(good(), max_ai_entry_laughter_ms=bad)
+
+    def test_cli_laughter_entry_gate_is_strict_when_opted_in(self):
+        events = good()
+        events.insert(3, event("audience", "笑い声", 3750, 4050, kind="laughter"))
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "src.json", Path(tmp) / "out.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-laugh", "provenance": "synthetic",
+                                       "events": events}, ensure_ascii=False), encoding="utf-8")
+            cmd = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                   "--input", str(src), "--output", str(dest),
+                   "--strict", "--max-ai-entry-laughter-ms", "0"]
+            fail = subprocess.run(cmd, capture_output=True, text=True)
+            self.assertEqual(fail.returncode, 1, fail.stderr)
+            self.assertEqual(json.loads(dest.read_text())["ai_entries_during_laughter"], 1)
+            self.assertEqual(subprocess.run(cmd[:-1] + ["150"], capture_output=True,
+                                            text=True).returncode, 0)
+
     def test_cli_strict_exit_and_report_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
