@@ -1,0 +1,65 @@
+{
+  "scenario_id": "synthetic-continuous-laughter-crosses-ai-entry",
+  "provenance": "synthetic",
+  "purpose": "annotation-boundary-regression-only_not_actual_audio_or_audience",
+  "events": [
+    {
+      "speaker": "dais",
+      "text": "痛い痛い！ もしもし！",
+      "start_ms": 0,
+      "end_ms": 1600,
+      "cue": "start"
+    },
+    {
+      "speaker": "ai",
+      "text": "はい、救急指令センターです。火事ですか、救急ですか？",
+      "start_ms": 1800,
+      "end_ms": 2900
+    },
+    {
+      "speaker": "dais",
+      "text": "救急！痛い痛い！",
+      "start_ms": 3000,
+      "end_ms": 3700
+    },
+    {
+      "speaker": "audience",
+      "text": "合成・観客笑いA",
+      "start_ms": 3750,
+      "end_ms": 3950,
+      "kind": "laughter"
+    },
+    {
+      "speaker": "ai",
+      "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+      "start_ms": 3900,
+      "end_ms": 7900
+    },
+    {
+      "speaker": "audience",
+      "text": "合成・観客笑いB",
+      "start_ms": 3925,
+      "end_ms": 4100,
+      "kind": "laughter"
+    },
+    {
+      "speaker": "dais",
+      "text": "救急車がまだ来ない！",
+      "start_ms": 8100,
+      "end_ms": 9000
+    },
+    {
+      "speaker": "ai",
+      "text": "おもち34号の招待状が消防署に届きました。",
+      "start_ms": 9300,
+      "end_ms": 10300
+    },
+    {
+      "speaker": "dais",
+      "text": "もういい、終わり！",
+      "start_ms": 11000,
+      "end_ms": 11200,
+      "cue": "end"
+    }
+  ]
+}

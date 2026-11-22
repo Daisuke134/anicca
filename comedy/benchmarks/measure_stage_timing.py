@@ -22,18 +22,20 @@ def _optional_limit(name: str, value: object) -> int | None:
     return value
 
 
+def _merged_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Coalesce touching/overlapping labels into continuous annotated intervals."""
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted((a, b) for a, b in intervals if b > a):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
 def _merged_interval_ms(intervals: list[tuple[int, int]]) -> int:
     """Union duration; multiple simultaneous laughter labels must not double-count."""
-    total = 0
-    right = None
-    for start, end in sorted((a, b) for a, b in intervals if b > a):
-        if right is None or start >= right:
-            total += end - start
-            right = end
-        else:
-            total += max(0, end - right)
-            right = max(right, end)
-    return total
+    return sum(end - start for start, end in _merged_intervals(intervals))
 
 
 def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
@@ -114,6 +116,10 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         for idx, event in enumerate(events)
         if event["speaker"] == "audience" and event.get("kind", "speech") == "laughter"
     ]
+    # Continuous audience laughter may span multiple overlapping annotations.
+    # If a label begins AFTER AI entry but extends laughter already active at
+    # entry, it still belongs to the same uninterrupted laughter episode.
+    continuous_laughter = _merged_intervals([(start, end) for _, start, end in laughter])
     ai_laughter_overlaps = []
     for ai_idx, ai in enumerate(events):
         if ai["speaker"] != "ai" or ai.get("kind", "speech") != "speech" or not ai["text"].strip():
@@ -124,7 +130,7 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         # Only laughter already underway when AI began can trigger the optional
         # entry gate. Laughter starting mid-sentence is not an AI entry error.
         entry_intersections = [(start, min(end, l_end))
-                               for _, l_start, l_end in laughter
+                               for l_start, l_end in continuous_laughter
                                if l_start <= start < l_end]
         overlap_ms = _merged_interval_ms(all_intersections)
         entry_ms = _merged_interval_ms(entry_intersections)
