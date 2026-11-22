@@ -338,11 +338,6 @@ struct ReminderScheduleStepView: View {
     @State private var didInitialize = false
 
     private var sortedSlots: [NudgeSlot] { selectedSlots.sorted() }
-    private var isValid: Bool {
-        if PersonalizationRules.availableSlots(user: appState.syntheticUser).isEmpty { return true }
-        return PersonalizationRules.isValidSchedule(slots: sortedSlots, frequency: frequency)
-            && !sortedSlots.contains { PersonalizationRules.isQuiet($0, quietHours: appState.syntheticUser.quietHours) }
-    }
 
     var body: some View {
         OnboardingPage(alignment: .leading) {
@@ -351,83 +346,25 @@ struct ReminderScheduleStepView: View {
                 .font(AppTheme.Typography.onboardingTitle)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text(String(localized: "growth_reminder_explanation"))
+            // Founder rule (2026-11-22): notification timing is the model's
+            // decision, never a question to the user. This step used to ask
+            // "When should we reach you?" and "How many moments a day?" —
+            // that ask itself is the design error. The step now only says
+            // that Anicca chooses the moment. The schedule saved on continue
+            // is the rules proposal from initializeIfNeeded (not a user
+            // choice), so local delivery keeps working while the server
+            // decision engine takes over timing.
+            Text(String(localized: "growth_reminder_model_timing"))
                 .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
                 .fixedSize(horizontal: false, vertical: true)
-            VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "growth_slots_title"))
-                    .font(.headline).fixedSize(horizontal: false, vertical: true)
-                ForEach(PersonalizationRules.presetSlots, id: \.self) { slot in
-                    Button {
-                        toggle(slot)
-                    } label: {
-                        HStack(spacing: 14) {
-                            Text(slot.label)
-                            Spacer()
-                            Image(systemName: selectedSlots.contains(slot) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selectedSlots.contains(slot) ? AppTheme.Colors.accent : AppTheme.Colors.secondaryLabel)
-                        }
-                        .padding(14)
-                        .selectionCard(isSelected: selectedSlots.contains(slot))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(PersonalizationRules.isQuiet(slot, quietHours: appState.syntheticUser.quietHours))
-                    .accessibilityIdentifier("onboarding-slot-\(slot.hour)")
-                    .accessibilityAddTraits(selectedSlots.contains(slot) ? .isSelected : [])
-                }
-            }
-            if !appState.syntheticUser.quietHours.filter({ $0 != "none" }).isEmpty {
-                Text(String(localized: PersonalizationRules.availableSlots(user: appState.syntheticUser).isEmpty
-                            ? "adaptive_no_available_times" : "adaptive_quiet_conflict"))
-                    .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "growth_frequency_title"))
-                    .font(.headline).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 10) {
-                    ForEach(1...PersonalizationRules.freeFrequencyCap, id: \.self) { count in
-                        Button { UISelectionFeedbackGenerator().selectionChanged(); frequency = count } label: {
-                            HStack(spacing: 8) {
-                                Text("\(count)").font(.headline)
-                                Image(systemName: frequency == count ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(frequency == count ? AppTheme.Colors.accent : AppTheme.Colors.secondaryLabel)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(14)
-                            .selectionCard(isSelected: frequency == count)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("onboarding-frequency-\(count)")
-                        .accessibilityAddTraits(frequency == count ? .isSelected : [])
-                    }
-                }
-                if frequency > selectedSlots.count {
-                    Text(String(localized: "growth_slots_need_more"))
-                        .font(.caption).foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
         } footer: {
-            PrimaryButton(title: String(localized: "common_continue"), isEnabled: isValid) {
+            PrimaryButton(title: String(localized: "common_continue"), isEnabled: true) {
                 save()
                 next()
             }
             .accessibilityIdentifier("onboarding-reminder-continue")
         }
         .onAppear { initializeIfNeeded() }
-    }
-
-    private func toggle(_ slot: NudgeSlot) {
-        // Selection feedback while a value changes (Apple HIG, Playing haptics).
-        UISelectionFeedbackGenerator().selectionChanged()
-        if selectedSlots.contains(slot) {
-            selectedSlots.remove(slot)
-        } else if selectedSlots.count < PersonalizationRules.freeFrequencyCap {
-            selectedSlots.insert(slot)
-        }
     }
 
     private func initializeIfNeeded() {

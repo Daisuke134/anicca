@@ -2759,6 +2759,7 @@
 // Actual remote reminder schedule
 "growth_reminder_title" = "あなたのための時間";
 "growth_reminder_explanation" = "この端末の時間で選べます。通知の設定や通信状況によって届く時刻が変わることがあります。";
+"growth_reminder_model_timing" = "アニッチャがあなたの1日を見て、いちばん届くタイミングで届けます。時刻を選ぶ必要はありません。";
 "growth_reminder_free_schedule" = "無料: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "通知は許可されています";

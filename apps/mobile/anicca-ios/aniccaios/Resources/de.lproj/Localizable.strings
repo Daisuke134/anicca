@@ -1377,6 +1377,7 @@
 // Actual remote reminder schedule
 "growth_reminder_title" = "Ein Moment für dich";
 "growth_reminder_explanation" = "Wähle Zeiten in deiner Zeitzone. Die Zustellung hängt von deinen Mitteilungseinstellungen und deiner Verbindung ab.";
+"growth_reminder_model_timing" = "Anicca achtet auf deinen Tag und liefert jeden Moment zu der Zeit, die am besten passt. Du musst keine Zeiten auswählen.";
 "growth_reminder_free_schedule" = "Kostenlos: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Mitteilungen erlaubt";
