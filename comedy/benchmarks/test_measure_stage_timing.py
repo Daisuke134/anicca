@@ -43,6 +43,44 @@ class TimingAuditTests(unittest.TestCase):
         self.assertEqual([r["gap_ms"] for r in report["reply_gap_ms"]], [200, 200, 300])
         self.assertFalse(report["raw_audio_verified"])
 
+    def test_ai_tail_after_dais_end_cue_fails_closed(self):
+        events = good()
+        events[5]["end_ms"] = 11500  # AI starts before end cue, plays 300 ms after cue finishes.
+        report = measure(events)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(report["gate"], "FAIL")
+        self.assertEqual(report["ai_audio_after_end_total_ms"], 300)
+        self.assertEqual(report["ai_audio_after_end_event_count"], 1)
+        self.assertEqual(report["timing_violations"][-1],
+                         {"event": 5, "reason": "ai_audio_after_end_cue", "spillover_ms": 300})
+
+    def test_ai_tail_touching_end_boundary_is_not_failure(self):
+        events = good()
+        events[5]["end_ms"] = 11200
+        report = measure(events)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["ai_audio_after_end_total_ms"], 0)
+
+    def test_ai_tail_finishes_before_end_boundary_is_not_failure(self):
+        report = measure(good())
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["ai_audio_after_end_event_count"], 0)
+
+    def test_cli_strict_ai_tail_after_end_returns_one(self):
+        events = good()
+        events[5]["end_ms"] = 11500
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dest = Path(tmp) / "end_spill.json", Path(tmp) / "out.json"
+            src.write_text(json.dumps({"scenario_id": "synthetic-end-spill",
+                                       "provenance": "synthetic", "events": events},
+                                      ensure_ascii=False), encoding="utf-8")
+            cmd = [sys.executable, str(Path(__file__).with_name("measure_stage_timing.py")),
+                   "--input", str(src), "--output", str(dest), "--strict"]
+            run = subprocess.run(cmd, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 1, run.stderr)
+            self.assertEqual(json.loads(dest.read_text())["ai_audio_after_end_total_ms"], 300)
+
     def test_threshold_is_explicit_not_a_default(self):
         self.assertEqual(measure(good())["timing_violations"], [])
         report = measure(good(), max_reply_gap_ms=250)
