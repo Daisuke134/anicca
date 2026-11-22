@@ -80,7 +80,8 @@ final class OnboardingTapE2ETests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "onboarding-widget-preview").firstMatch.waitForExistence(timeout: 10))
         tap(app.buttons["onboarding-widget-interested"], x: tapX)
         tap(app.buttons["onboarding-first-continue"], x: tapX)
-        select(app.buttons["onboarding-frequency-1"], in: app, x: tapX)
+        // Timing is the model's decision (founder rule 2026-11-22): the
+        // reminder step no longer asks for slots or frequency.
         tap(app.buttons["onboarding-reminder-continue"], x: tapX)
         tap(app.buttons["onboarding-notifications-allow"], x: tapX)
 

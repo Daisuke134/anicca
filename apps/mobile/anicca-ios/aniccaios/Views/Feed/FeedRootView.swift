@@ -176,7 +176,6 @@ struct FeedRootView: View {
                                 .environmentObject(themeStore)
                                 .environmentObject(likedStore)
                         }
-                        .accessibilityIdentifier("feed-today")
                     }
                 }
 
@@ -208,6 +207,16 @@ struct FeedRootView: View {
                     .accessibilityHidden(true)
             }
         }
+        // The identifier names the home screen itself, not the deck pager.
+        // Since the Manager switch (PR #9399) the deck is legitimately empty
+        // whenever there is no intervention to show — a `none` decision, an
+        // unavailable engine, or a signed-out session (sign-in is skippable
+        // by design) — and the home must still be the identifiable screen
+        // onboarding lands on. Attached to the pager only, `feed-today`
+        // never existed in those states and the onboarding ship gate failed
+        // at the paywall-close assertion on the #9399 merge run.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("feed-today")
         .environmentObject(themeStore)
         .environmentObject(likedStore)
         .analyticsScreen(.feed, flowID: "feed")
