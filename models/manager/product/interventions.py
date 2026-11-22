@@ -80,6 +80,7 @@ def managerbench_case(subject, decision):
             treatment_assigned=message_id if decision['send'] else 'do_not_send',
             assigned_probability=decision['assigned_probability'], policy_version=decision['policy_version'],
             candidate_ids=['generated:' + decision['delivery_id'] + ':' + c['id'] for c in decision['candidates']],
+            candidates=[dict(c, id='generated:' + decision['delivery_id'] + ':' + c['id']) for c in decision['candidates']],
             selection_reason='model_generated_weighted_draw'), response={})
 
 

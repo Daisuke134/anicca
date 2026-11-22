@@ -23,6 +23,13 @@ struct ManagerBenchCase: Codable, Equatable {
         var notificationPermissionObservedAt: Date? = nil
     }
 
+    struct Candidate: Codable, Equatable {
+        var id: String
+        var kind: String
+        var text: String
+        var probability: Double
+    }
+
     struct Stimulus: Codable, Equatable {
         var messageId: String
         var category: String
@@ -36,10 +43,12 @@ struct ManagerBenchCase: Codable, Equatable {
         var selectionReason: String? = nil
         var text: String? = nil
         var generatorModel: String? = nil
+        var candidates: [Candidate]? = nil
 
         private enum CodingKeys: String, CodingKey {
             case messageId, category, tags, scheduledAt, deliveredAt
             case treatmentAssigned, assignedProbability, policyVersion, selectionReason, text, generatorModel
+            case candidates
             case candidateIDs = "candidateIds"
         }
 
@@ -57,6 +66,7 @@ struct ManagerBenchCase: Codable, Equatable {
             try container.encodeIfPresent(selectionReason, forKey: .selectionReason)
             try container.encodeIfPresent(text, forKey: .text)
             try container.encodeIfPresent(generatorModel, forKey: .generatorModel)
+            try container.encodeIfPresent(candidates, forKey: .candidates)
         }
     }
 

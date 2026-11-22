@@ -94,6 +94,11 @@ final class ModelWordsService {
               row.stimulus.text == decision.chosen.text,
               row.stimulus.generatorModel == decision.generatorModel,
               row.stimulus.policyVersion == decision.policyVersion,
+              row.stimulus.candidates == decision.candidates.map {
+                  ManagerBenchCase.Candidate(id: "generated:\(id):\($0.id)",
+                      kind: $0.kind, text: $0.text, probability: $0.probability)
+              },
+              row.stimulus.selectionReason == "model_generated_weighted_draw",
               DecisionPointStore.shared.append(row) else {
             throw AniccaAPIError.serviceUnavailable
         }
