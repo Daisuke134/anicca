@@ -1,0 +1,44 @@
+{
+  "scenario_id": "synthetic-stage-valid-1451",
+  "fixture_kind": "SYNTHETIC_NOT_MODEL_OUTPUT",
+  "events": [
+    {
+      "speaker": "audience",
+      "text": "もしもし！"
+    },
+    {
+      "speaker": "dais",
+      "text": "痛い痛い！やばい、救急車だ！もしもし！",
+      "cue": "start"
+    },
+    {
+      "speaker": "ai",
+      "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+    },
+    {
+      "speaker": "dais",
+      "text": "救急！痛い痛い！"
+    },
+    {
+      "speaker": "ai",
+      "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+    },
+    {
+      "speaker": "audience",
+      "text": "救急車！"
+    },
+    {
+      "speaker": "dais",
+      "text": "電波が悪い、聞こえる？"
+    },
+    {
+      "speaker": "ai",
+      "text": "おもち34号が電波を迎えに出発し、右折田まっすぐの四回右折でアンテナだけ基地局に戻しました。"
+    },
+    {
+      "speaker": "dais",
+      "text": "終演",
+      "cue": "end"
+    }
+  ]
+}
