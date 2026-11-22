@@ -106,3 +106,28 @@ validate_stage_dialogue.py に任意のイベント属性 "kind": "speech" | "la
 - `python3 comedy/benchmarks/test_measure_stage_timing.py` は合成データのみの回帰試験。今回のログ：[研究記録](../research/2026-11-22-1755-jst-timing-audit.md)。匿名化した音声／時刻注釈の収集、音量、第三者の声への反応、笑いの再現性、金子さんの講評の改善効果は `NOT_MEASURED`。
 
 背景参考：Stivers et al. (2009), *PNAS*, https://doi.org/10.1073/pnas.0903616106 は日常会話の発話交代における重なりと沈黙を検討した研究。舞台上の演技・AI回線の閾値は提供していないため、ここでは測定対象の選択の参考に限る。
+
+
+### 2026-11-22 18:55 JST：観客の笑いが既に始まっている最中にAIが発話開始するか
+
+`measure_stage_timing.py` は手動時刻注釈の `speaker="audience", kind="laughter"` とAI発話区間の交差を測る。これは**観客の笑いを収録・識別した実験ではなく、注釈が真実だと仮定したオフライン計算**。笑いの強度や面白さを採点しない。
+
+- `annotated_audience_laughter_events`：観客の笑いとラベルされた入力イベント件数（個人・笑い回数の推定ではない）。
+- `ai_laughter_overlap_total_ms`：AI発声と観客笑い注釈の総重複ミリ秒。同じAI区間について重なった複数の笑いラベルは**区間の和集合**で数え、二重計上しない。
+- `ai_entries_during_laughter`：**AI発声が始まった時点ですでに観客笑いが進行中**だったAI発話件数。AIの発話途中に笑い始めた場合は重なり量だけ計上し、AIの「発話開始失敗」としない。
+- `--max-ai-entry-laughter-ms N`：任意の事前宣言した閾値。AI開始時に既に続いていた笑いとの重複が N ミリ秒を**超えた場合だけ** `ai_enters_active_audience_laughter` のタイミングFAIL。デフォルト未指定なら情報表示のみ。過去録音を見て都合のよい閾値を選ぶと過適合する。
+- `--strict`：文字列ゲートとタイミングゲートの両方がPASSの場合のみ終了コード0。これは実機Voiceの音声制御や第三者話者の確実な識別ではない。
+
+再現用合成フィクスチャ（閾値0は境界検査用で**実機の推奨閾値ではない**）：
+
+```bash
+python3 comedy/benchmarks/measure_stage_timing.py   --input comedy/benchmarks/runs/2026-11-22-1855-laughter-entry-synthetic.json   --output /tmp/laughter-entry-report.json --max-ai-entry-laughter-ms 0 --strict
+# EXPECTED exit=1: AI開始済みの観客笑いに150 ms重なる
+
+python3 comedy/benchmarks/measure_stage_timing.py   --input comedy/benchmarks/runs/2026-11-22-1855-laughter-midline-synthetic.json   --output /tmp/laughter-midline-report.json --max-ai-entry-laughter-ms 0 --strict
+# EXPECTED exit=0: AI発声の後で笑い始めたため、総重複300 msだが開始時違反は0
+```
+
+`python3 -m unittest discover -s comedy/benchmarks -p 'test_*.py' -q` で合成の境界・ラベル重複・CLI厳格終了コードを含めて回帰テスト。**実際の観客・会場後方音量・ダイスの間は未測定**。詳細は [18:55研究ログ](../research/2026-11-22-1855-jst-laughter-entry-audit.md)。
+
+参考：Pope et al. (2018) [Audience Laughter Distribution in Live Stand-up Comedy](https://www.isca-archive.org/lw_2018/pope18_lw.html)、Zribi et al. (2026) [TIC-TALK](https://aclanthology.org/2026.chum-1.2/)。どちらもこのコントの適切な閾値を確定するものではない。
