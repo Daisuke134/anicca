@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T16:57:04.270180+00:00",
+  "taskset": "comedy/benchmarks/runs/2026-11-23-0155-boundary-tasks.jsonl",
+  "responses": "comedy/benchmarks/runs/2026-11-23-0155-boundary-responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-01",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-02",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-03",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-04",
+      "category": "大喜利",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-05",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-05",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-06",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-06",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-07",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-07",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-a",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-08",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0155-gpt6-chat-candidate-b",
+      "model": "ChatGPT",
+      "task_id": "stage-boundary-orig-08",
+      "category": "電話先AI即興",
+      "kind": "generation",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}
