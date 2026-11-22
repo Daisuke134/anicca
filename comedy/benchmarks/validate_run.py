@@ -52,6 +52,12 @@ def score(task: dict[str, Any], response: str) -> list[str]:
     for phrase in task.get("forbidden", []):
         if phrase in response:
             issues.append(f"forbidden_phrase:{phrase}")
+    max_chars = task.get("max_chars")
+    if max_chars is not None:
+        if not isinstance(max_chars, int) or isinstance(max_chars, bool) or max_chars <= 0:
+            raise ValueError("max_chars must be a positive integer when specified")
+        if len(response) > max_chars:
+            issues.append("exceeds_max_chars")
     return issues
 
 
