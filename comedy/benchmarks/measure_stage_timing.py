@@ -112,7 +112,9 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
 
         # A Dais reply after an AI line is a measurable interval, NOT proof
         # of physical acting or audience laughter. Exclude start/end cues.
-        if (speaker == "dais" and kind == "speech" and cue is None
+        # Debrief/dialogue after the end cue is outside the performance.
+        # It must not inflate the on-stage reentry count or trigger opt-in gates.
+        if (active and speaker == "dais" and kind == "speech" and cue is None
                 and event["text"].strip() and ai_waiting_for_dais):
             reentry = start - last_ai_end
             dais_reentry_gaps.append({"dais_event": idx, "ai_event": last_ai_event_idx,

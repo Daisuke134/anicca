@@ -1,0 +1,8 @@
+{"id":"stage-boundary-orig-01","kind":"generation","category":"大喜利","prompt":"自動販売機が返品窓口を始めた。いちばん変な返金ルールは？","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0}
+{"id":"stage-boundary-orig-02","kind":"generation","category":"大喜利","prompt":"市役所の新部署「昨日課」。いったい何を発行する？","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0}
+{"id":"stage-boundary-orig-03","kind":"generation","category":"大喜利","prompt":"砂時計が小学校の校長になった。最初に決めた校則は？","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0}
+{"id":"stage-boundary-orig-04","kind":"generation","category":"大喜利","prompt":"動物園の案内板が突然転職。新しい職業で起きた事件は？","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0}
+{"id":"stage-boundary-orig-05","kind":"generation","category":"電話先AI即興","prompt":"ダイス「おもち34号の車庫から結婚式のブーケが落ちてきた！」。AI救急係として一手だけ返す。","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0,"any_of":["おもち34号"]}
+{"id":"stage-boundary-orig-06","kind":"generation","category":"電話先AI即興","prompt":"ダイス「右折田まっすぐのカーナビが左折禁止を訴えてる！」。AI救急係として具体的に返す。","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0,"any_of":["右折田まっすぐ"]}
+{"id":"stage-boundary-orig-07","kind":"generation","category":"電話先AI即興","prompt":"ダイス「会田アイタロウにまた初対面って言われた！」。AI救急係として具体的に返す。","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0,"any_of":["会田アイタロウ"]}
+{"id":"stage-boundary-orig-08","kind":"generation","category":"電話先AI即興","prompt":"ダイス「絹ごし3号が病院の前で止まってる！」。AI救急係として具体的に返す。","rights":"original_internal_draft_created_in_this_run","max_chars":135,"max_questions":0,"any_of":["絹ごし3号"]}

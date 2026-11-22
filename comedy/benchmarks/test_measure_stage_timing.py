@@ -456,6 +456,30 @@ class DaisReentryGapTests(unittest.TestCase):
         self.assertEqual(len(r["dais_reentry_gap_ms"]), 2)
         self.assertNotIn(700, [x["gap_ms"] for x in r["dais_reentry_gap_ms"]])
 
+    def test_post_end_debrief_does_not_count_as_stage_reentry(self):
+        events = good() + [event("dais", "はい、稽古ここまで。", 11400, 11900)]
+        report = measure(events)
+        self.assertEqual(report["text_gate"], "PASS")
+        self.assertEqual([r["gap_ms"] for r in report["dais_reentry_gap_ms"]], [100, 200])
+        self.assertEqual(report["dais_reentry_gap_median_ms"], 150)
+
+    def test_post_end_debrief_cannot_trigger_opt_in_gap_failure(self):
+        events = good() + [event("dais", "お疲れさま。", 11400, 12000)]
+        report = measure(events, min_dais_reentry_gap_ms=1200)
+        # Two genuine stage replies are short; a debrief must not be a THIRD violation.
+        self.assertEqual(len(report["dais_reentry_gap_ms"]), 2)
+        self.assertEqual([v["reason"] for v in report["timing_violations"]],
+                         ["dais_reentry_below_opt_in_target"] * 2)
+
+    def test_end_cue_then_late_debrief_excluded_even_if_commentary_overlaps_ai_tail(self):
+        events = good()
+        events[5]["end_ms"] = 11500
+        events.append(event("dais", "音の確認をします。", 11400, 11800))
+        report = measure(events)
+        self.assertEqual(len(report["dais_reentry_gap_ms"]), 2)
+        self.assertEqual(report["ai_audio_after_end_total_ms"], 300)
+        self.assertEqual(report["timing_gate"], "FAIL")
+
     def test_minimum_validation(self):
         for bad in (-1, True, 1.2, "100"):
             with self.subTest(bad=bad):
