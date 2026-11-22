@@ -109,6 +109,23 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             pending_dais = None
             last_ai_end = end
 
+    # Event order alone cannot detect audio that continues after Dais's end cue:
+    # an AI utterance can start legitimately before the cue and finish afterward.
+    # Stage-end silence is a hard contract, unlike opt-in laugh timing thresholds.
+    post_end_ai_audio = []
+    if stage_end is not None:
+        for idx, event in enumerate(events):
+            if event["speaker"] != "ai" or event.get("kind", "speech") != "speech":
+                continue
+            if not event["text"].strip():
+                continue
+            spill = event["end_ms"] - max(stage_end, event["start_ms"])
+            if spill > 0:
+                post_end_ai_audio.append((max(stage_end, event["start_ms"]), event["end_ms"]))
+                violations.append({
+                    "event": idx, "reason": "ai_audio_after_end_cue", "spillover_ms": spill,
+                })
+
     # Descriptive only unless a predeclared entry threshold is supplied.
     # This examines time annotations, never audio waveforms or laughter intensity.
     laughter = [
@@ -173,6 +190,8 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         "ai_overlap_dais_count": sum(r["reason"] == "ai_overlaps_dais_speech" for r in violations),
         "dais_overlap_ai_events": dais_overlaps_ai,
         "stage_duration_ms": duration,
+        "ai_audio_after_end_total_ms": _merged_interval_ms(post_end_ai_audio),
+        "ai_audio_after_end_event_count": len(post_end_ai_audio),
         "annotated_audience_laughter_events": len(laughter),
         "ai_laughter_overlaps": ai_laughter_overlaps,
         "ai_laughter_overlap_total_ms": sum(r["overlap_ms"] for r in ai_laughter_overlaps),

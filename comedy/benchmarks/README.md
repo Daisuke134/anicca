@@ -138,3 +138,12 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 修正前の合成反例：観客笑いA 3750–3950ms、笑いB 3925–4100ms、AI開始3900ms。総重複200msに対し旧entry継続量50msと過小計算。修正後は200msで、閾値100msの strict 評価は旧0（誤PASS）→新1（FAIL）。Bを3970ms開始（20msの隙間）とする対照例では継続50ms。これは合成注釈の境界検査であり、観客の音声や笑いの強さを測っていない。閾値100msは試験値であり舞台の合否基準ではない。
 
 実行：Python unittest 64件→67件 PASS（新規3件）。新作オリジナル8題（大喜利4・舞台即興4）×2案=16件は形式ゲートPASS。固定ベンチは今回未使用。Voice・観客笑い・金子さんの指摘の改善効果は未測定。[研究ログ](../research/2026-11-22-1955-jst-laughter-continuity.md)。
+
+
+### 2026-11-22 20:55 JST：終幕合図後のAI音声残留ゲート（合成注釈）
+
+`measure_stage_timing.py` は、台詞が終幕合図の前に**始まっていても**、その録音上の終了時刻がダイスの終幕合図の終了時刻より後なら `ai_audio_after_end_cue` としてFAILにする。従来の `validate_stage_dialogue.py` はイベントの**開始順**しか検査せず、AIが終幕後も300ms話し続けても誤PASSだった。今回のゲートは終幕後の沈黙という明示された演出契約を検査するもので、日常会話の割り込み一般を禁止する閾値ではない。境界がちょうど一致する場合は違反にしない。
+
+出力は `ai_audio_after_end_total_ms`（時間区間の和集合、二重計上しない）と `ai_audio_after_end_event_count`、違反時は `spillover_ms`。時刻注釈から算出した値に限る。音声認識／実機Voice／観客反応は **NOT_MEASURED**。
+
+[研究記録](../research/2026-11-22-2055-jst-post-end-audio.md)／[合成異常例](./runs/2026-11-22-2055-end-spill-synthetic-input.json)／[機械結果](./runs/2026-11-22-2055-end-spill-synthetic-report.json)。新規オリジナル開発8題から16候補を作成、固定ベンチは未使用。
