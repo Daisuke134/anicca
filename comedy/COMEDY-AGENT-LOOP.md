@@ -25,7 +25,7 @@ Canonical: 2026-11-22。**これは実装仕様／稼働計画。書いただけ
 
 ## 2. 毎日：外部ベンチと人間評価の準備
 - Oogiri-Master (理解力)を許諾・公開仕様どおりに実行できるなら比較。
-- Oogiriの生成は AAII 2026 ではなく **AAAI 2026の6軸** Novelty / Clarity / Relevance / Intelligence / Empathy / Overall Funniness で比較。
+- Oogiriの生成は **AAAI 2026の6軸** Novelty / Clarity / Relevance / Intelligence / Empathy / Overall Funniness で比較。
 - 可能な範囲でblindな人間評価を得る。人間評価なしなら `HUMAN_NOT_MEASURED` とする。LLM-as-Judgeの点数は別列。
 - 人物を守れた率、台本第一声の一致率、ダイスの短いアドリブを具体的な手配にした率を報告。
 - 最良モデルの結果・旧版と新版の差・失敗を週次レポートに反映。
