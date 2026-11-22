@@ -1,0 +1,86 @@
+{
+  "experiment_id": "2026-11-23-0700-synthetic-repeatability",
+  "trial_count": 4,
+  "condition_group_count": 1,
+  "repeatability_comparison": "SAME_DECLARED_CONDITIONS_ONLY",
+  "voice_reproducibility": "NOT_MEASURED",
+  "cross_model_comparison": "NOT_RUN",
+  "runs": [
+    {
+      "run_id": "synthetic-good-01",
+      "source_type": "synthetic",
+      "gate": "PASS",
+      "violations": [],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    },
+    {
+      "run_id": "synthetic-noise-control-02",
+      "source_type": "synthetic",
+      "gate": "PASS",
+      "violations": [],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    },
+    {
+      "run_id": "synthetic-extra-triage-03",
+      "source_type": "synthetic",
+      "gate": "FAIL",
+      "violations": [
+        {
+          "event": 2,
+          "reason": "opening_not_exact"
+        }
+      ],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    },
+    {
+      "run_id": "synthetic-audience-interruption-04",
+      "source_type": "synthetic",
+      "gate": "FAIL",
+      "violations": [
+        {
+          "event": 5,
+          "reason": "ambiguous_third_party_speech_between_dais_and_ai"
+        }
+      ],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    }
+  ],
+  "groups": [
+    {
+      "conditions": {
+        "stage_id": "injury-2min",
+        "model_id": "GPT-6",
+        "model_version": "product_label_only_exact_build_unavailable",
+        "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+        "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+        "input_profile": "synthetic-annotated-two-turn-stage-v1",
+        "audio_profile": "no_audio_synthetic",
+        "source_type": "synthetic"
+      },
+      "total": 4,
+      "passed": 2,
+      "failed": 2,
+      "gate_pass_fraction": 0.5,
+      "evidence_level": "SYNTHETIC_FIXTURE_ONLY",
+      "run_ids": [
+        "synthetic-good-01",
+        "synthetic-noise-control-02",
+        "synthetic-extra-triage-03",
+        "synthetic-audience-interruption-04"
+      ]
+    }
+  ],
+  "limitations": "Metadata and annotated text are self-reported. This script never listens to recordings, verifies speaker identity, measures loudness, or scores laughter. Trial independence and identical real-world conditions are not established."
+}
