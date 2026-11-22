@@ -58,6 +58,12 @@ def score(task: dict[str, Any], response: str) -> list[str]:
             raise ValueError("max_chars must be a positive integer when specified")
         if len(response) > max_chars:
             issues.append("exceeds_max_chars")
+    max_questions = task.get("max_questions")
+    if max_questions is not None:
+        if not isinstance(max_questions, int) or isinstance(max_questions, bool) or max_questions < 0:
+            raise ValueError("max_questions must be a nonnegative integer when specified")
+        if response.count("?") + response.count("？") > max_questions:
+            issues.append("exceeds_max_questions")
     return issues
 
 
@@ -156,7 +162,11 @@ def main() -> int:
     )
     for row in report["run_summary"]:
         print(f"{row['run_id']} / {row['model']}: passed={row['passed']} failed={row['failed']} missing={len(row['missing_tasks'])}")
-    if args.strict and any(item["gate"] == "FAIL" for item in report["items"]):
+    if args.strict and (
+        any(item["gate"] == "FAIL" for item in report["items"])
+        or not report["run_summary"]
+        or any(group["missing_tasks"] for group in report["run_summary"])
+    ):
         return 1
     return 0
 
