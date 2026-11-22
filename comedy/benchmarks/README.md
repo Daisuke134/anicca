@@ -3,6 +3,14 @@
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
+## 2026-11-23 05:55 JST：2分舞台の第一声・第二声を「完全一致」で検査
+
+- 既存の `expected_prefix` は先頭一致のみで、正しい第一声の後ろに「住所を教えてください」を付け足す誤答でもPASSし得る。**完全固定の舞台発話**だけに `expected_exact`（任意フィールド）を指定し、余計な語・途中切断・語尾違いも `script_exact_response_mismatch` とする。旧タスクは従来どおり先頭一致を維持。
+- 新規の**舞台回帰セット** `injury-stage-exact-2026-11-23.jsonl` は第一声完全一致・第二声完全一致・観客だけが叫んだ場合の沈黙の3件。これらは**新規大喜利題ではない**。固定15題 `taskset-v1.jsonl`、既存9題の2026-11-22回帰セット、長尺v8と9/6確定稿は変更していない。
+- 検証：`python3 comedy/benchmarks/validate_run.py --tasks comedy/benchmarks/injury-stage-exact-2026-11-23.jsonl --responses comedy/benchmarks/runs/2026-11-23-0555-exact-positive-synthetic.jsonl --output /tmp/exact-positive-report.json --strict` は3/3 PASS。negative fixtureでは3/3の**期待どおりのFAIL**、終了コード1。合成テキストによる実装検査であり、実際のVoice音声がその台詞を話した証拠ではない。
+- 同日の**新規オリジナル開発題**8題×2候補=16テキストは別ファイル `runs/2026-11-23-0555-tasks.jsonl`、`runs/2026-11-23-0555-responses.jsonl` に保存。形式16/16 PASS、モデル比較 `NOT_COMPARABLE`、観客の笑い・声の再現性 `NOT_MEASURED`。外部投稿OFF。
+- [実行結果と限界](../research/2026-11-23-0555-jst-exact-stage-utterance.md)。
+
 ## A. 既存ベンチマーク（それぞれ目的が違う）
 
 | ベンチマーク | 何を測るか | 採用方法 | 限界 |
