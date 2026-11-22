@@ -4,12 +4,23 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 from collections import defaultdict
 from pathlib import Path
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
 SETTINGS = ("modality", "temperature", "effort", "max_output_tokens")
+
+
+def valid_controlled_settings(row: dict) -> bool:
+    """Check metadata shape, not whether the provider truly honored the controls."""
+    t = row.get("temperature")
+    n = row.get("max_output_tokens")
+    return (isinstance(row.get("modality"), str) and bool(row["modality"].strip())
+            and isinstance(row.get("effort"), str) and bool(row["effort"].strip())
+            and type(t) in (int, float) and math.isfinite(t) and 0 <= t <= 2
+            and type(n) is int and n > 0)
 
 
 def read_jsonl(path: Path) -> list[dict]:
@@ -58,6 +69,8 @@ def audit(tasks_path: Path, responses_path: Path) -> dict:
             reasons.add("invalid_skill_sha")
         if any(k not in row or row.get(k) is None or str(row.get(k)).startswith("NOT_") for k in SETTINGS):
             reasons.add("missing_generation_setting")
+        if not valid_controlled_settings(row):
+            reasons.add("invalid_generation_setting")
         if row.get("invocation_source") != "provider_api":
             reasons.add("no_verified_independent_invocation")
         receipt = row.get("provider_receipt")
@@ -71,6 +84,16 @@ def audit(tasks_path: Path, responses_path: Path) -> dict:
         reasons.add("fewer_than_two_models")
     per_model = {}
     for model, items in sorted(groups.items()):
+        # Equal coverage *across* models is not enough: both models can have
+        # the same accidental missing repeat in one task and pass pairwise checks.
+        by_task = {task: set() for task in task_ids}
+        for r in items:
+            by_task[r["task_id"]].add(r["sample_index"])
+        if len({len(indices) for indices in by_task.values()}) != 1:
+            reasons.add("uneven_task_sample_counts")
+        for indices in by_task.values():
+            if indices and indices != set(range(1, max(indices) + 1)):
+                reasons.add("noncontiguous_sample_indices")
         coverage = {(r["task_id"], r["sample_index"]) for r in items}
         per_model[model] = {
             "responses": len(items), "unique_task_samples": len(coverage),

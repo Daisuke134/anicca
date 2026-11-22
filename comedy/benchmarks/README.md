@@ -187,3 +187,9 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 - 実行コマンド：`python3 comedy/benchmarks/audit_comparison_provenance.py --tasks <tasks.jsonl> --responses <responses.jsonl> --output <audit.json>`。比較可能性の判定を形式チェック `validate_run.py` と別に実行する。
 - 新しいオリジナル開発題8件（大喜利4、電話先AI即興4）×2案=16回答について、形式検査16/16 PASS、出自監査は **NOT_COMPARABLE**。新規ユニットテスト10/10 PASS。固定ベンチ未使用。実機Voiceと観客笑いは未測定。
 - [出自監査レポート](./runs/2026-11-23-0255-provenance-audit.json)、[今回の研究記録](../research/2026-11-23-0255-jst-provenance-audit.md)。X投稿・第三者サイトへの自動投稿はOFF。
+
+### 2026-11-23 03:52 JST：比較出自監査の欠測対称性バグ修正
+- `audit_comparison_provenance.py` は、モデル間の`(task_id, sample_index)`の集合一致だけでなく、**各モデル内で全タスクの試行数が同数か**と、**試行番号が1から連続しているか**も監査する。両モデルが同じ試行を欠測すると従来の集合一致だけでは見落とした。
+- `temperature` の真偽値・非数値、`max_output_tokens=0` のような無効な生成設定は `invalid_generation_setting` として検出する。ただし検査はメタデータの自己申告だけで、実際のモデル版やAPIレシートの真正性を保証しない。
+- 合成の4負例で**修正前14件中4件FAIL、修正後14/14 PASS**。新規オリジナル開発8題×2案=16件の形式検査16/16 PASS、比較出自は**NOT_COMPARABLE**。今回の固定ベンチは未使用、Grok/Muse未実行、実録Voice・観客笑いは未測定。
+- [研究報告](../research/2026-11-23-0352-jst-provenance-sample-integrity.md)、[形式結果](./runs/2026-11-23-0352-format-report.json)、[出自監査結果](./runs/2026-11-23-0352-provenance-report.json)。外部への自動投稿・返信はOFF。

@@ -77,6 +77,32 @@ class ProvenanceTests(unittest.TestCase):
         rows[0]["temperature"] = None
         self.assertIn("missing_generation_setting", self.evaluate(rows)["reasons"])
 
+
+    def test_symmetric_missing_samples_cannot_pass_as_comparable(self):
+        # Both models omit the same second trial for t2. Pairwise coverage alone is insufficient.
+        rows = [r for r in self.paired()
+                if not (r["task_id"] == "t2" and r["sample_index"] == 2)]
+        self.assertIn("uneven_task_sample_counts", self.evaluate(rows)["reasons"])
+
+    def test_matching_sample_index_gaps_cannot_pass(self):
+        rows = self.paired()
+        for row in rows:
+            if row["sample_index"] == 2:
+                row["sample_index"] = 3
+        self.assertIn("noncontiguous_sample_indices", self.evaluate(rows)["reasons"])
+
+    def test_boolean_temperature_is_not_valid_controlled_temperature(self):
+        rows = self.paired()
+        for row in rows:
+            row["temperature"] = True
+        self.assertIn("invalid_generation_setting", self.evaluate(rows)["reasons"])
+
+    def test_zero_token_budget_is_not_valid_comparable_trial(self):
+        rows = self.paired()
+        for row in rows:
+            row["max_output_tokens"] = 0
+        self.assertIn("invalid_generation_setting", self.evaluate(rows)["reasons"])
+
     def test_unknown_task_raises(self):
         rows = self.paired()
         rows[-1]["task_id"] = "unknown"
