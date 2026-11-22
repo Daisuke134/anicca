@@ -19,6 +19,12 @@ Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../ski
 - HumorBench (speech): https://humorous.dev/reports/humorbench
 - HumorBench (cartoon): https://arxiv.org/abs/2507.21476
 
+## 11/22の追加回帰テスト
+- **2分の実演用台本** `../sagi-injury-help-2min-live.md` を追加。長尺v8は保存。
+- **9題の音声脱線回帰問題** `injury-stage-regression-2026-11-22.jsonl` ：「痛い、もしもし」への第一声、2回目の痛み→即架空病名、任意の新宿住所を受け入れる、窓の外の質問に逃げない、色・会いたいへの即興、第三者への沈黙、本物の救急例外。
+- **台本静的チェック** `python3 comedy/benchmarks/check_injury_2min.py` は、第一声と第二声、質問の増殖、掛け合いの交互、固有名詞の回収を調べる。**このチャットからの実行未検証なら合格を報告しない**。音声モデルの実演合格とも別。
+- 先行の固定15題 `taskset-v1.jsonl` は保持。学習用公開題と新規ホールドアウトの混同を避ける。
+
 ## B. オリジナルComedy-AI Bench（テキスト＋舞台）
 [`taskset-v1.jsonl`](./taskset-v1.jsonl)は少量の公開サンプル。**テストデータを新しいSkillの暗記素材に使わない。** 開幕の文字一致、観客への無言、アドリブに既存キャラで対応、現実の緊急事態の例外、大喜利の転移、ソロ90秒などのタスクがある。
 
