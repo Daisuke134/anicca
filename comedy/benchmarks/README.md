@@ -131,3 +131,10 @@ python3 comedy/benchmarks/measure_stage_timing.py   --input comedy/benchmarks/ru
 `python3 -m unittest discover -s comedy/benchmarks -p 'test_*.py' -q` で合成の境界・ラベル重複・CLI厳格終了コードを含めて回帰テスト。**実際の観客・会場後方音量・ダイスの間は未測定**。詳細は [18:55研究ログ](../research/2026-11-22-1855-jst-laughter-entry-audit.md)。
 
 参考：Pope et al. (2018) [Audience Laughter Distribution in Live Stand-up Comedy](https://www.isca-archive.org/lw_2018/pope18_lw.html)、Zribi et al. (2026) [TIC-TALK](https://aclanthology.org/2026.chum-1.2/)。どちらもこのコントの適切な閾値を確定するものではない。
+
+### 2026-11-22 19:55 JST：観客笑い注釈の連続区間を考慮したAI発話開始監査
+measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に既に進行中だった笑いの連続区間」がどこまで続くかを計測する。複数の audience/laughter 注釈が重なる、または端点で接する場合は、一つの連続区間にまとめる。AI開始後に別ラベルが始まっても、開始前のラベルと途切れず連結していれば、その継続分を含める。開始後の新しい笑いとの間に隙間がある場合は開始時の違反には含めない。総重複量 overlap_ms は以前と同義。
+
+修正前の合成反例：観客笑いA 3750–3950ms、笑いB 3925–4100ms、AI開始3900ms。総重複200msに対し旧entry継続量50msと過小計算。修正後は200msで、閾値100msの strict 評価は旧0（誤PASS）→新1（FAIL）。Bを3970ms開始（20msの隙間）とする対照例では継続50ms。これは合成注釈の境界検査であり、観客の音声や笑いの強さを測っていない。閾値100msは試験値であり舞台の合否基準ではない。
+
+実行：Python unittest 64件→67件 PASS（新規3件）。新作オリジナル8題（大喜利4・舞台即興4）×2案=16件は形式ゲートPASS。固定ベンチは今回未使用。Voice・観客笑い・金子さんの指摘の改善効果は未測定。[研究ログ](../research/2026-11-22-1955-jst-laughter-continuity.md)。

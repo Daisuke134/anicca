@@ -166,6 +166,36 @@ class TimingAuditTests(unittest.TestCase):
         self.assertEqual(report["ai_entries_during_laughter"], 1)
         self.assertEqual(measure(events, max_ai_entry_laughter_ms=399)["timing_gate"], "FAIL")
 
+    def test_continuous_laughter_labels_crossing_ai_start_are_one_entry(self):
+        events = good()
+        # Laugh A is active at AI entry (3900); laugh B begins at 3925
+        # before A stops (3950), extending the same continuous episode.
+        events.insert(3, event("audience", "笑いA", 3750, 3950, kind="laughter"))
+        events.insert(5, event("audience", "笑いB", 3925, 4100, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=100)
+        self.assertEqual(report["ai_laughter_overlaps"][0]["overlap_ms"], 200)
+        self.assertEqual(report["ai_laughter_overlaps"][0]["entry_during_laughter_ms"], 200)
+        self.assertEqual(report["ai_entries_during_laughter"], 1)
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(measure(events, max_ai_entry_laughter_ms=200)["gate"], "PASS")
+
+    def test_separated_laughter_after_ai_start_is_not_entry(self):
+        events = good()
+        events.insert(3, event("audience", "笑いA", 3750, 3950, kind="laughter"))
+        events.insert(5, event("audience", "笑いB", 3970, 4100, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=50)
+        self.assertEqual(report["ai_laughter_overlaps"][0]["overlap_ms"], 180)
+        self.assertEqual(report["ai_laughter_overlaps"][0]["entry_during_laughter_ms"], 50)
+        self.assertEqual(report["timing_gate"], "PASS")
+
+    def test_touching_laughter_labels_count_as_continuous(self):
+        events = good()
+        events.insert(3, event("audience", "笑いA", 3750, 3950, kind="laughter"))
+        events.insert(5, event("audience", "笑いB", 3950, 4100, kind="laughter"))
+        report = measure(events, max_ai_entry_laughter_ms=199)
+        self.assertEqual(report["ai_laughter_overlaps"][0]["entry_during_laughter_ms"], 200)
+        self.assertEqual(report["timing_gate"], "FAIL")
+
     def test_staff_laughter_is_not_audience_laughter(self):
         events = good()
         events.insert(3, event("staff", "笑い", 3800, 4000, kind="laughter"))
