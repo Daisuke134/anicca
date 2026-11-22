@@ -88,3 +88,8 @@ python3 comedy/benchmarks/test_validate_run.py
 validate_stage_dialogue.py に任意のイベント属性 "kind": "speech" | "laughter" | "noise" を追加。最後のダイス発話からAI発話までの間に観客・スタッフのspeechが挟まれば ambiguous_third_party_speech_between_dais_and_ai を記録する。これは**第三者に応答した因果関係の証拠ではなく、録音を要確認という保守的なリスクフラグ**。観客のlaughter・スタッフのnoiseは介在発話として数えず、未指定kindは従来互換のspeechと解釈する。誤アノテーションは偽陽性・偽陰性の原因となる。
 
 [内部研究・実行ログ](../research/2026-11-22-1557-jst-third-party-gate.md)：Python単体テスト38/38 PASS、合成の第三者割り込みはFAIL/1違反、笑い声の対照はPASS/0違反。新規独自開発6題×2候補の形式検査12/12 PASS。**固定ベンチは今回未使用、Voice・笑い・モデル間優劣は未測定**。
+
+### 2026-11-22 16:53 JST：Voice第二声の正本照合
+- 対話テストが2分実演正本からAI第一声・第二声を抽出し、台本チェック、対話検証器、AGENTS、Comedy Skill、Voice用最小指示の**文字列完全一致**を継続検査する。
+- 修正以前は3つの指示文だけが架空の病名を『…』と表記し、2分台本・検証器の「…」とずれていた。意図は同じでも、完全一致評価の再現性を損なうため、**台本は変更せず指示文の表記を修正**。
+- これは静的なドキュメント整合性検証であり、音声モデルの出力文字、発声、観客理解、実際の笑いを測るものではない。[研究記録](../research/2026-11-22-1653-jst-voice-contract.md)。

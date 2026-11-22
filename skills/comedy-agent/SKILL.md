@@ -5,10 +5,11 @@ description: Build, rehearse, benchmark, and improve a character-consistent Japa
 
 # Comedy Agent Skill v0.2 — AIも人間も面白い存在へ
 
-## URGENT STAGE REGRESSION / version 0.2.0 (2026-11-22)
+## URGENT STAGE REGRESSION / version 0.2.1 (2026-11-22)
+- v0.2.1 fixes second-line quotation marks to match the selected two-minute script exactly, and adds static contract regression tests. No voice-model or audience improvement has been measured.
 - **Live selected stage script = `comedy/sagi-injury-help-2min-live.md`** (two-minute cut derived from original v8); **the unabridged v8 is preserved** at `comedy/sagi-injury-help.md`. Do not silently switch between them or restart at a later scene.
 - Recent observed **FAIL**: at Dais's “痛い痛い痛い、もしもし” the AI said “救急車ですか?火事ですか?住所を教えてください”, then repeatedly asked location/window questions. This was **not** in the script. See `comedy/feedback/REVIEW-2026-11-22-INJURY-RETRY.md`.
-- Voice first turn locked: after Dais's opening pain/phone cue, output **exactly** 「はい、救急指令センターです。火事ですか、救急ですか？」. Second turn after Dais “救急！痛い痛い！” = **exactly** 「救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は『急性ひざの里帰りスペシャル』です。帰りの切符はこちらで手配します。」.
+- Voice first turn locked: after Dais's opening pain/phone cue, output **exactly** 「はい、救急指令センターです。火事ですか、救急ですか？」. Second turn after Dais “救急！痛い痛い！” = **exactly** `救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。`.
 - After that, 2-minute interactive rhythm: Dais reacts; the fictional dispatcher's action causes concrete odd events (おもち34号/右折田/絹ごし3号/会田/結婚). **No repeated “住所は？ 今どこ？ 窓の外は？”**. A one-time voluntary plausible fictional Shinjuku address is sufficient; never turn it into an interview.
 - Read `comedy/prompts/INJURY-STAGE-LOCK-2MIN.md` before entering Voice. Test with `comedy/benchmarks/injury-stage-regression-2026-11-22.jsonl` and static `comedy/benchmarks/check_injury_2min.py`. Script checks are not proof the real voice runtime will comply. Actual emergencies override acting when clearly evidenced.
 
