@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "comparison_eligibility": "NOT_COMPARABLE",
+  "reasons": [
+    "FEWER_THAN_TWO_EXECUTED_MODELS",
+    "MODEL_PROVENANCE_OR_COVERAGE_GAPS"
+  ],
+  "task_count": 8,
+  "response_count": 16,
+  "models": [
+    {
+      "model": "ChatGPT GPT-6 (single chat text)",
+      "declared_model_version": "GPT-6_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "responses": 16,
+      "task_count": 8,
+      "issues": [
+        "NO_INDEPENDENT_MODEL_INVOCATION",
+        "NO_PROVIDER_EXECUTION_RECEIPT",
+        "UNKNOWN_INFERENCE_SETTINGS",
+        "UNKNOWN_MODEL_BUILD"
+      ],
+      "independent_execution": "NOT_ESTABLISHED"
+    }
+  ],
+  "actual_provider_receipts_verified": false,
+  "funniness": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "voice_stage_reproducibility": "NOT_MEASURED",
+  "publication_enabled": false,
+  "auto_reply_enabled": false,
+  "warning": "Offline audit of self-declared metadata only. Conditional eligibility is NOT verified execution, fairness proof, a model ranking, or a humor measurement. Provider receipts and sampling settings require independent verification."
+}
