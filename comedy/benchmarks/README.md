@@ -1,5 +1,11 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-24 02:00 JST：比較対象双方の同一欠測・空回答を見逃さない
+- `audit_run_comparability.py` で**各題2候補以上・各題の候補数均衡**を検査。比較対象の全モデルが同じ候補を落とした場合でも `NOT_COMPARABLE`。沈黙課題の空文字は正当な回答として許容する一方、それ以外の空白回答や沈黙課題の発話を拒否する。
+- 人工回帰18件は旧mainで **14/18 PASS（4 FAIL）** → 修正後 **18/18 PASS**。全Pythonテスト **315/315 PASS**。新規オリジナル開発題8題×2テキスト回答は形式 **16/16 PASS**、**固定ベンチ未使用**。
+- 実際のモデル間比較は **NOT_COMPARABLE**。ChatGPT GPT-6の単一チャット内候補のみ、ビルドID・独立APIレシート不明。Reason NetworkのGrok/Muse接続3件はHTTP409で**未実行**。Voice・観客の笑い・後方可聴性・電話先AIという設定理解は **NOT_MEASURED**。
+- [研究報告](../research/2026-11-24-0200-jst-comparison-missingness.md) / [旧新版の合成回帰](./runs/2026-11-24-0200-eligibility-regression.json) / [回答16件](./runs/2026-11-24-0200-chat-responses.jsonl)。台本v8・9/6確定稿・2分稿・Skill本文は変更なし。外部publish・自動返信OFF。
+
 ## 2026-11-24 01:00 JST：独立モデルの比較資格を保守的に監査
 - 新規 `audit_run_comparability.py` は共通タスク・各候補・Skill blob SHA・モデル版・モダリティ・推論設定・独立APIレシートの申告を検査。レシートの実在性はオフラインでは未検証なので、条件を満たす人工正例でも `CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED` に留める。
 - 新規回帰12/12 PASS、Python全309/309 PASS。固定ベンチは使用せず、新作オリジナル開発8題×2回答の静的形式16/16 PASS。
