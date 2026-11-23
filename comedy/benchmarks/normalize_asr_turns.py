@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from validate_stage_dialogue import validate as validate_stage
+from measure_stage_timing import measure as measure_stage_timing
 
 SPEAKERS = {"dais", "ai", "audience", "staff"}
 KINDS = {"speech", "laughter", "noise"}
@@ -97,6 +98,10 @@ def evaluate(payload: dict, *, max_gap_ms: int = 250,
         raise ValueError("unsupported provenance")
     turns = normalize(payload["events"], max_gap_ms=max_gap_ms)
     audit = validate_stage(turns, require_turn_coverage=require_turn_coverage)
+    # Script order alone can report PASS while AI begins before Dais finishes,
+    # or AI audio persists beyond the end cue. Use the existing timestamp
+    # auditor on the *normalized* turns; never infer timings from raw text.
+    timing = measure_stage_timing(turns)
     return {
         "scenario_id": payload.get("scenario_id"),
         "source_provenance_claim": provenance,
@@ -106,8 +111,10 @@ def evaluate(payload: dict, *, max_gap_ms: int = 250,
         "joined_chunk_count": len(payload["events"]) - len(turns),
         "normalized_events": turns,
         "stage_gate": audit,
-        "gate": audit["gate"],
-        "scope": "explicit_turn_id_text_reconstruction_only",
+        "timing_gate": timing["timing_gate"],
+        "timing_audit": timing,
+        "gate": "PASS" if audit["gate"] == "PASS" and timing["timing_gate"] == "PASS" else "FAIL",
+        "scope": "explicit_turn_id_text_and_annotated_timing_only",
         "raw_audio_verified": False,
         "speaker_identity_verified": False,
         "voice_reproducibility": "NOT_MEASURED",
