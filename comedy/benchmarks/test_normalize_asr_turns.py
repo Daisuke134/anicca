@@ -152,5 +152,47 @@ class NormalizationTests(unittest.TestCase):
         self.assertIn("post_end_ai_speech", str(result["stage_gate"]["violations"]))
 
 
+    def test_text_is_exact_but_ai_interrupts_opening_dais_cue(self):
+        data = fixture()
+        # The first AI segment starts 50 ms before the cue ends. All textual
+        # script lines stay byte-for-byte unchanged.
+        data["events"][3]["start_ms"] = 450
+        report = evaluate(data)
+        self.assertEqual(report["stage_gate"]["gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(report["gate"], "FAIL")
+        self.assertIn("ai_overlaps_dais_speech",
+                      str(report["timing_audit"]["timing_violations"]))
+        self.assertEqual(report["timing_audit"]["ai_overlap_dais_count"], 1)
+
+    def test_text_is_exact_but_ai_audio_persists_after_end_cue(self):
+        data = fixture()
+        # Earlier AI speech extends into/after Dais's closing cue.
+        data["events"][8]["end_ms"] = 3500
+        report = evaluate(data)
+        self.assertEqual(report["stage_gate"]["gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "FAIL")
+        self.assertEqual(report["gate"], "FAIL")
+        self.assertEqual(report["timing_audit"]["ai_audio_after_end_total_ms"], 50)
+        self.assertIn("ai_audio_after_end_cue",
+                      str(report["timing_audit"]["timing_violations"]))
+
+    def test_touching_cue_boundary_not_overlap(self):
+        data = fixture()
+        data["events"][3]["start_ms"] = 500  # Dais cue ends at 500 ms.
+        report = evaluate(data)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertEqual(report["timing_gate"], "PASS")
+
+    def test_audio_claim_remains_unverified_even_with_timing_pass(self):
+        data = fixture()
+        data["provenance"] = "audio_annotated"
+        report = evaluate(data)
+        self.assertEqual(report["gate"], "PASS")
+        self.assertFalse(report["raw_audio_verified"])
+        self.assertFalse(report["speaker_identity_verified"])
+        self.assertEqual(report["audience_laughter"], "NOT_MEASURED")
+
+
 if __name__ == "__main__":
     unittest.main()
