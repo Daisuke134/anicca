@@ -1,5 +1,11 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 18:55 JST：ASR復元後に隠れた時間的舞台違反を検出
+- `normalize_asr_turns.evaluate` は従来の文字列ゲートに加え、復元後の手動時刻注釈を `measure_stage_timing.measure` で監査。台本第一声が完全一致しても、ダイスの合図終了前のAI発話開始、終幕後まで続くAI音声なら総合FAIL。`stage_gate` と `timing_gate` を分離して記録。
+- 合成の2負例：旧テキストゲート誤PASS → 新時間ゲートFAIL（開演の50ms被り／終幕後50ms残留）。通常の11断片→7イベントと境界一致の正例はPASS。**実音声ではなく人工タイムコード**。
+- Python全回帰テスト **267/267 PASS（新規4件）**、現行2分稿の静的検査PASS（22発話・714文字）。**固定ベンチ未使用**、新作オリジナル8題（一般4・電話先AI4）×2案、形式 **16/16 PASS**。GPT-6製品ラベルのチャット内生成だけ、Grok/MuseはReason Network 409で未実行、複数モデル比較 `NOT_COMPARABLE`。Voice・観客の笑い・後方可聴性・金子さんの設定理解率は `NOT_MEASURED`。外部投稿・自動返信OFF。
+- [研究報告](../research/2026-11-23-1855-jst-asr-timing-composite.md)、[旧→新の合成監査](./runs/2026-11-23-1855-asr-timing-regression.json)。
+
 ## 2026-11-23 18:02 JST：ASRチャンク分割を舞台の誤FAILにしないターン復元
 - 新規 `normalize_asr_turns.py` は、明示的な `turn_id`・話者・時間境界が一致する連続断片だけを連結する。観客やスタッフの発言を跨ぐ結合、話者混同、曖昧な時間差は拒否。既存の `validate_stage_dialogue` に完全発話を渡して開始合図・第一/第二声・アドリブの反応機会・終幕を判定。
 - **合成11断片 → 7イベント（4連結）で静的舞台ゲートPASS**。原断片を直接渡した場合はFAIL。別の脚本改変・第三者発話の人工負例は正しくFAILまたは入力エラー。新規17件を含め **Python 263/263 PASS**（ローカルのGitHub main由来ソースで実行）。音声録音・ASR品質の実測ではない。
