@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-23T05:01:34.614802+00:00",
+  "taskset": "tasks.jsonl",
+  "responses": "responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og01",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og01",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og02",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og02",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og03",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og03",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og04",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-og04",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st01",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st01",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st02",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st02",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st03",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st03",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-1",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st04",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1355-single-chat-sample-2",
+      "model": "GPT-6",
+      "task_id": "2026-11-23-1355-st04",
+      "category": "original_development_not_fixed_benchmark",
+      "kind": "stage_adlib",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}

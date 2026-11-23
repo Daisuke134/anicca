@@ -1,0 +1,268 @@
+{
+  "source_type": "synthetic",
+  "total_cases": 8,
+  "expectations_met": 8,
+  "all_expectations_met": true,
+  "cases": [
+    {
+      "scenario_id": "question_only",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_only_uncommitted_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "offer_only",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_only_uncommitted_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "request_only",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_only_uncommitted_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "plan_only",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_only_uncommitted_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "denied_then_question",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [
+            "連絡"
+          ],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_only_uncommitted_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "affirmative",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "連絡"
+          ],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "question_then_dispatch",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "手配"
+          ],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "no_grounding",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 0,
+          "immediate_ai_event": 1,
+          "matched_anchors": [],
+          "matched_actions": [],
+          "negated_action_mentions": [],
+          "uncommitted_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 0,
+          "reason": "immediate_reply_missing_anchor"
+        },
+        {
+          "event": 0,
+          "reason": "immediate_reply_missing_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    }
+  ],
+  "voice": "NOT_MEASURED",
+  "laughter": "NOT_MEASURED"
+}
