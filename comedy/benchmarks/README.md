@@ -1,5 +1,11 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 23:57 JST：有効な無音WAVを「発話した稽古」と誤認しない
+- `audit_voice_wav_evidence.py` はWAVバイト整合性と、`claimed_real_rehearsal` が会話を含む証拠として使えるかを別ゲートに分離。有効な**完全無音WAV**は `wav_byte_integrity=PASS` だが `claimed_rehearsal_audio_evidence=FAIL` としてCLI終了1。非ゼロ波形は `NEEDS_SPEECH_VERIFICATION` であり話し声を証明しない。新たにPCM非ゼロサンプル割合を診断値として記録。
+- 新規7テストは旧mainで1 FAIL/6 ERROR、修正後は既存17件を含め **24/24 PASS**。合成WAVのみ。金子さんの指摘した電話先AIの設定理解、客席後方の可聴性、ダイスの演技、観客の笑い、Voice実機再現率は **NOT_MEASURED**。
+- 新規オリジナル開発8題（一般4、舞台4）×2候補＝16回答の文字列ハードゲート **16/16 PASS**。固定ベンチ未使用。単一GPT-6チャット内テキストのみで独立モデル間比較 **NOT_COMPARABLE**。Grok/MuseはReason Network接続HTTP409で未実行。外部publish・自動返信OFF。
+- [研究報告](../research/2026-11-23-2357-jst-silent-voice-evidence.md) / [合成試験・出自結果](./runs/2026-11-23-2357-silence-evidence-evaluation.json) / [オリジナル16候補](./runs/2026-11-23-2357-chat-responses.jsonl)。
+
 ## 2026-11-23 22:55 JST：RIFFヘッダ差し替えによる同一PCM再利用の検出
 - `audit_voice_wav_evidence.py` は既存のファイル全体SHA-256に加え、読み出したPCMの逐次SHA-256を比較する。同じサンプル列を異なる合法WAVヘッダに格納しても、二つの独立試行として誤受理しない。
 - 同条件の新規5テストで旧版 **1 PASS / 2 FAIL / 2 ERROR**、修正版では既存12件を含め **17/17 PASS**。合成WAVだけの監査。実機Voiceの再現性・笑い・客席後方での聞き取りは **NOT_MEASURED**。

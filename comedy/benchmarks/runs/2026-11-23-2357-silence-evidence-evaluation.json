@@ -1,0 +1,87 @@
+{
+  "run_id": "comedy-2026-11-23-2357-jst",
+  "canonical_source_commit": "3c7b690cf16c1630cee0c5a054807021b1c4053c",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "source_kind": "synthetic_regression_and_single_chat_text_generation",
+  "source_files_read": [
+    "comedy/AGENTS.md",
+    "skills/comedy-agent/SKILL.md",
+    "comedy/COMEDY-AGENT-LOOP.md",
+    "comedy/benchmarks/README.md",
+    "comedy/IMPROV-PLAYBOOK.md",
+    "comedy/feedback/KANEKO-2026-11-15.md"
+  ],
+  "legacy_before_new_feature": {
+    "new_tests_total": 7,
+    "failures": 1,
+    "errors": 6,
+    "source": "main audit_voice_wav_evidence.py"
+  },
+  "updated_feature": {
+    "new_tests_pass": 7,
+    "regression_tests_pass": 17,
+    "total_pass": 24,
+    "total_fail": 0,
+    "execution_platform": "connected Mac mini python3, downloaded GitHub source to /tmp"
+  },
+  "synthetic_audio_example": {
+    "source_kind_claim": "claimed_real_rehearsal deliberately forged in fixture",
+    "wav_byte_integrity": "PASS",
+    "claimed_rehearsal_audio_evidence": "FAIL",
+    "audio_origin_authenticity": "NOT_VERIFIED",
+    "trials": [
+      {
+        "id": "silence",
+        "pcm_digital_silence": true,
+        "nonzero_sample_fraction": 0,
+        "dialogue_evidence": "DIGITAL_SILENCE_INVALID"
+      },
+      {
+        "id": "signal",
+        "pcm_digital_silence": false,
+        "nonzero_sample_fraction": 1,
+        "dialogue_evidence": "UNVERIFIED_SPEECH"
+      }
+    ]
+  },
+  "original_dev_tasks": 8,
+  "original_dev_responses": 16,
+  "fixed_benchmark_used": false,
+  "response_format": {
+    "passed": 16,
+    "failed": 0,
+    "validator": "comedy/benchmarks/validate_run.py --strict"
+  },
+  "comparison_provenance": {
+    "comparison_setup": "NOT_COMPARABLE",
+    "reasons": [
+      "fewer_than_two_models",
+      "invalid_generation_setting",
+      "missing_generation_setting",
+      "missing_provider_receipt",
+      "no_verified_independent_invocation"
+    ],
+    "receipt_authenticity": "NOT_VERIFIED"
+  },
+  "model_execution": {
+    "chatgpt": "single current GPT-6 chat text; exact build and API receipts NOT_AVAILABLE",
+    "grok": "NOT_RUN; Reason Network connector link HTTP 409 agent_network_offline",
+    "muse": "NOT_RUN; Reason Network connector link HTTP 409 agent_network_offline"
+  },
+  "selected_two_minute_stage_script": {
+    "static_gate": "PASS",
+    "turns": 22,
+    "spoken_chars": 714
+  },
+  "actual_live_voice": "NOT_MEASURED",
+  "human_judgement": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "back_row_intelligibility": "NOT_MEASURED",
+  "real_rehearsal_audio": "NOT_PROVIDED",
+  "external_publication": {
+    "publish": false,
+    "auto_reply": false,
+    "external_submissions": 0
+  },
+  "protected_files_unchanged": true
+}
