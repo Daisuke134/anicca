@@ -1,0 +1,282 @@
+{
+  "source_type": "synthetic",
+  "total_cases": 8,
+  "expectations_met": 8,
+  "all_expectations_met": true,
+  "cases": [
+    {
+      "scenario_id": "valid_callback",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "callback_forgets_vehicle",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": false,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [
+        {
+          "reason": "callback_missing_entity",
+          "chain_index": 0,
+          "event_index": null
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "callback_forgets_new_beat",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": false,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [
+        {
+          "reason": "callback_missing_payoff",
+          "chain_index": 0,
+          "event_index": null
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "impossible_vehicle_arrival",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": [
+            {
+              "event": 9,
+              "phrase": "おもち34号が到着しました"
+            }
+          ]
+        }
+      ],
+      "violations": [
+        {
+          "reason": "forbidden_continuity_reversal",
+          "chain_index": 0,
+          "event_index": null
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "human_reaction_missing",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": false,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [
+        {
+          "reason": "consecutive_ai_turns_without_dais",
+          "chain_index": null,
+          "event_index": 7
+        },
+        {
+          "reason": "consecutive_ai_turns_without_dais",
+          "chain_index": null,
+          "event_index": 9
+        },
+        {
+          "reason": "no_dais_reaction_between_beats",
+          "chain_index": 0,
+          "event_index": null
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "ai_monologue",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [
+        {
+          "reason": "consecutive_ai_turns_without_dais",
+          "chain_index": null,
+          "event_index": 6
+        },
+        {
+          "reason": "consecutive_ai_turns_without_dais",
+          "chain_index": null,
+          "event_index": 7
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "audience_laughter_nonblocking",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 10,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    },
+    {
+      "scenario_id": "post_end_extra_line",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "checks": [
+        {
+          "chain_index": 0,
+          "entity": "おもち34号",
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "setup_entity_found": true,
+          "setup_state_found": true,
+          "callback_entity_found": true,
+          "payoff_found": true,
+          "dais_reaction_present": true,
+          "forbidden_hits": []
+        }
+      ],
+      "violations": [
+        {
+          "reason": "ai_spoke_after_end",
+          "chain_index": null,
+          "event_index": 11
+        }
+      ],
+      "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+      "voice": "NOT_MEASURED",
+      "human_laughter": "NOT_MEASURED",
+      "response_latency": "NOT_MEASURED",
+      "semantic_consistency": "NOT_MEASURED",
+      "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+    }
+  ],
+  "voice": "NOT_MEASURED",
+  "human_laughter": "NOT_MEASURED"
+}
