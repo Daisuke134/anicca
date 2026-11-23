@@ -4,12 +4,37 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import unicodedata
 from pathlib import Path
 
 
 def norm(text: str) -> str:
     return unicodedata.normalize("NFKC", text).casefold()
+
+
+# Narrow Japanese denial proxy. Not a semantic parser or proof that an action happened.
+NEGATED_ACTION_SUFFIX = re.compile(
+    r"^(?:すること)?[のをにはがも]?(?:まだ)?"
+    r"(?:しません|しない|していません|しておりません|してない|していない|"
+    r"できません|できない|できていません|中止しました|取り消しました|"
+    r"ません|ない)"
+)
+
+
+def action_mentions(text: str, actions: list[str]) -> tuple[list[str], list[str]]:
+    """Separate affirmative-looking lexical mentions from explicit denials."""
+    present, denied = [], []
+    for action in actions:
+        needle = norm(action)
+        positions = [m.end() for m in re.finditer(re.escape(needle), text)]
+        if not positions:
+            continue
+        if any(not NEGATED_ACTION_SUFFIX.match(text[pos:]) for pos in positions):
+            present.append(action)
+        else:
+            denied.append(action)
+    return present, denied
 
 
 def terms(event: dict, key: str, index: int) -> list[str]:
@@ -53,16 +78,19 @@ def audit(events: list[dict]) -> dict:
                 break
         matched_anchor = []
         matched_action = []
+        negated_actions = []
         if reply_index is None:
             violations.append({"event": index, "reason": "missing_immediate_ai_reply"})
         else:
             text = norm(events[reply_index]["text"])
             matched_anchor = [a for a in anchors if norm(a) in text]
-            matched_action = [a for a in actions if norm(a) in text]
+            matched_action, negated_actions = action_mentions(text, actions)
             if not matched_anchor:
                 violations.append({"event": index, "reason": "immediate_reply_missing_anchor"})
             if not matched_action:
-                violations.append({"event": index, "reason": "immediate_reply_missing_action"})
+                reason = ("immediate_reply_only_negated_action" if negated_actions
+                          else "immediate_reply_missing_action")
+                violations.append({"event": index, "reason": reason})
         if intervening_speech:
             violations.append({"event": index, "reason": "intervening_third_party_speech_review"})
         checks.append({
@@ -70,6 +98,7 @@ def audit(events: list[dict]) -> dict:
             "immediate_ai_event": reply_index,
             "matched_anchors": matched_anchor,
             "matched_actions": matched_action,
+            "negated_action_mentions": negated_actions,
             "third_party_speech_intervened": intervening_speech,
         })
     if not checks:
@@ -83,7 +112,7 @@ def audit(events: list[dict]) -> dict:
         "voice": "NOT_MEASURED",
         "laughter": "NOT_MEASURED",
         "semantic_understanding": "NOT_MEASURED",
-        "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns.",
+        "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns.",
     }
 
 

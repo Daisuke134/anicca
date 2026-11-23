@@ -94,5 +94,25 @@ class ImmediateAnchorTests(unittest.TestCase):
         self.assertEqual(result["expectations_met"], 2)
 
 
+class NegativeActionProxyRegression(unittest.TestCase):
+    def test_explicit_denial_does_not_count_as_action(self):
+        result = audit(scene("会田アイタロウへ連絡しません。"))
+        self.assertIn("immediate_reply_only_negated_action", [v["reason"] for v in result["violations"]])
+
+    def test_inability_does_not_count_as_action(self):
+        result = audit(scene("会田アイタロウへの連絡はできません。"))
+        self.assertIn("immediate_reply_only_negated_action", [v["reason"] for v in result["violations"]])
+
+    def test_positive_action_survives_another_negated_action(self):
+        events = scene("会田アイタロウへの連絡はできません。会田アイタロウの車を手配しました。")
+        events[4]["action_any"] = ["連絡", "手配"]
+        result = audit(events)
+        self.assertEqual(result["gate"], "PASS")
+        self.assertEqual(result["checks"][0]["matched_actions"], ["手配"])
+
+    def test_normal_affirmative_action_remains_pass(self):
+        self.assertEqual(audit(scene("会田アイタロウへ連絡しました。"))["gate"], "PASS")
+
+
 if __name__ == "__main__":
     unittest.main()
