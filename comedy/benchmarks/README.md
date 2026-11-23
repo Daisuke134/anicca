@@ -1,5 +1,12 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-24 03:55 JST：アドリブの「名前だけ回収」を検知する追加診断
+- 新規 `audit_improv_relevance.py` は電話先AIの初見アドリブ応答を、**既出人物の語／ダイスの新しい合図の語／具体的な手配動詞**の三つに分けて字面チェック。既出名だけで新しい台詞に応答していない疑似回収を検出する。意味理解や面白さの自動採点ではない。
+- 新規オリジナル開発題8題（一般大喜利4題、電話先AI4題）×2の**16/16が静的字面・形式診断PASS**、人工単体テスト15/15 PASS。固定ベンチは今回未使用。ChatGPT GPT-6チャット内の候補のみ、モデル正確なビルドや独立APIレシートはなし。
+- Grok/MuseはReason Network接続3件でHTTP 409 `agent_network_offline` のため未実行。独立モデル間比較 `NOT_COMPARABLE`。実機Voice・観客の笑い・後方可聴性・金子さん指摘の設定理解は `NOT_MEASURED`。v8・9/6確定稿・2分稿・Skill本文無変更。publish/auto-reply OFF。
+- [研究報告](../research/2026-11-24-0355-jst-improv-cue-action.md) / [新作8題](./runs/2026-11-24-0355-original-tasks.jsonl) / [16回答](./runs/2026-11-24-0355-chat-responses.jsonl) / [実行された字面監査](./runs/2026-11-24-0355-improv-gate-report.json)。
+
+
 ## 2026-11-24 03:00 JST：問題文が異なるのに同条件比較可能と誤判定しない
 - `audit_run_comparability.py` は問題文 `prompt` の**厳密UTF-8 SHA-256**を正本タスク側で計算し、各回答の `task_prompt_sha256` を照合する。IDだけ共通・プロンプト入れ替え・両モデル同じ誤ハッシュ・ハッシュ欠測を `NOT_COMPARABLE` にする。ローカルのSHA一致でもプロバイダへの送信実証ではなく、人工正例は引き続き `CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED`。
 - 合成4比較で旧版は誤条件付き許可3件、修正後は3件とも拒否。新規回帰7件を含めPython **322/322 PASS**。現行2分稿静的検査22発話・714文字でPASS。

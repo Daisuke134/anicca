@@ -1,0 +1,234 @@
+{
+  "schema_version": "1.0",
+  "gate": "PASS",
+  "task_count": 8,
+  "response_count": 16,
+  "passed": 16,
+  "failed": 0,
+  "candidate_count_mismatches": {},
+  "items": [
+    {
+      "task_id": "original-2026-11-24-0355-g01",
+      "candidate": "A",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g01",
+      "candidate": "B",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g02",
+      "candidate": "A",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g02",
+      "candidate": "B",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g03",
+      "candidate": "A",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g03",
+      "candidate": "B",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g04",
+      "candidate": "A",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-g04",
+      "candidate": "B",
+      "category": "oogiri",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s01",
+      "candidate": "A",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s01",
+      "candidate": "B",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s02",
+      "candidate": "A",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s02",
+      "candidate": "B",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s03",
+      "candidate": "A",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s03",
+      "candidate": "B",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s04",
+      "candidate": "A",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    },
+    {
+      "task_id": "original-2026-11-24-0355-s04",
+      "candidate": "B",
+      "category": "phone_ai_stage",
+      "gate": "PASS",
+      "reasons": [],
+      "literal_checks": {
+        "nonempty": true,
+        "within_char_budget": true,
+        "known_world_anchor": true,
+        "cue_acknowledgement_proxy": true,
+        "action_verb_proxy": true,
+        "no_forbidden_literal": true,
+        "no_new_questions": true
+      }
+    }
+  ],
+  "method": "literal_substring_and_format_proxies_only",
+  "causal_callback_quality": "NOT_MEASURED",
+  "funniness": "NOT_MEASURED",
+  "actual_voice": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "warning": "Passing lexical anchors/cue/action proxies does not establish coherence, consequence, humor, turn timing, or a real voice take.",
+  "recheck_method": "independent_JS_audit_of_GitHub_branch_data; Python CLI locally produced identical counts"
+}
