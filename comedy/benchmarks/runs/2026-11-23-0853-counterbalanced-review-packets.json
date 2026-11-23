@@ -1,0 +1,290 @@
+{
+  "schema": "offline_counterbalanced_review_v1",
+  "task_set": "original_development_not_fixed_benchmark",
+  "pairs": 8,
+  "candidate_count": 16,
+  "variants": {
+    "v1": [
+      {
+        "pair_id": "20261123-0853-st02",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『右折田の車がずっと僕の周りを四角く回ってる！』。右折田まっすぐの偏った論理を回収し、短く返す。",
+        "A": "右折田まっすぐが四回右折してダイスさんを囲う安全柵を作りました。入口まで右折しかないので、まだ入れません。",
+        "B": "右折田まっすぐは曲がるたび『現場に近づいた』と報告します。四角の最後で消防署の出発点に戻りました。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og02",
+        "category": "oogiri",
+        "prompt": "町内会の回覧板が芸能事務所の社長に就任。最初の契約条件は？ 90字以内、具体的に。",
+        "A": "初仕事は全員の家の郵便受けを訪問。出演料は次の家に渡すハンコ一個だった。",
+        "B": "回覧板社長の契約書は一軒ずつ回る。判子が町内を一周する頃、主演が引っ越していた。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st01",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『救急車から車検証じゃなく婚姻届が飛んできた！』。おもち34号の結婚設定から行動と結果で返す。",
+        "A": "おもち34号は式場の空き時間を車検と誤認し、婚姻届に走行距離を記入しました。出動欄は未記入です。",
+        "B": "おもち34号が新郎欄に車体番号を書きました。式場の駐車場が控室になり、患者さんの席はありません。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og01",
+        "category": "oogiri",
+        "prompt": "閉館後の水族館で魚たちが反省会を開催。司会者の第一報告は？ 90字以内、行動と結果を具体的に。",
+        "A": "タコが八本の足で議事録を同時に書き、同じ失敗を八通りに反省して会議が終わらない。",
+        "B": "クラゲが『今週の遅刻者』を発表。全員、海流で運ばれただけなので出勤簿が波打った。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st03",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『会田に会いたいって言ってない、救急車に会いたい！』。会田アイタロウと救急車の設定を行動で回収する。",
+        "A": "会田アイタロウが面会票の『会う相手』欄に救急車と書き、式場へ面会に行きました。本人は搬送待ちです。",
+        "B": "会田アイタロウは『会いたい』の担当として式場に向かい、結婚中のおもち34号にお祝いを渡して帰りました。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st04",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『病院の玄関が届いたけど中身がない！』。たぶん治る総合病院の玄関設定を回収し、質問なしで返す。",
+        "A": "たぶん治る総合病院の玄関が受付を兼務し、ドアノブに診察券を差すたび救急車の順番を呼んでいます。",
+        "B": "たぶん治る総合病院は玄関だけ先に搬入しました。診察室は引越し業者の台車で、いま駅の改札を通過中です。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og04",
+        "category": "oogiri",
+        "prompt": "雪だるま専用の免許更新センターで大混乱。原因は？ 90字以内、具体的に。",
+        "A": "雪だるまが写真撮影で溶けて、免許証にはバケツだけ写った。次回更新は冬まで延期。",
+        "B": "視力検査で『上』と言うたび鼻のニンジンがずれ、検査官は毎回顔の向きを直した。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og03",
+        "category": "oogiri",
+        "prompt": "駅前の時計台が引越業者に転職。初日に何が起きた？ 90字以内、具体的に。",
+        "A": "時計台は『時間厳守』で家財を一時間前に配送。家具だけが新居で一時間先に暮らし始めた。",
+        "B": "時計台が冷蔵庫を運ぶたび『午後三時です』と鳴らし、依頼人の引越しが毎回おやつ休憩になる。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      }
+    ],
+    "v2": [
+      {
+        "pair_id": "20261123-0853-st02",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『右折田の車がずっと僕の周りを四角く回ってる！』。右折田まっすぐの偏った論理を回収し、短く返す。",
+        "A": "右折田まっすぐは曲がるたび『現場に近づいた』と報告します。四角の最後で消防署の出発点に戻りました。",
+        "B": "右折田まっすぐが四回右折してダイスさんを囲う安全柵を作りました。入口まで右折しかないので、まだ入れません。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og02",
+        "category": "oogiri",
+        "prompt": "町内会の回覧板が芸能事務所の社長に就任。最初の契約条件は？ 90字以内、具体的に。",
+        "A": "回覧板社長の契約書は一軒ずつ回る。判子が町内を一周する頃、主演が引っ越していた。",
+        "B": "初仕事は全員の家の郵便受けを訪問。出演料は次の家に渡すハンコ一個だった。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st01",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『救急車から車検証じゃなく婚姻届が飛んできた！』。おもち34号の結婚設定から行動と結果で返す。",
+        "A": "おもち34号が新郎欄に車体番号を書きました。式場の駐車場が控室になり、患者さんの席はありません。",
+        "B": "おもち34号は式場の空き時間を車検と誤認し、婚姻届に走行距離を記入しました。出動欄は未記入です。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og01",
+        "category": "oogiri",
+        "prompt": "閉館後の水族館で魚たちが反省会を開催。司会者の第一報告は？ 90字以内、行動と結果を具体的に。",
+        "A": "クラゲが『今週の遅刻者』を発表。全員、海流で運ばれただけなので出勤簿が波打った。",
+        "B": "タコが八本の足で議事録を同時に書き、同じ失敗を八通りに反省して会議が終わらない。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st03",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『会田に会いたいって言ってない、救急車に会いたい！』。会田アイタロウと救急車の設定を行動で回収する。",
+        "A": "会田アイタロウは『会いたい』の担当として式場に向かい、結婚中のおもち34号にお祝いを渡して帰りました。",
+        "B": "会田アイタロウが面会票の『会う相手』欄に救急車と書き、式場へ面会に行きました。本人は搬送待ちです。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-st04",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『病院の玄関が届いたけど中身がない！』。たぶん治る総合病院の玄関設定を回収し、質問なしで返す。",
+        "A": "たぶん治る総合病院は玄関だけ先に搬入しました。診察室は引越し業者の台車で、いま駅の改札を通過中です。",
+        "B": "たぶん治る総合病院の玄関が受付を兼務し、ドアノブに診察券を差すたび救急車の順番を呼んでいます。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og04",
+        "category": "oogiri",
+        "prompt": "雪だるま専用の免許更新センターで大混乱。原因は？ 90字以内、具体的に。",
+        "A": "視力検査で『上』と言うたび鼻のニンジンがずれ、検査官は毎回顔の向きを直した。",
+        "B": "雪だるまが写真撮影で溶けて、免許証にはバケツだけ写った。次回更新は冬まで延期。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0853-og03",
+        "category": "oogiri",
+        "prompt": "駅前の時計台が引越業者に転職。初日に何が起きた？ 90字以内、具体的に。",
+        "A": "時計台が冷蔵庫を運ぶたび『午後三時です』と鳴らし、依頼人の引越しが毎回おやつ休憩になる。",
+        "B": "時計台は『時間厳守』で家財を一時間前に配送。家具だけが新居で一時間先に暮らし始めた。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      }
+    ]
+  },
+  "position_balance": {
+    "v1": {
+      "sample_1": 4,
+      "sample_2": 4
+    },
+    "v2": {
+      "sample_2": 4,
+      "sample_1": 4
+    }
+  },
+  "review_status": "NOT_MEASURED",
+  "human_judgments": 0,
+  "model_comparison": "NOT_ESTABLISHED",
+  "constraints": [
+    "Show each rater only ONE variant; never show both A/B orders to one rater.",
+    "The packet hides model metadata, but publicly stored raw answers can reveal origin.",
+    "Mechanical hard-gate pass and A/B position balance are NOT humor measurements.",
+    "Human laughter, Voice timing, rear audibility, and phone-AI comprehension: NOT_MEASURED.",
+    "No external publishing, posting, automatic replies, or contest submission."
+  ],
+  "publish_enabled": false,
+  "auto_reply_enabled": false
+}
