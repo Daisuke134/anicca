@@ -3,6 +3,14 @@
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
+## 2026-11-23 08:53 JST：大喜利・電話先AI即興のA/B順序バイアスを制御する内部レビュー準備
+
+- 新しい `prepare_blind_pairs.py` は**オリジナル開発題のみ**（固定ベンチではない）の2候補について、問題の表示順を決定論的にシャッフルし、候補1/2がA欄へ表示される回数を均衡化する。反対順の`v1`/`v2`を作るが、同じ評価者に両方を見せない。
+- 13件のPythonテスト**13/13 PASS**、新作8題×2回答の既存文字・禁止表現ゲート**16/16 PASS**、両バリアントのA欄が4/4で均衡。**人間評価0件、笑い`NOT_MEASURED`**。出自監査`NOT_COMPARABLE`（GPT-6ラベルの同一チャットのみ、独立APIレシートなし、Grok/Muse未実行）。
+- 実行例：`python3 comedy/benchmarks/prepare_blind_pairs.py --tasks comedy/benchmarks/runs/2026-11-23-0853-blind-pair-tasks.jsonl --responses comedy/benchmarks/runs/2026-11-23-0853-blind-pair-responses.jsonl --output /tmp/comedy-blind-packets.json --seed comedy-20261123-0853`。
+- パケットはモデル名・run_idを表示しないが、生回答が同じ公開リポジトリにあるため、アクセスできる人への**完全な盲検化ではない**。未実測のVoice・会場後方の聞こえ方・電話先AIの理解度・ダイスの演技効果をPASSと解釈しない。
+- [研究記録](../research/2026-11-23-0853-jst-counterbalanced-human-review.md)。外部投稿・自動返信はOFF。
+
 ## 2026-11-23 07:55 JST：録音IDの重複を「別々の稽古」と誤集計しない
 
 - `audit_stage_repeatability.py` に `recording_ref` の再使用検出と、任意の `recording_sha256`（64桁の16進数）の再使用検出を追加。別の`run_id`でも同じ録音参照なら `NOT_COMPARABLE` とし、台詞のPASS/FAILと録音の出自不備を別欄で示す。
