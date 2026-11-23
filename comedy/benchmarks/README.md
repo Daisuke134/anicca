@@ -1,5 +1,12 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+
+## 2026-11-23 16:00 JST：舞台の個別評価をAND合成する総合静的ゲート
+- New `audit_stage_composite.py` は既存の `validate_stage_dialogue`（ダイス合図・第一/第二声・第三者・終幕）、`audit_callback_continuity`（仕込み→リアクション→回収）、注釈ありの場合 `audit_adlib_anchors`（直前の行動回収）を全て実行する。**どれかがFAILなら総合FAIL**。アドリブ未注釈は `NOT_REQUESTED` と区別。
+- 新規テスト13件＋既存45件＝**58/58 PASS**。合成の正例/負例**8/8期待判定一致**。新規**オリジナル開発題8題×2テキスト候補**の形式検査**16/16 PASS**。固定ベンチは未使用。
+- ChatGPT GPT-6製品ラベルの単一チャット内生成だけで、独立モデル比較 `NOT_COMPARABLE`。Reason Networkの3接続はHTTP409、Grok/Museは未実行。**Voice・金子さん指摘の観客理解・後方可聴性・身体演技・笑いは未測定**。
+- [研究報告](../research/2026-11-23-1600-jst-composite-stage-gate.md)、[合成結果](./runs/2026-11-23-1600-composite-report.json)。台本v8・9/6確定稿・2分稿・Skill本文は変更せず、外部投稿・自動返信はOFF。
+
 ## 2026-11-23 14:55 JST：仕込み→ダイスのリアクション→後半回収の複数ターン監査
 
 - 新規 `audit_callback_continuity.py`: 人手注釈の完全発話列に限定し、同一人物の前振り／後半の展開／間にダイス発話があるか／事前指定の矛盾文字列／開始・終幕の逸脱を検査。**実際の間の秒数や意味理解は評価しない**。
