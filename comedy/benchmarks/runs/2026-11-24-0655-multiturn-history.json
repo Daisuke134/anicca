@@ -156,7 +156,104 @@
     "fixed_contract": "a8381ea1eef99edeb72f854a458603a88fbe8e03",
     "lexical": "eed5fa6622bcbd9cd2b2f627f0fa136ff831fae8"
   },
-  "execution_tool_result": {
-    "text": "Process started with PID 51392 (shell: /bin/zsh)\nInitial output:\nRESULT_JSON={\"original_format\":18,\"swapped_format\":18,\"original_lexical\":18,\"swapped_lexical\":18,\"original_count\":18,\"swapped_count\":18,\"changed_final_count\":6,\"original_state_pass\":6,\"swapped_state_rejected\":6,\"state_details\":[{\"scene\":\"stamp\",\"candidate\":\"A\",\"expected_state\":\"右折無料券\",\"foreign_state\":\"車庫無料券\",\"original\":true,\"swapped\":false,\"original_text\":\"右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。\",\"swapped_text\":\"右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。\"},{\"scene\":\"stamp\",\"candidate\":\"B\",\"expected_state\":\"車庫無料券\",\"foreign_state\":\"右折無料券\",\"original\":true,\"swapped\":false,\"original_text\":\"右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。\",\"swapped_text\":\"右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。\"},{\"scene\":\"partition\",\"candidate\":\"A\",\"expected_state\":\"木綿専用席\",\"foreign_state\":\"絹ごし個室\",\"original\":true,\"swapped\":false,\"original_text\":\"豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。\",\"swapped_text\":\"豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。\"},{\"scene\":\"partition\",\"candidate\":\"B\",\"expected_state\":\"絹ごし個室\",\"foreign_state\":\"木綿専用席\",\"original\":true,\"swapped\":false,\"original_text\":\"豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。\",\"swapped_text\":\"豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。\"},{\"scene\":\"photo\",\"candidate\":\"A\",\"expected_state\":\"等身大パネル\",\"foreign_state\":\"証明写真\",\"original\":true,\"swapped\":false,\"original_text\":\"会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。\",\"swapped_text\":\"会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。\"},{\"scene\":\"photo\",\"candidate\":\"B\",\"expected_state\":\"証明写真\",\"foreign_state\":\"等身大パネル\",\"original\":true,\"swapped\":false,\"original_text\":\"会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。\",\"swapped_text\":\"会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。\"}],\"original_lexical_failures\":[],\"swapped_lexical_failures\":[],\"fixed_contract\":[{\"task\":\"exact-stage-first-01\",\"positive_accepted\":true,\"negative_rejected\":true},{\"task\":\"exact-stage-second-02\",\"positive_accepted\":true,\"negative_rejected\":true},{\"task\":\"exact-stage-silence-03\",\"positive_accepted\":true,\"negative_rejected\":true}],\"humor\":\"NOT_MEASURED\",\"voice\":\"NOT_MEASURED\",\"human_evaluation_count\":0}\nPYTHON=3.14.7\n\n✅ Process 51392 has finished execution\n\n[executed on device: AniccanoMac-mini.local (e38f34d7-64a7-4608-85dd-b0ff2c57e109)]"
+  "evaluation": {
+    "original_format": 18,
+    "swapped_format": 18,
+    "original_lexical": 18,
+    "swapped_lexical": 18,
+    "original_count": 18,
+    "swapped_count": 18,
+    "changed_final_count": 6,
+    "original_state_pass": 6,
+    "swapped_state_rejected": 6,
+    "state_details": [
+      {
+        "scene": "stamp",
+        "candidate": "A",
+        "expected_state": "右折無料券",
+        "foreign_state": "車庫無料券",
+        "original": true,
+        "swapped": false,
+        "original_text": "右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。",
+        "swapped_text": "右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。"
+      },
+      {
+        "scene": "stamp",
+        "candidate": "B",
+        "expected_state": "車庫無料券",
+        "foreign_state": "右折無料券",
+        "original": true,
+        "swapped": false,
+        "original_text": "右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。",
+        "swapped_text": "右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。"
+      },
+      {
+        "scene": "partition",
+        "candidate": "A",
+        "expected_state": "木綿専用席",
+        "foreign_state": "絹ごし個室",
+        "original": true,
+        "swapped": false,
+        "original_text": "豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。",
+        "swapped_text": "豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。"
+      },
+      {
+        "scene": "partition",
+        "candidate": "B",
+        "expected_state": "絹ごし個室",
+        "foreign_state": "木綿専用席",
+        "original": true,
+        "swapped": false,
+        "original_text": "豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。",
+        "swapped_text": "豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。"
+      },
+      {
+        "scene": "photo",
+        "candidate": "A",
+        "expected_state": "等身大パネル",
+        "foreign_state": "証明写真",
+        "original": true,
+        "swapped": false,
+        "original_text": "会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。",
+        "swapped_text": "会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。"
+      },
+      {
+        "scene": "photo",
+        "candidate": "B",
+        "expected_state": "証明写真",
+        "foreign_state": "等身大パネル",
+        "original": true,
+        "swapped": false,
+        "original_text": "会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。",
+        "swapped_text": "会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。"
+      }
+    ],
+    "original_lexical_failures": [],
+    "swapped_lexical_failures": [],
+    "fixed_contract": [
+      {
+        "task": "exact-stage-first-01",
+        "positive_accepted": true,
+        "negative_rejected": true
+      },
+      {
+        "task": "exact-stage-second-02",
+        "positive_accepted": true,
+        "negative_rejected": true
+      },
+      {
+        "task": "exact-stage-silence-03",
+        "positive_accepted": true,
+        "negative_rejected": true
+      }
+    ],
+    "humor": "NOT_MEASURED",
+    "voice": "NOT_MEASURED",
+    "human_evaluation_count": 0
+  },
+  "execution": {
+    "runtime": "Python 3.14.7",
+    "environment": "authorized Mac mini",
+    "completed": true
   }
 }
