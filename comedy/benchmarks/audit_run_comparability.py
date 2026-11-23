@@ -33,6 +33,7 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
         raise ValueError("tasks require nonempty string IDs")
     if len(set(task_ids)) != len(task_ids):
         raise ValueError("duplicate task ID")
+    task_kinds = {task["id"]: task.get("kind") for task in tasks}
     if any(not isinstance(row, dict) for row in responses):
         raise ValueError("each response must be an object")
 
@@ -66,8 +67,14 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
             if pair in pairs:
                 issues.append("DUPLICATE_TASK_CANDIDATE")
             pairs.add(pair)
-            if not isinstance(r.get("response"), str):
+            response_text = r.get("response")
+            if not isinstance(response_text, str):
                 issues.append("MISSING_RESPONSE_TEXT")
+            elif task in task_kinds:
+                if task_kinds[task] == "silence" and response_text.strip():
+                    issues.append("UNEXPECTED_RESPONSE_TO_SILENCE")
+                elif task_kinds[task] != "silence" and not response_text.strip():
+                    issues.append("EMPTY_NON_SILENCE_RESPONSE")
             if r.get("invocation_source") not in INDEPENDENT_SOURCES:
                 issues.append("NO_INDEPENDENT_MODEL_INVOCATION")
             if not known(r.get("provider_receipt")):
@@ -87,6 +94,16 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
             sha_sets.add(str(r.get("skill_blob_sha", "")))
             modes.add(r.get("modality"))
             settings.add((str(r.get("temperature")), str(r.get("effort"))))
+        # Matching pair sets across models alone can hide the same omission
+        # in every model. Require multiple candidates for EACH task.
+        candidate_counts = {
+            task_id: sum(pair_task == task_id for pair_task, _ in pairs)
+            for task_id in task_ids
+        }
+        if any(count < 2 for count in candidate_counts.values()):
+            issues.append("LESS_THAN_TWO_CANDIDATES_PER_TASK")
+        if len(set(candidate_counts.values())) > 1:
+            issues.append("UNEQUAL_CANDIDATES_PER_TASK")
         if len({str(r.get("model_version")) for r in rows}) != 1:
             issues.append("MIXED_MODEL_BUILDS")
         if len({str(r.get("skill_blob_sha")) for r in rows}) != 1:
@@ -101,6 +118,7 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
             "declared_model_version": rows[0].get("model_version"),
             "responses": len(rows),
             "task_count": len({task for task, _ in pairs}),
+            "candidates_per_task": candidate_counts,
             "issues": sorted(set(issues)),
             "independent_execution": "NOT_VERIFIED" if not issues else "NOT_ESTABLISHED",
         })
