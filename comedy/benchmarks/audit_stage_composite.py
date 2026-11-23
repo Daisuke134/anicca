@@ -13,7 +13,7 @@ def evaluate(events: list[dict], chains: list[dict], *, require_adlib: bool = Fa
     """Require ALL requested gates; do not mistake an unrequested gate for PASS."""
     if not isinstance(require_adlib, bool):
         raise ValueError("require_adlib must be boolean")
-    stage = stage_gate(events, require_turn_coverage=True)
+    stage = stage_gate(events, require_turn_coverage=True, max_ai_turn_chars=96)
     callbacks = callback_gate(events, chains)
     annotated = any(isinstance(e, dict) and
                     ("anchor_any" in e or "action_any" in e) for e in events)
