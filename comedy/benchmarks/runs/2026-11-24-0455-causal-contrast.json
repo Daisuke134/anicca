@@ -1,0 +1,951 @@
+{
+  "run_id": "2026-11-24-0455-causal-contrast",
+  "base_main": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+  "source_blob_sha": {
+    "comedy/AGENTS.md": "aa5b798ccb38cb2c3c6dd045e7a26f7adac44b09",
+    "skills/comedy-agent/SKILL.md": "fe21da855d08d5d01feff89be7244176087d4044",
+    "comedy/COMEDY-AGENT-LOOP.md": "a3325b5851155311a09805d443ea352a239347e6",
+    "comedy/benchmarks/README.md": "a4d92ad94a3b309a17ba3a1e4a48139daa024705",
+    "comedy/IMPROV-PLAYBOOK.md": "5f494c648ac6a630fe932342b53c575f4349e3db",
+    "comedy/feedback/KANEKO-2026-11-15.md": "6c26deba72a978b29da3cfb1975a96d6993451ca",
+    "comedy/sagi-injury-help.md": "099ab68381e23f838299a9706c64f82bfc2dce1d",
+    "comedy/sagi-denwa-2026-09-06-live.md": "036a10a7a0cd103663c48b56b9ab5137b3f2c4b9",
+    "comedy/sagi-injury-help-2min-live.md": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+    "comedy/benchmarks/audit_improv_relevance.py": "eed5fa6622bcbd9cd2b2f627f0fa136ff831fae8",
+    "comedy/benchmarks/validate_run.py": "c0472dea7f4b0bd24a7d80a03948f70497d241a7",
+    "comedy/benchmarks/injury-stage-exact-2026-11-23.jsonl": "a8381ea1eef99edeb72f854a458603a88fbe8e03"
+  },
+  "model_status": {
+    "chatgpt": "GENERATED_SINGLE_CHAT_TEXT_GPT_6_2_BUILD_UNKNOWN",
+    "grok": "NOT_RUN_REASON_NETWORK_HTTP_409",
+    "muse": "NOT_RUN_REASON_NETWORK_HTTP_409",
+    "comparison": "NOT_COMPARABLE",
+    "reason_connection_attempts": 3
+  },
+  "tasks": [
+    {
+      "id": "original-2026-11-24-0455-g01",
+      "kind": "generation",
+      "category": "oogiri",
+      "prompt": "大喜利：時計屋が遅刻の修理を始めた。最初の故障は？",
+      "max_chars": 95,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false
+    },
+    {
+      "id": "original-2026-11-24-0455-g02",
+      "kind": "generation",
+      "category": "oogiri",
+      "prompt": "大喜利：図書館に『まだ書かれていない本』の返却口ができた。何が起こった？",
+      "max_chars": 95,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false
+    },
+    {
+      "id": "original-2026-11-24-0455-s01",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の舞台コント。電話先のAI救急指令員として、固定冒頭二声の後にダイスへ一度だけ返す。既出人物の信念から具体的な手配とその結果を描く。96字以内。ダイス「右折田まっすぐ、道の真ん中に右向きの矢印が四つ並んでるぞ！」",
+      "max_chars": 96,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false,
+      "cue_ack_any_of": [
+        "矢印",
+        "四つ"
+      ],
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "action_any_of": [
+        "手配",
+        "登録",
+        "指示",
+        "変更",
+        "発行",
+        "転送",
+        "確認",
+        "追加",
+        "発送"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "今どこ",
+        "窓の外",
+        "台本を確認",
+        "救急車が患者に到着しました",
+        "左折できました"
+      ],
+      "max_questions": 0
+    },
+    {
+      "id": "original-2026-11-24-0455-s02",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の舞台コント。電話先のAI救急指令員として、固定冒頭二声の後にダイスへ一度だけ返す。既出人物の信念から具体的な手配とその結果を描く。96字以内。ダイス「豆腐田プル男、豆腐の荷台に患者用の名札が付いてる！」",
+      "max_chars": 96,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false,
+      "cue_ack_any_of": [
+        "荷台",
+        "名札"
+      ],
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "action_any_of": [
+        "手配",
+        "登録",
+        "指示",
+        "変更",
+        "発行",
+        "転送",
+        "確認",
+        "追加",
+        "発送"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "今どこ",
+        "窓の外",
+        "台本を確認",
+        "救急車が患者に到着しました",
+        "左折できました"
+      ],
+      "max_questions": 0
+    },
+    {
+      "id": "original-2026-11-24-0455-s03",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の舞台コント。電話先のAI救急指令員として、固定冒頭二声の後にダイスへ一度だけ返す。既出人物の信念から具体的な手配とその結果を描く。96字以内。ダイス「会田アイタロウ、面会予約票に俺の名前じゃなくて車のナンバーがある！」",
+      "max_chars": 96,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false,
+      "cue_ack_any_of": [
+        "予約票",
+        "ナンバー"
+      ],
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "action_any_of": [
+        "手配",
+        "登録",
+        "指示",
+        "変更",
+        "発行",
+        "転送",
+        "確認",
+        "追加",
+        "発送"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "今どこ",
+        "窓の外",
+        "台本を確認",
+        "救急車が患者に到着しました",
+        "左折できました"
+      ],
+      "max_questions": 0
+    },
+    {
+      "id": "original-2026-11-24-0455-s04",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の舞台コント。電話先のAI救急指令員として、固定冒頭二声の後にダイスへ一度だけ返す。既出人物の信念から具体的な手配とその結果を描く。96字以内。ダイス「丸山たんす蔵、病院の受付番号札だけ五十枚も届いたよ！」",
+      "max_chars": 96,
+      "origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "rights": "ORIGINAL_WRITTEN_FOR_INTERNAL_EVAL",
+      "fixed_benchmark": false,
+      "publish": false,
+      "cue_ack_any_of": [
+        "番号札",
+        "五十枚"
+      ],
+      "any_of": [
+        "丸山たんす蔵"
+      ],
+      "action_any_of": [
+        "手配",
+        "登録",
+        "指示",
+        "変更",
+        "発行",
+        "転送",
+        "確認",
+        "追加",
+        "発送"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "今どこ",
+        "窓の外",
+        "台本を確認",
+        "救急車が患者に到着しました",
+        "左折できました"
+      ],
+      "max_questions": 0
+    }
+  ],
+  "responses": [
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-g01",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "修理代を払ったら、店員が昨日の会議に出席してくれた。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "06187e8350a4d563fe8f1cb4e34e99834f3520f95cde6f4289dbf51667583698"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-g01",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "三分の遅刻を預けたら、代わりに三分早く老ける時計を渡された。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "06187e8350a4d563fe8f1cb4e34e99834f3520f95cde6f4289dbf51667583698"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-g02",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "返却期限だけ先に過ぎて、著者が生まれる前から延滞料を請求された。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "38750dd4c8fbcef8a8944f96a6df773b45c3d27b1f8284756da804998b92a036"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-g02",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "返した瞬間に司書が『ネタバレ禁止です』と著者の口をふさいだ。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "38750dd4c8fbcef8a8944f96a6df773b45c3d27b1f8284756da804998b92a036"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-s01",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "右折田まっすぐに矢印四つを順番に通るよう指示しました。消防署の玄関が一つ目の矢印になりました。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "1a8b034f687739089d0754ca593240d8ee2a2bc6d90f82c95e0bd9f822119fb6"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-s01",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "右折田まっすぐの矢印を四つ登録しました。全部右折すると消防署の前に戻るので、矢印だけ現場に発送しました。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "1a8b034f687739089d0754ca593240d8ee2a2bc6d90f82c95e0bd9f822119fb6"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-s02",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "豆腐田プル男の荷台の名札を確認しました。木綿豆腐四丁を患者として登録し、座席は全て入院済みです。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "49cbec5dc18d3c0c03d9bd2ba3aaf7a43c4b8c2da37dd25012b9f6fb705efb01"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-s02",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "豆腐田プル男に患者用の名札を一枚追加しました。五枚目は厚揚げに貼られました。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "49cbec5dc18d3c0c03d9bd2ba3aaf7a43c4b8c2da37dd25012b9f6fb705efb01"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-s03",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "会田アイタロウの予約票を確認しました。車のナンバー同士の面会に変更したので、ダイスの席は駐車枠です。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "f365f5ff4222c4d53edaf2f8ebaed45e682e572bd23fc91aaccc5b837309d1dc"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-s03",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "会田アイタロウに車のナンバーを面会者として登録させました。受付で車検証を持った方からお会いできます。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "f365f5ff4222c4d53edaf2f8ebaed45e682e572bd23fc91aaccc5b837309d1dc"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-A",
+      "task_id": "original-2026-11-24-0455-s04",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "A",
+      "sample_index": 1,
+      "response": "丸山たんす蔵に番号札を順番どおり配るよう指示しました。五十枚目は玄関が持っているので、先に玄関が診察されます。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "2ef13121e50a316b3753ff4af130cba577fb66efd33c93126ebd5a1a4952345a"
+    },
+    {
+      "run_id": "chatgpt-comedy-2026-11-24-0455-B",
+      "task_id": "original-2026-11-24-0455-s04",
+      "model": "ChatGPT GPT-6.2 (single chat text)",
+      "model_version": "GPT-6.2_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "skill_version": "0.2.1",
+      "skill_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "source_repo_main_commit": "633d7aeb5cfe248c2fafe15535d667af004a5644",
+      "candidate": "B",
+      "sample_index": 2,
+      "response": "丸山たんす蔵の番号札五十枚を患者として登録しました。全員分の椅子を手配したので、診察室を運ぶ車が満杯です。",
+      "modality": "text",
+      "invocation_source": "single_chat_no_independent_provider_call",
+      "provider_receipt": null,
+      "temperature": "NOT_EXPOSED",
+      "effort": "NOT_EXPOSED",
+      "created_at": "2026-11-24T04:51:58+09:00",
+      "created_at_precision": "run_window_start_not_exact_generation_timestamp",
+      "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+      "fixed_benchmark": false,
+      "publish": false,
+      "auto_reply": false,
+      "task_prompt_sha256": "2ef13121e50a316b3753ff4af130cba577fb66efd33c93126ebd5a1a4952345a"
+    }
+  ],
+  "synthetic_controls": [
+    {
+      "task_id": "original-2026-11-24-0455-s01",
+      "candidate": "SYNTHETIC_UNRELATED",
+      "response": "右折田まっすぐの矢印四つを確認しました。病院の院長に花瓶を手配しました。",
+      "source": "deliberately constructed negative fixture; not a model sample",
+      "design_label": "ACTION_NOT_CAUSALLY_RELATED_TO_NEW_CUE"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s02",
+      "candidate": "SYNTHETIC_UNRELATED",
+      "response": "豆腐田プル男の名札を確認しました。式場の拍手係を二名手配しました。",
+      "source": "deliberately constructed negative fixture; not a model sample",
+      "design_label": "ACTION_NOT_CAUSALLY_RELATED_TO_NEW_CUE"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s03",
+      "candidate": "SYNTHETIC_UNRELATED",
+      "response": "会田アイタロウの予約票のナンバーを確認しました。病院の窓にカーテンを手配しました。",
+      "source": "deliberately constructed negative fixture; not a model sample",
+      "design_label": "ACTION_NOT_CAUSALLY_RELATED_TO_NEW_CUE"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s04",
+      "candidate": "SYNTHETIC_UNRELATED",
+      "response": "丸山たんす蔵の番号札五十枚を確認しました。結婚式の招待状を手配しました。",
+      "source": "deliberately constructed negative fixture; not a model sample",
+      "design_label": "ACTION_NOT_CAUSALLY_RELATED_TO_NEW_CUE"
+    }
+  ],
+  "unblinded_self_review": [
+    {
+      "task_id": "original-2026-11-24-0455-s01",
+      "criterion": [
+        "入力の物体・出来事を受け取る",
+        "既出人物の信念に沿う",
+        "入力から手配と結果への因果が具体的",
+        "ダイスの反応余白を残す"
+      ],
+      "notes": [
+        "Aは矢印と帰還の因果がやや曖昧",
+        "Bは四回右折と帰還を明示"
+      ],
+      "source": "unblinded self review by same generating chat; not human or independent judge"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s02",
+      "criterion": [
+        "入力の物体・出来事を受け取る",
+        "既出人物の信念に沿う",
+        "入力から手配と結果への因果が具体的",
+        "ダイスの反応余白を残す"
+      ],
+      "notes": [
+        "Aは名札→豆腐患者→座席消失",
+        "Bは追加名札→厚揚げへ拡張"
+      ],
+      "source": "unblinded self review by same generating chat; not human or independent judge"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s03",
+      "criterion": [
+        "入力の物体・出来事を受け取る",
+        "既出人物の信念に沿う",
+        "入力から手配と結果への因果が具体的",
+        "ダイスの反応余白を残す"
+      ],
+      "notes": [
+        "Aは予約を車の面会に変更",
+        "Bは車検証の手続きへ変換"
+      ],
+      "source": "unblinded self review by same generating chat; not human or independent judge"
+    },
+    {
+      "task_id": "original-2026-11-24-0455-s04",
+      "criterion": [
+        "入力の物体・出来事を受け取る",
+        "既出人物の信念に沿う",
+        "入力から手配と結果への因果が具体的",
+        "ダイスの反応余白を残す"
+      ],
+      "notes": [
+        "Aは番号札→玄関が患者",
+        "Bは番号札→椅子で車が満杯"
+      ],
+      "source": "unblinded self review by same generating chat; not human or independent judge"
+    }
+  ],
+  "results": {
+    "format_passed": 12,
+    "format_total": 12,
+    "format_issues": [
+      {
+        "task_id": "original-2026-11-24-0455-g01",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g01",
+        "candidate": "B",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g02",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g02",
+        "candidate": "B",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s01",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s01",
+        "candidate": "B",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s02",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s02",
+        "candidate": "B",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s03",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s03",
+        "candidate": "B",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s04",
+        "candidate": "A",
+        "issues": []
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s04",
+        "candidate": "B",
+        "issues": []
+      }
+    ],
+    "lexical_passed": 12,
+    "lexical_total": 12,
+    "lexical_items": [
+      {
+        "task_id": "original-2026-11-24-0455-g01",
+        "candidate": "A",
+        "category": "oogiri",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g01",
+        "candidate": "B",
+        "category": "oogiri",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g02",
+        "candidate": "A",
+        "category": "oogiri",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-g02",
+        "candidate": "B",
+        "category": "oogiri",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s01",
+        "candidate": "A",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s01",
+        "candidate": "B",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s02",
+        "candidate": "A",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s02",
+        "candidate": "B",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s03",
+        "candidate": "A",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s03",
+        "candidate": "B",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s04",
+        "candidate": "A",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s04",
+        "candidate": "B",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      }
+    ],
+    "synthetic_unrelated_passed": 4,
+    "synthetic_unrelated_total": 4,
+    "synthetic_items": [
+      {
+        "task_id": "original-2026-11-24-0455-s01",
+        "candidate": "SYNTHETIC_UNRELATED",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s02",
+        "candidate": "SYNTHETIC_UNRELATED",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s03",
+        "candidate": "SYNTHETIC_UNRELATED",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "original-2026-11-24-0455-s04",
+        "candidate": "SYNTHETIC_UNRELATED",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      }
+    ],
+    "fixed_contract_controls": [
+      {
+        "id": "exact-stage-first-01",
+        "positive": [],
+        "negative": [
+          "script_exact_response_mismatch"
+        ]
+      },
+      {
+        "id": "exact-stage-second-02",
+        "positive": [],
+        "negative": [
+          "script_exact_response_mismatch"
+        ]
+      },
+      {
+        "id": "exact-stage-silence-03",
+        "positive": [],
+        "negative": [
+          "expected_silence"
+        ]
+      }
+    ],
+    "python_version": "3.14.7",
+    "task_prompt_sha256": {
+      "original-2026-11-24-0455-g01": "06187e8350a4d563fe8f1cb4e34e99834f3520f95cde6f4289dbf51667583698",
+      "original-2026-11-24-0455-g02": "38750dd4c8fbcef8a8944f96a6df773b45c3d27b1f8284756da804998b92a036",
+      "original-2026-11-24-0455-s01": "1a8b034f687739089d0754ca593240d8ee2a2bc6d90f82c95e0bd9f822119fb6",
+      "original-2026-11-24-0455-s02": "49cbec5dc18d3c0c03d9bd2ba3aaf7a43c4b8c2da37dd25012b9f6fb705efb01",
+      "original-2026-11-24-0455-s03": "f365f5ff4222c4d53edaf2f8ebaed45e682e572bd23fc91aaccc5b837309d1dc",
+      "original-2026-11-24-0455-s04": "2ef13121e50a316b3753ff4af130cba577fb66efd33c93126ebd5a1a4952345a"
+    }
+  },
+  "actual_voice": "NOT_MEASURED",
+  "human_judgments": 0,
+  "audience_laughter": "NOT_MEASURED",
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "reference": "https://improvarchive.org/learn-improv/concepts/game-of-the-scene"
+}
