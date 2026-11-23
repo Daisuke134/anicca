@@ -36,7 +36,7 @@ def pcm_metrics(path: Path) -> dict:
             raise ValueError("unsupported_wav: require PCM 16-bit mono/stereo")
         if rate <= 0 or frames <= 0:
             raise ValueError("empty_or_invalid_wav")
-        count, sumsq, peak, clipped = 0, 0, 0, 0
+        count, sumsq, peak, clipped, nonzero = 0, 0, 0, 0, 0
         pcm_digest = hashlib.sha256()
         while True:
             raw = wav.readframes(32768)
@@ -49,6 +49,7 @@ def pcm_metrics(path: Path) -> dict:
                 values.byteswap()
             for value in values:
                 count += 1
+                nonzero += value != 0
                 sumsq += value * value
                 peak = max(peak, abs(value))
                 if value in (-32768, 32767):
@@ -61,6 +62,7 @@ def pcm_metrics(path: Path) -> dict:
         "sample_rate_hz": rate,
         "channels": channels,
         "sample_count": count,
+        "nonzero_sample_fraction": round(nonzero / count, 8),
         "pcm_sha256": pcm_digest.hexdigest(),
         "rms_dbfs": round(20 * math.log10(rms), 2) if rms else None,
         "sample_peak_dbfs": round(20 * math.log10(peak / 32768), 2) if peak else None,
@@ -131,7 +133,19 @@ def audit(manifest: Path) -> dict:
                     audio_formats.add((metrics["sample_rate_hz"], metrics["channels"]))
                 except (wave.Error, ValueError, EOFError, OSError) as exc:
                     errors.append(f"invalid_wav:{str(exc)[:80]}")
+        # Decoded PCM integrity does not prove that the file contains spoken dialogue.
+        # Zero-only audio cannot be used as a claimed performance, even when the
+        # WAV bytes and the signed manifest SHA match exactly.
+        dialogue_evidence = "NOT_APPLICABLE"
+        if origin == "claimed_real_rehearsal":
+            if metrics is None or errors:
+                dialogue_evidence = "UNVERIFIABLE_FILE"
+            elif metrics["digital_silence"]:
+                dialogue_evidence = "DIGITAL_SILENCE_INVALID"
+            else:
+                dialogue_evidence = "UNVERIFIED_SPEECH"
         items.append({
+            "dialogue_evidence": dialogue_evidence,
             "trial_id": tid,
             "source_kind_claimed": origin,
             "file": Path(rel).name if isinstance(rel, str) else None,
@@ -143,12 +157,19 @@ def audit(manifest: Path) -> dict:
     all_ok = bool(items) and all(x["checks"] == "PASS" for x in items)
     synthetic = sum(1 for x in items if x["source_kind_claimed"] == "synthetic_fixture")
     claimed_real = sum(1 for x in items if x["source_kind_claimed"] == "claimed_real_rehearsal")
+    real_rows = [x for x in items if x["source_kind_claimed"] == "claimed_real_rehearsal"]
+    real_evidence_gate = ("NOT_MEASURED" if not real_rows
+                          else "FAIL" if any(x["dialogue_evidence"] in
+                                             ("DIGITAL_SILENCE_INVALID", "UNVERIFIABLE_FILE")
+                                             for x in real_rows)
+                          else "NEEDS_SPEECH_VERIFICATION")
     return {
         "schema_version": "1.0",
         "input_count": len(items),
         "verified_wav_count": sum(x["checks"] == "PASS" for x in items),
         "synthetic_fixture_count": synthetic,
         "claimed_real_rehearsal_count": claimed_real,
+        "claimed_rehearsal_audio_evidence": real_evidence_gate,
         "wav_byte_integrity": "PASS" if all_ok else "FAIL" if items else "NOT_MEASURED",
         "repeated_config_consistency": "CONSISTENT" if all_ok and len(configurations) == 1 and len(audio_formats) == 1
                                        else "DIFFERENT_CONFIGS" if len(configurations) > 1 or len(audio_formats) > 1
@@ -162,7 +183,7 @@ def audit(manifest: Path) -> dict:
         "publication_enabled": False,
         "auto_reply_enabled": False,
         "items": items,
-        "limitations": "PCM SHA detects reused decoded samples even when WAV container metadata differs; does not prove independent performances or audio authenticity. RMS/peak/clipping are digital proxies, not LUFS, SPL, ASR, human reaction or audience judgement.",
+        "limitations": "Valid WAV bytes do not prove dialogue. Zero-only claimed real recordings fail a separate evidence gate; nonzero PCM still needs independent speech, origin and speaker verification. Nonzero fraction, RMS, peak and clipping are not voice activity detection, LUFS, SPL, ASR or audience response. PCM SHA only detects exact decoded-sample reuse.",
     }
 
 
@@ -180,7 +201,8 @@ def main() -> int:
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"wav_integrity={result['wav_byte_integrity']} n={result['input_count']} "
           f"voice_reproducibility={result['voice_reproducibility']}")
-    return 0 if result["wav_byte_integrity"] != "FAIL" else 1
+    return 1 if (result["wav_byte_integrity"] == "FAIL" or
+                 result["claimed_rehearsal_audio_evidence"] == "FAIL") else 0
 
 
 if __name__ == "__main__":
