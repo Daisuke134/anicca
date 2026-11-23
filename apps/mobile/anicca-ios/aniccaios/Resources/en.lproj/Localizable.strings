@@ -2897,6 +2897,7 @@
 "adaptive_no_available_times" = "Your quiet hours cover the whole day, so no reminders will be scheduled.";
 "adaptive_prior_attempts_hint" = "Trying something does not mean it failed. Next, you can tell us what did not suit you.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Words from Anicca, for today";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value

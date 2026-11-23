@@ -1,0 +1,65 @@
+# E2E regression: the living home must ALWAYS show words.
+#
+# 1.11.0 shipped a blank home to every user: the Manager decisions
+# endpoint rejected every app request (HTTP 422 — the app sends a
+# `synthetic_user` context key the backend validator refuses), the app
+# treated the error as "show nothing", and the ship gate only asserted
+# the screen existed, not that words were rendered.
+#
+# This flow asserts a non-empty quote is visible on the home screen.
+# It covers all three backend conditions by construction, because the
+# app now falls back to bundled words whenever the engine cannot
+# deliver one:
+#   (a) backend normal with a chosen word  -> model word is shown
+#   (b) backend returns a `none` decision  -> bundled words are shown
+#   (c) backend unreachable / error        -> bundled words are shown
+# The deck-level guarantee for (b)/(c) is also unit-tested
+# (HomeFallbackDeckTests), and the XCUITest ship gate
+# (OnboardingTapE2ETests) asserts the same thing on the fresh-install
+# and relaunch paths.
+#
+# Requires: onboarding already completed on this simulator (run after
+# the onboarding flows, like the other e2e flows in this folder).
+
+appId: ai.anicca.app.ios
+name: E2E home always shows words (blank-home regression)
+tags:
+  - e2e
+  - home
+  - regression
+
+---
+- launchApp:
+    arguments:
+      - "-uiTesting"
+
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+    timeout: 30000
+
+- assertVisible:
+    id: "quote-text"
+
+- takeScreenshot: "e2e-home-words-visible"
+
+# Relaunch: the returning-user path that was blank in 1.11.0.
+- stopApp
+- launchApp:
+    arguments:
+      - "-uiTesting"
+
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+    timeout: 30000
+
+- assertVisible:
+    id: "quote-text"
+
+- takeScreenshot: "e2e-home-words-visible-after-relaunch"

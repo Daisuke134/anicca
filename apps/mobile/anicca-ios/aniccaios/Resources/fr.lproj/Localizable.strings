@@ -1531,6 +1531,7 @@
 "adaptive_no_available_times" = "Tes plages de silence couvrent toute la journée. Aucun rappel ne sera programmé.";
 "adaptive_prior_attempts_hint" = "Avoir essayé une méthode ne signifie pas qu’elle ne t’a pas aidé·e. Tu peux ensuite indiquer ce qui ne t’a pas convenu.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Des mots d'Anicca, pour aujourd'hui";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value

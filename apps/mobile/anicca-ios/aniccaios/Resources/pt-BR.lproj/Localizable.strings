@@ -1531,6 +1531,7 @@
 "adaptive_no_available_times" = "Seus horários de silêncio cobrem o dia inteiro, então nenhum lembrete será programado.";
 "adaptive_prior_attempts_hint" = "Ter experimentado algo não significa que não funcionou. A seguir, você pode indicar o que não combinou com você.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Palavras da Anicca, para hoje";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value
