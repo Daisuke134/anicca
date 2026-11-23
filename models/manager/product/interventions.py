@@ -39,8 +39,14 @@ def validate_synthetic_user(user):
             or not isinstance(answers, dict) or not set(answers) <= ANSWER_AXES):
         raise ValueError('invalid answer snapshot')
     for values in answers.values():
+        # The dot is required: the app's own catalog quote IDs are dotted
+        # ("growth.calm.2", "adaptive.calm.key") and they flow back as
+        # legacy_recent_message_ids. Without it, every returning user who
+        # had viewed such a quote got HTTP 422 on every home request —
+        # the 1.11.0 blank home (2026-11-23). Free text (spaces etc.)
+        # stays rejected.
         if not isinstance(values, list) or len(values) > 30 or any(
-                not isinstance(v, str) or not re.fullmatch(r'[a-zA-Z0-9_:-]{1,80}', v) for v in values):
+                not isinstance(v, str) or not re.fullmatch(r'[a-zA-Z0-9_.:-]{1,80}', v) for v in values):
             raise ValueError('expected bounded categorical IDs')
 
 

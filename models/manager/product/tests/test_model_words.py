@@ -66,6 +66,24 @@ def test_rejects_free_text_conditioning(tmp_path):
         InterventionStore(str(tmp_path / 'cases.db'), Generator()).decide('person', str(uuid.uuid4()), ctx)
 
 
+def test_accepts_dotted_catalog_ids_in_recent_message_ids(tmp_path):
+    """Regression (2026-11-23, the 1.11.0 blank home): the app sends its
+    own viewed quote IDs back as legacy_recent_message_ids, and catalog
+    IDs are dotted ("growth.calm.2", "adaptive..."). The answer-value
+    regex excluded '.', so every returning user who had viewed such a
+    quote got HTTP 422 on every decisions request and a blank home."""
+    generator = Generator()
+    store = InterventionStore(str(tmp_path / 'cases.db'), generator, draw=lambda: .1)
+    ctx = context()
+    ctx['synthetic_user']['answer_ids']['legacy_recent_message_ids'] = ['growth.calm.2', 'adaptive.presence.breath']
+    decision = store.decide('person', str(uuid.uuid4()), ctx)
+    assert decision['chosen']['text'] == 'Let this breath finish.'
+    # Free text with spaces is still rejected even on an allowed axis.
+    ctx['synthetic_user']['answer_ids']['legacy_recent_message_ids'] = ['not an id']
+    with pytest.raises(ValueError):
+        store.decide('person', str(uuid.uuid4()), ctx)
+
+
 def test_none_and_measured_outcomes_export_without_invented_negatives(tmp_path):
     from models.manager.product.export_cases import export_cases
     path = str(tmp_path / 'cases.db')
