@@ -1,5 +1,12 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 10:56 JST：ダイスの一手を取りこぼさない厳格テキスト監査
+
+- `validate_stage_dialogue.py --require-turn-coverage` は**任意の厳格モード**。完全発話単位に注釈したダイスの一手へAIが返さず次のダイスの発話／終幕へ進んだ場合を検知する。ASRの分割チャンクには使用しない。既定動作は保持。
+- 旧ソースで見逃した合成ケースが新モードでは `unanswered_dais_turn` FAILに。既存22件＋新規6件の単体テスト**28/28 PASS**（Mac miniのPython上でGitHubソースをインメモリ実行）。本物の音声による未回収率や笑いの改善を意味しない。
+- **オリジナル開発題**8題 ×2案、ChatGPT GPT-6の単一チャット内の16テキストを既存`validate_run.score`で**16/16形式PASS**。固定ベンチ未使用。モデル比較監査は`NOT_COMPARABLE`。Grok/MuseはReason Network 409で未実行、Voice・観客笑いは未測定。
+- [研究報告](../research/2026-11-23-1056-jst-turn-uptake.md)。X投稿／外部自動返信はOFF。
+
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
