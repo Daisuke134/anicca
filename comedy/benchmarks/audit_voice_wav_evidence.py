@@ -18,6 +18,15 @@ CONFIG_KEYS = ("model_version", "skill_blob_sha", "script_blob_sha", "voice_mode
 HEX_SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
+def sha256_file(path: Path) -> str:
+    """Read files in chunks to avoid loading an entire performance recording into RAM."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def pcm_metrics(path: Path) -> dict:
     """Sample-domain diagnostics, not LUFS, SPL, ASR, or speech intelligibility."""
     with wave.open(str(path), "rb") as wav:
@@ -65,6 +74,7 @@ def audit(manifest: Path) -> dict:
     seen_ids: set[str] = set()
     seen_hashes: set[str] = set()
     configurations: set[tuple] = set()
+    audio_formats: set[tuple[int, int]] = set()
     items: list[dict] = []
     for index, row in enumerate(rows, 1):
         if not isinstance(row, dict):
@@ -100,7 +110,7 @@ def audit(manifest: Path) -> dict:
             if not file_path.is_file():
                 errors.append("wav_not_found")
             else:
-                actual = hashlib.sha256(file_path.read_bytes()).hexdigest()
+                actual = sha256_file(file_path)
                 if actual != announced:
                     errors.append("sha256_mismatch")
                 if actual in seen_hashes:
@@ -108,6 +118,7 @@ def audit(manifest: Path) -> dict:
                 seen_hashes.add(actual)
                 try:
                     metrics = pcm_metrics(file_path)
+                    audio_formats.add((metrics["sample_rate_hz"], metrics["channels"]))
                 except (wave.Error, ValueError, EOFError, OSError) as exc:
                     errors.append(f"invalid_wav:{str(exc)[:80]}")
         items.append({
@@ -129,8 +140,8 @@ def audit(manifest: Path) -> dict:
         "synthetic_fixture_count": synthetic,
         "claimed_real_rehearsal_count": claimed_real,
         "wav_byte_integrity": "PASS" if all_ok else "FAIL" if items else "NOT_MEASURED",
-        "repeated_config_consistency": "CONSISTENT" if all_ok and len(configurations) == 1
-                                       else "DIFFERENT_CONFIGS" if len(configurations) > 1
+        "repeated_config_consistency": "CONSISTENT" if all_ok and len(configurations) == 1 and len(audio_formats) == 1
+                                       else "DIFFERENT_CONFIGS" if len(configurations) > 1 or len(audio_formats) > 1
                                        else "NOT_MEASURED",
         "audio_origin_authenticity": "NOT_VERIFIED",
         "voice_reproducibility": "NOT_MEASURED",
