@@ -1,0 +1,660 @@
+{
+  "run_id": "2026-11-24-0755-history-paraphrase",
+  "base_main": "5913c3930b29baccf559f069603b79ea386ff618",
+  "skill_version": "0.2.1",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "rights": "Original internal fictional rehearsal materials, no third-party prompt dataset",
+  "cue": "それ僕にも使って！",
+  "model": "ChatGPT GPT-6.2",
+  "model_build": null,
+  "temperature": null,
+  "effort": null,
+  "provider_receipt": null,
+  "cost": null,
+  "invocation": "same chat authoring histories, candidates and constructed controls; no independent model calls",
+  "other_models": {
+    "Grok": "NOT_RUN: Reason list_team HTTP 409 agent_network_offline",
+    "Muse": "NOT_RUN: Reason list_team HTTP 409 agent_network_offline"
+  },
+  "comparison": "NOT_COMPARABLE",
+  "human": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "cases": [
+    {
+      "id": "right-1",
+      "character": "右折田まっすぐ",
+      "history": "右折田まっすぐの車に右折専用の回数券を配布しました。あと一枚で車庫に戻れます。",
+      "marker": "回数券",
+      "other": "優先レーン",
+      "literal": "右折田まっすぐの回数券をお客様にも発行しました。救急車が戻るたび一枚ずつ減ります。",
+      "paraphrase": "右折田まっすぐの切符をお客様にも発行しました。あと一角で消防署に着きますので、最後の一枚はそちらに郵送します。",
+      "negative": "右折田まっすぐの回数券をお客様に発行しました。豆腐田の花瓶を式場に飾りました。"
+    },
+    {
+      "id": "right-2",
+      "character": "右折田まっすぐ",
+      "history": "右折田まっすぐのために右折優先レーンを確保しました。消防署の周囲を一周する車専用です。",
+      "marker": "優先レーン",
+      "other": "回数券",
+      "literal": "右折田まっすぐの優先レーンにお客様を登録しました。右折する車が優先ですので、徒歩で四つ目の角までお進みください。",
+      "paraphrase": "右折田まっすぐの専用車線にお客様を登録しました。車は一周ごとに消防署へ、徒歩のお客様はその後ろをお待ちください。",
+      "negative": "右折田まっすぐの優先レーンにお客様を登録しました。病院の花瓶に木綿豆腐を入れました。"
+    },
+    {
+      "id": "tofu-1",
+      "character": "豆腐田プル男",
+      "history": "豆腐田プル男に豆腐専用の緩衝材を配布しました。一丁ずつ包むため車内が満杯です。",
+      "marker": "緩衝材",
+      "other": "温度計",
+      "literal": "豆腐田プル男の緩衝材をお客様用にも手配しました。先に座席を包み終えましたので、もう誰も座れません。",
+      "paraphrase": "豆腐田プル男にお客様の分のプチプチを手配しました。空席がなく、救急車の外側に巻いております。",
+      "negative": "豆腐田プル男の緩衝材をお客様用にも手配しました。式場の時計を壁に掛けました。"
+    },
+    {
+      "id": "tofu-2",
+      "character": "豆腐田プル男",
+      "history": "豆腐田プル男に豆腐専用の温度計を配布しました。木綿豆腐の温度を一丁ずつ記録しています。",
+      "marker": "温度計",
+      "other": "緩衝材",
+      "literal": "豆腐田プル男の温度計をお客様用にも手配しました。木綿豆腐の検温が一万二千番まで終わり次第、お客様の順番です。",
+      "paraphrase": "豆腐田プル男にお客様用の検温器を手配しました。豆腐を先に全数測っておりますので、お客様は最後の一丁の次です。",
+      "negative": "豆腐田プル男の温度計をお客様用にも手配しました。丸山の玄関に招待状を貼りました。"
+    },
+    {
+      "id": "meet-1",
+      "character": "会田アイタロウ",
+      "history": "会田アイタロウが面会者用の整理券を発行しました。番号が呼ばれた時点で面会済み扱いです。",
+      "marker": "整理券",
+      "other": "記念写真",
+      "literal": "会田アイタロウの整理券をお客様にも発行しました。番号を呼び終えたので、面会相手はもう帰りました。",
+      "paraphrase": "会田アイタロウのお呼び出し番号をお客様にも発行しました。番号は先ほど会えましたので、次の方をお呼びしております。",
+      "negative": "会田アイタロウの整理券をお客様にも発行しました。豆腐配送車の色を白にしました。"
+    },
+    {
+      "id": "meet-2",
+      "character": "会田アイタロウ",
+      "history": "会田アイタロウは面会の記念写真を先に合成しました。撮影済みなら実際の面会は不要です。",
+      "marker": "記念写真",
+      "other": "整理券",
+      "literal": "会田アイタロウの記念写真をお客様にも発行しました。おもち34号と並んで写っておりますので、もう救急車には会えています。",
+      "paraphrase": "会田アイタロウにお客様とおもち34号が並ぶ合成画像を発行させました。面会は終了ですので、車は式場へ向かいました。",
+      "negative": "会田アイタロウの記念写真をお客様にも発行しました。右折田の靴を磨きました。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "right-1",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "右折田まっすぐの車に右折専用の回数券を配布しました。あと一枚で車庫に戻れます。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "right-2",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "右折田まっすぐのために右折優先レーンを確保しました。消防署の周囲を一周する車専用です。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "tofu-1",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "豆腐田プル男に豆腐専用の緩衝材を配布しました。一丁ずつ包むため車内が満杯です。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "tofu-2",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "豆腐田プル男に豆腐専用の温度計を配布しました。木綿豆腐の温度を一丁ずつ記録しています。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "meet-1",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "会田アイタロウが面会者用の整理券を発行しました。番号が呼ばれた時点で面会済み扱いです。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "meet-2",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "会田アイタロウは面会の記念写真を先に合成しました。撮影済みなら実際の面会は不要です。\nダイス：それ僕にも使って！",
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "お客様"
+      ],
+      "action_any_of": [
+        "手配",
+        "発行",
+        "登録"
+      ],
+      "max_chars": 110,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    }
+  ],
+  "responses": [
+    {
+      "task_id": "right-1",
+      "candidate": "literal",
+      "response": "右折田まっすぐの回数券をお客様にも発行しました。救急車が戻るたび一枚ずつ減ります。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "right-1",
+      "candidate": "paraphrase",
+      "response": "右折田まっすぐの切符をお客様にも発行しました。あと一角で消防署に着きますので、最後の一枚はそちらに郵送します。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "right-1",
+      "candidate": "negative",
+      "response": "右折田まっすぐの回数券をお客様に発行しました。豆腐田の花瓶を式場に飾りました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "right-2",
+      "candidate": "literal",
+      "response": "右折田まっすぐの優先レーンにお客様を登録しました。右折する車が優先ですので、徒歩で四つ目の角までお進みください。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "right-2",
+      "candidate": "paraphrase",
+      "response": "右折田まっすぐの専用車線にお客様を登録しました。車は一周ごとに消防署へ、徒歩のお客様はその後ろをお待ちください。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "right-2",
+      "candidate": "negative",
+      "response": "右折田まっすぐの優先レーンにお客様を登録しました。病院の花瓶に木綿豆腐を入れました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-1",
+      "candidate": "literal",
+      "response": "豆腐田プル男の緩衝材をお客様用にも手配しました。先に座席を包み終えましたので、もう誰も座れません。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-1",
+      "candidate": "paraphrase",
+      "response": "豆腐田プル男にお客様の分のプチプチを手配しました。空席がなく、救急車の外側に巻いております。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-1",
+      "candidate": "negative",
+      "response": "豆腐田プル男の緩衝材をお客様用にも手配しました。式場の時計を壁に掛けました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-2",
+      "candidate": "literal",
+      "response": "豆腐田プル男の温度計をお客様用にも手配しました。木綿豆腐の検温が一万二千番まで終わり次第、お客様の順番です。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-2",
+      "candidate": "paraphrase",
+      "response": "豆腐田プル男にお客様用の検温器を手配しました。豆腐を先に全数測っておりますので、お客様は最後の一丁の次です。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "tofu-2",
+      "candidate": "negative",
+      "response": "豆腐田プル男の温度計をお客様用にも手配しました。丸山の玄関に招待状を貼りました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-1",
+      "candidate": "literal",
+      "response": "会田アイタロウの整理券をお客様にも発行しました。番号を呼び終えたので、面会相手はもう帰りました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-1",
+      "candidate": "paraphrase",
+      "response": "会田アイタロウのお呼び出し番号をお客様にも発行しました。番号は先ほど会えましたので、次の方をお呼びしております。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-1",
+      "candidate": "negative",
+      "response": "会田アイタロウの整理券をお客様にも発行しました。豆腐配送車の色を白にしました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-2",
+      "candidate": "literal",
+      "response": "会田アイタロウの記念写真をお客様にも発行しました。おもち34号と並んで写っておりますので、もう救急車には会えています。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-2",
+      "candidate": "paraphrase",
+      "response": "会田アイタロウにお客様とおもち34号が並ぶ合成画像を発行させました。面会は終了ですので、車は式場へ向かいました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    },
+    {
+      "task_id": "meet-2",
+      "candidate": "negative",
+      "response": "会田アイタロウの記念写真をお客様にも発行しました。右折田の靴を磨きました。",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": null,
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "invocation_source": "chat_session_constructed",
+      "modality": "text"
+    }
+  ],
+  "evaluation": {
+    "python": "3.14.7",
+    "method": "canonical validate_run.score and audit_improv_relevance.audit plus reconstructed literal history marker proxy; constructed examples, no semantic human gold",
+    "conditions": {
+      "literal": {
+        "n": 6,
+        "format_pass": 6,
+        "literal_pass": 6,
+        "history_marker_pass": 6,
+        "combined_pass": 6,
+        "items": [
+          {
+            "task_id": "right-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "right-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "tofu-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "tofu-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "meet-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "meet-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          }
+        ]
+      },
+      "paraphrase": {
+        "n": 6,
+        "format_pass": 6,
+        "literal_pass": 6,
+        "history_marker_pass": 0,
+        "combined_pass": 0,
+        "items": [
+          {
+            "task_id": "right-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          },
+          {
+            "task_id": "right-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          },
+          {
+            "task_id": "tofu-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          },
+          {
+            "task_id": "tofu-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          },
+          {
+            "task_id": "meet-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          },
+          {
+            "task_id": "meet-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": false,
+            "combined_gate": false
+          }
+        ]
+      },
+      "negative": {
+        "n": 6,
+        "format_pass": 6,
+        "literal_pass": 6,
+        "history_marker_pass": 6,
+        "combined_pass": 6,
+        "items": [
+          {
+            "task_id": "right-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "right-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "tofu-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "tofu-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "meet-1",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          },
+          {
+            "task_id": "meet-2",
+            "format_issues": [],
+            "literal_gate": "PASS",
+            "literal_reasons": [],
+            "history_marker": true,
+            "combined_gate": true
+          }
+        ]
+      }
+    },
+    "fixed_stage_contract": [
+      {
+        "task_id": "exact-stage-first-01",
+        "kind": "synthetic_positive",
+        "response": "はい、救急指令センターです。火事ですか、救急ですか？",
+        "issues": [],
+        "expected_match": true
+      },
+      {
+        "task_id": "exact-stage-first-01",
+        "kind": "synthetic_negative",
+        "response": "はい、救急指令センターです。火事ですか、救急ですか？確認します。",
+        "issues": [
+          "script_exact_response_mismatch"
+        ],
+        "expected_match": true
+      },
+      {
+        "task_id": "exact-stage-second-02",
+        "kind": "synthetic_positive",
+        "response": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+        "issues": [],
+        "expected_match": true
+      },
+      {
+        "task_id": "exact-stage-second-02",
+        "kind": "synthetic_negative",
+        "response": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。確認します。",
+        "issues": [
+          "script_exact_response_mismatch"
+        ],
+        "expected_match": true
+      },
+      {
+        "task_id": "exact-stage-silence-03",
+        "kind": "synthetic_positive",
+        "response": "",
+        "issues": [],
+        "expected_match": true
+      },
+      {
+        "task_id": "exact-stage-silence-03",
+        "kind": "synthetic_negative",
+        "response": "確認します。",
+        "issues": [
+          "expected_silence"
+        ],
+        "expected_match": true
+      }
+    ]
+  },
+  "evaluation_source": "import json,sys,platform,subprocess\nfrom pathlib import Path\nfrom collections import Counter\nimport validate_run as v\nimport audit_improv_relevance as a\nroot=Path(__file__).resolve().parent\ndata=json.loads((root/'cases.json').read_text())\ntasks=[]; rows=[]\nfor c in data['cases']:\n    tasks.append(dict(id=c['id'],kind='adlib',category='phone_ai_stage',prompt=c['history']+'\\nダイス：'+data['cue'],any_of=[c['character']],cue_ack_any_of=['お客様'],action_any_of=['手配','発行','登録'],max_chars=110,max_questions=0,forbidden=['深呼吸','吸って','吐いて','住所を教えて','窓の外','台本を確認']))\n    for k in ('literal','paraphrase','negative'):\n        rows.append(dict(task_id=c['id'],candidate=k,response=c[k],model='ChatGPT GPT-6.2',model_version=None,skill_blob_sha=data['skill_blob_sha'],invocation_source='chat_session_constructed',modality='text'))\nreport={}\nfor k in ('literal','paraphrase','negative'):\n    r=[x for x in rows if x['candidate']==k]\n    ar=a.audit(tasks,r,candidates_per_task=1)\n    items=[]\n    for t,x,y,c in zip(tasks,r,ar['items'],data['cases']):\n        assert t['id']==x['task_id']==y['task_id']==c['id']\n        marker=c['marker'] in x['response'] and c['other'] not in x['response']\n        items.append(dict(task_id=t['id'],format_issues=v.score(t,x['response']),literal_gate=y['gate'],literal_reasons=y['reasons'],history_marker=marker,combined_gate=not v.score(t,x['response']) and y['gate']=='PASS' and marker))\n    report[k]={'n':len(items),'format_pass':sum(not x['format_issues'] for x in items),'literal_pass':ar['passed'],'history_marker_pass':sum(x['history_marker'] for x in items),'combined_pass':sum(x['combined_gate'] for x in items),'items':items}\nfixed=[]\nfor t in v.jsonl(root/'injury-stage-exact-2026-11-23.jsonl'):\n    correct=t.get('expected_exact','')\n    for label,response in [('synthetic_positive',correct),('synthetic_negative',correct+'確認します。')]:\n        issues=v.score(t,response)\n        fixed.append(dict(task_id=t['id'],kind=label,response=response,issues=issues,expected_match=bool(issues)==(label=='synthetic_negative')))\nassert len(tasks)==6 and len(rows)==18\nassert all(x['expected_match'] for x in fixed)\ndata['tasks']=tasks\ndata['responses']=rows\ndata['evaluation']={'python':platform.python_version(),'method':'canonical validate_run.score and audit_improv_relevance.audit plus reconstructed literal history marker proxy; constructed examples, no semantic human gold','conditions':report,'fixed_stage_contract':fixed}\ndata['evaluation_source']=Path(__file__).read_text()\n(root/'result.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\\n')\nprint(json.dumps({k:{i:j for i,j in r.items() if i!='items'} for k,r in report.items()},ensure_ascii=False))\nprint('fixed expected matches',sum(x['expected_match'] for x in fixed),len(fixed))\n\n"
+}
