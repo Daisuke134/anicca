@@ -1,0 +1,529 @@
+{
+  "run_id": "2026-11-24-0558-cue-swap",
+  "base": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "design": "4 character-matched cue pairs; 2 same-chat candidates per cue; swap answers to sibling cue as synthetic negative controls, not new generation",
+  "tasks": [
+    {
+      "id": "right-1",
+      "pair": "right",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「右折田まっすぐが領収書を送ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "領収書"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "right-2",
+      "pair": "right",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「右折田まっすぐが方位磁石を持ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "方位磁石"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "tofu-1",
+      "pair": "tofu",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「豆腐田プル男が保冷剤を追加したって！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "保冷剤"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "tofu-2",
+      "pair": "tofu",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「豆腐田プル男がバーコードを貼り始めた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "バーコード"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "aida-1",
+      "pair": "aida",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「会田アイタロウが空席の写真を送ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "空席"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "aida-2",
+      "pair": "aida",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「会田アイタロウがカレンダーを送ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "カレンダー"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "maru-1",
+      "pair": "maru",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「丸山たんす蔵が病院の呼び鈴だけ持ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "丸山たんす蔵"
+      ],
+      "cue_ack_any_of": [
+        "呼び鈴"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "maru-2",
+      "pair": "maru",
+      "kind": "improv",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コントの冒頭二声を終え、該当人物が紹介済み。電話先AIの田中として、ダイス「丸山たんす蔵が病院の合鍵だけ持ってきた！」に1～2文で返す。既出人物の信念、具体的行動、結果を維持。",
+      "rights": "original_internal",
+      "max_chars": 96,
+      "max_questions": 0,
+      "any_of": [
+        "丸山たんす蔵"
+      ],
+      "cue_ack_any_of": [
+        "合鍵"
+      ],
+      "action_any_of": [
+        "確認しました",
+        "受理しました",
+        "登録しました",
+        "手配しました",
+        "検査しました",
+        "点検しました",
+        "照合しました",
+        "確保しました",
+        "更新しました",
+        "設置しました",
+        "配布しました",
+        "固定しました"
+      ],
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所を教えて",
+        "窓の外",
+        "台本を確認"
+      ]
+    }
+  ],
+  "responses": [
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "right-1",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "右折田まっすぐの領収書を確認しました。四回の右折を往復交通費で計上したため、出発地点までの運賃が発生しております。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "right-1",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "右折田まっすぐの領収書を受理しました。行き先が消防署になっていたので、消防署宛ての配車として精算しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "right-2",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "右折田まっすぐの方位磁石を固定しました。東を向くまで右折した結果、患者ではなく磁石を目的地として登録しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "right-2",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "右折田まっすぐの方位磁石を検査しました。北へ向くには左折が必要だったので、北の方角を右に変更しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "tofu-1",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "豆腐田プル男の保冷剤を追加手配しました。豆腐四箱を囲んだので、患者用の座席も保冷剤で埋まりました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "tofu-1",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "豆腐田プル男の保冷剤を点検しました。溶けかけた一個を最優先の搬送対象として登録しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "tofu-2",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "豆腐田プル男のバーコードを読み取りました。木綿豆腐四箱が患者として登録され、患者用の座席を全て確保しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "tofu-2",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "豆腐田プル男のバーコードを照合しました。患者用の座席が在庫一個と表示されたため、豆腐の予約分として確保しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "aida-1",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "会田アイタロウの空席を確認しました。面会相手を空席として登録したため、椅子だけが面会済みです。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "aida-1",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "会田アイタロウの空席を確保しました。面会者の欄に椅子の写真を添付したので、人間の入室枠は終了しております。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "aida-2",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "会田アイタロウのカレンダーを確認しました。面会日を丸で囲ったので、丸と患者の面会は完了と登録しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "aida-2",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "会田アイタロウのカレンダーを更新しました。予定が重ならないよう、患者と面会相手を別の日に予約しました。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "maru-1",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "丸山たんす蔵の呼び鈴を設置しました。受付係の机はまだ倉庫ですので、鳴らすたび倉庫に患者一名と報告が入ります。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "maru-1",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "丸山たんす蔵の呼び鈴を登録しました。呼び出し音だけ先に病院として開業し、診察室は次の便です。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-1",
+      "task_id": "maru-2",
+      "candidate": "1",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "丸山たんす蔵の合鍵を確認しました。玄関の鍵は開きますが、扉はまだ積み込み中です。"
+    },
+    {
+      "run_id": "2026-11-24-0558-chat-2",
+      "task_id": "maru-2",
+      "candidate": "2",
+      "model": "ChatGPT GPT-6.2",
+      "model_version": "exact_build_unknown",
+      "skill_version": "0.2.1",
+      "skill_commit": "f183161ab125bf44be4e6d3a2b748f2eeba685c6",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "modality": "text",
+      "source": "same_chat_generated_non_independent",
+      "response": "丸山たんす蔵の合鍵を配布しました。診察室が到着するまで、患者は鍵の番号順で入院扱いです。"
+    }
+  ],
+  "model_comparison": "NOT_COMPARABLE",
+  "reason_network": "3/3 HTTP 409 agent_network_offline; Grok and Muse NOT_RUN",
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "voice": "NOT_MEASURED",
+  "audience": "NOT_MEASURED",
+  "human_judgment": "NOT_MEASURED"
+}
