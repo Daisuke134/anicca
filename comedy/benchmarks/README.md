@@ -1,5 +1,12 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 17:04 JST：長い一文でダイスの反応時間を奪うリスクの静的検査
+- `validate_stage_dialogue.validate` に任意の `max_ai_turn_chars` を追加。総合舞台監査では冒頭の固定2声を除くAI発話を**96文字以下**で保守的に検査。句点1つの122文字という従来PASSした人工発話を `ai_turn_exceeds_char_budget_proxy` でFAIL。
+- **Python 100/100 PASS**（新規6、既存94）、現行2分稿の静的検査PASS（22発話、714文字、AI最大68文字）。新規**独自内部開発8題×2案=16テキスト**の形式検査16/16 PASS。固定ベンチ未使用。
+- ChatGPT GPT-6製品ラベルのチャット内案のみ。Grok/MuseはReason Network 409で未実行、比較 `NOT_COMPARABLE`。**音声秒数・笑い・電話先AI設定認識・後方可聴性は未測定**。96文字は発話時間の代替ではない。外部publishはOFF。
+- [研究報告](../research/2026-11-23-1657-jst-human-reply-budget.md) / [モデル接続出自](./runs/2026-11-23-1657-provenance.json)。
+
+
 
 ## 2026-11-23 16:00 JST：舞台の個別評価をAND合成する総合静的ゲート
 - New `audit_stage_composite.py` は既存の `validate_stage_dialogue`（ダイス合図・第一/第二声・第三者・終幕）、`audit_callback_continuity`（仕込み→リアクション→回収）、注釈ありの場合 `audit_adlib_anchors`（直前の行動回収）を全て実行する。**どれかがFAILなら総合FAIL**。アドリブ未注釈は `NOT_REQUESTED` と区別。
