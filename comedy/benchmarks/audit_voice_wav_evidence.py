@@ -37,10 +37,12 @@ def pcm_metrics(path: Path) -> dict:
         if rate <= 0 or frames <= 0:
             raise ValueError("empty_or_invalid_wav")
         count, sumsq, peak, clipped = 0, 0, 0, 0
+        pcm_digest = hashlib.sha256()
         while True:
             raw = wav.readframes(32768)
             if not raw:
                 break
+            pcm_digest.update(raw)
             values = array("h")
             values.frombytes(raw)
             if sys.byteorder != "little":
@@ -59,6 +61,7 @@ def pcm_metrics(path: Path) -> dict:
         "sample_rate_hz": rate,
         "channels": channels,
         "sample_count": count,
+        "pcm_sha256": pcm_digest.hexdigest(),
         "rms_dbfs": round(20 * math.log10(rms), 2) if rms else None,
         "sample_peak_dbfs": round(20 * math.log10(peak / 32768), 2) if peak else None,
         "sample_clip_fraction": round(clipped / count, 8),
@@ -73,6 +76,7 @@ def audit(manifest: Path) -> dict:
             if line.strip()]
     seen_ids: set[str] = set()
     seen_hashes: set[str] = set()
+    seen_pcm_hashes: set[tuple[int, str]] = set()
     configurations: set[tuple] = set()
     audio_formats: set[tuple[int, int]] = set()
     items: list[dict] = []
@@ -118,6 +122,12 @@ def audit(manifest: Path) -> dict:
                 seen_hashes.add(actual)
                 try:
                     metrics = pcm_metrics(file_path)
+                    # Distinct WAV container bytes can wrap the same decoded audio.
+                    # A second trial with identical PCM must not count as independent.
+                    pcm_key = (metrics["channels"], metrics["pcm_sha256"])
+                    if pcm_key in seen_pcm_hashes:
+                        errors.append("duplicate_decoded_pcm")
+                    seen_pcm_hashes.add(pcm_key)
                     audio_formats.add((metrics["sample_rate_hz"], metrics["channels"]))
                 except (wave.Error, ValueError, EOFError, OSError) as exc:
                     errors.append(f"invalid_wav:{str(exc)[:80]}")
@@ -152,7 +162,7 @@ def audit(manifest: Path) -> dict:
         "publication_enabled": False,
         "auto_reply_enabled": False,
         "items": items,
-        "limitations": "RMS/peak/clipping are digital sample proxies; no LUFS, SPL, hearing test, speech recognition, human reaction or audience judgement.",
+        "limitations": "PCM SHA detects reused decoded samples even when WAV container metadata differs; does not prove independent performances or audio authenticity. RMS/peak/clipping are digital proxies, not LUFS, SPL, ASR, human reaction or audience judgement.",
     }
 
 

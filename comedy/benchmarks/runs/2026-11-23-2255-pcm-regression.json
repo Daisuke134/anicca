@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "run_id": "2026-11-23-2255-jst-pcm-fingerprint",
+  "input_kind": "SYNTHETIC_WAV_ONLY",
+  "base_main_commit": "98ace4c5de2e55c8aa22b91b87cd5d9e5e4810ae",
+  "previous_implementation": {
+    "tests_run": 5,
+    "passed": 1,
+    "failed": 2,
+    "errors": 2,
+    "observed_false_pass": "Two WAV files with distinct valid RIFF headers but identical decoded PCM had wav_byte_integrity=PASS."
+  },
+  "new_implementation": {
+    "tests_run": 17,
+    "passed": 17,
+    "failed": 0,
+    "errors": 0,
+    "existing_tests": 12,
+    "new_tests": 5,
+    "flag": "duplicate_decoded_pcm",
+    "same_pcm_different_container": "FAIL",
+    "same_pcm_different_sample_rate": "FAIL",
+    "distinct_pcm": "PASS"
+  },
+  "verification": {
+    "source_downloaded_from_github_commit": "d72899a5306e774bffa687b8a72a6bbec99b91cf",
+    "source_git_blob_sha": "7fa1be4270bbbf71e34bf9607b74a5867fe9b359",
+    "test_git_blob_sha": "75eebda873013f63fe3a54a0ece11a46c3d4e1b7",
+    "executor": "authorized Mac mini terminal, python3 unittest",
+    "test_artifacts": "/private/tmp/anicca-comedy-pcm-2255 (ephemeral, no stage recording)"
+  },
+  "objective_interpretation": "Reused decoded PCM is rejected as a distinct recording. This is a data-integrity regression test, not proof of voice or humor quality.",
+  "voice_trials": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "stage_phone_ai_understanding": "NOT_MEASURED",
+  "back_row_intelligibility": "NOT_MEASURED",
+  "publication_enabled": false,
+  "auto_reply_enabled": false
+}

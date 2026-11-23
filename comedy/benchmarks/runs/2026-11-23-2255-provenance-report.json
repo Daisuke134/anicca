@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "taskset_sha256": "ae90a74828ffd57807c11c97ebf03d8f0116828ad7c8b6e069d9e01c00f03dbe",
+  "response_count": 16,
+  "models": {
+    "ChatGPT GPT-6 (single chat session text)": {
+      "responses": 16,
+      "unique_task_samples": 16,
+      "task_count": 8,
+      "independent_api_receipts": 0
+    }
+  },
+  "comparison_setup": "NOT_COMPARABLE",
+  "reasons": [
+    "fewer_than_two_models",
+    "invalid_generation_setting",
+    "missing_generation_setting",
+    "missing_provider_receipt",
+    "no_verified_independent_invocation"
+  ],
+  "humor_quality": "NOT_MEASURED",
+  "voice_reproducibility": "NOT_MEASURED",
+  "receipt_authenticity": "NOT_VERIFIED",
+  "warning": "Metadata consistency only. Receipt strings are not authenticated; no performance ranking."
+}
