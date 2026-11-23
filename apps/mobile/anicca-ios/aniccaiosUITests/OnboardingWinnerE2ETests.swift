@@ -126,13 +126,26 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         }
         let quote = app.staticTexts["quote-text"]
         XCTAssertTrue(quote.waitForExistence(timeout: 60))
-        let arrival = XCTAttachment(string: "home_quote_at_arrival=\(quote.label)")
+        let arrivalLabel = quote.label
+        XCTAssertFalse(arrivalLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       "Home must show words in recording mode — never a blank living home")
+        let arrival = XCTAttachment(string: "home_quote_at_arrival=\(arrivalLabel)")
         arrival.lifetime = .keepAlways
         add(arrival)
         Thread.sleep(forTimeInterval: 75)
         let afterDwell = XCTAttachment(string: "home_quote_after_75s=\(app.staticTexts["quote-text"].label)")
         afterDwell.lifetime = .keepAlways
         add(afterDwell)
+        // The living home must keep changing on its own: 75s spans two
+        // full 29s dwells, so the word on screen after the dwell must be
+        // a different, non-empty word — no user input happened. A deck
+        // frozen on one phrase fails here (founder, 2026-11-23: the home
+        // and notifications are a garden — never empty, never frozen).
+        let afterLabel = app.staticTexts["quote-text"].label
+        XCTAssertFalse(afterLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       "Home words must not be empty after the dwell")
+        XCTAssertNotEqual(afterLabel, arrivalLabel,
+                          "Living home must rotate words on its own (two 29s dwells in 75s)")
         let homeScreenshot = XCTAttachment(screenshot: app.screenshot())
         homeScreenshot.name = "living-home-after-dwell"
         homeScreenshot.lifetime = .keepAlways

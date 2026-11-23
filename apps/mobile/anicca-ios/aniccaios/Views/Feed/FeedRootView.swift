@@ -415,7 +415,17 @@ struct FeedRootView: View {
 
     private func buildDeck(selected presentation: DailyAffirmationStore.Presentation, language: LanguagePreference, now: Date, firstOrigin: HomeDeckCard.Origin = .selectedIntervention) {
         endDisplay(cause: .replaced)
-        deckModel.cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        // Behind the chosen word, the rest of today's deck: bundled words,
+        // so the living home keeps changing on its own at the established
+        // cadence. A single-card deck freezes on one phrase all day, which
+        // the founder rejected (2026-11-23): the home is a garden — never
+        // empty, never frozen. The Manager's word stays first and is the
+        // recorded intervention; the tail is labelled bundledFallback.
+        for quote in HomeFallbackDeck.quotes(language: language, date: now) where quote.id != presentation.quote.id {
+            cards.append(HomeDeckCard(quote: quote, origin: .bundledFallback))
+        }
+        deckModel.cards = cards
         currentIndex = 0
         navigationRevision += 1
         lastInteractionAt = Date()
