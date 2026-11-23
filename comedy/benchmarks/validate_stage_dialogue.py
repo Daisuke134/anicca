@@ -13,7 +13,7 @@ THIRD_PARTY_KINDS = {"speech", "laughter", "noise"}
 QUESTION_STEMS = ("住所は", "どこですか", "今どこ", "何が見え", "目印は", "教えてください", "どちらですか")
 
 
-def validate(events: list[dict]) -> dict:
+def validate(events: list[dict], *, require_turn_coverage: bool = False) -> dict:
     """Check explicit stage cues and turn order in an annotated text transcript."""
     if not isinstance(events, list) or not events:
         raise ValueError("events must be a nonempty list")
@@ -23,6 +23,7 @@ def validate(events: list[dict]) -> dict:
     last_replied_to_dais = False
     ai_count = 0
     dais_turns = 0
+    pending_dais_turn = False  # Only complete human turns, not ASR chunks, when opt-in is on.
     third_party_speech_since_dais = False
     for idx, event in enumerate(events):
         if not isinstance(event, dict):
@@ -43,11 +44,18 @@ def validate(events: list[dict]) -> dict:
                 last_replied_to_dais = False
                 third_party_speech_since_dais = False
                 dais_turns += 1
+                pending_dais_turn = True
         elif cue == "end":
+            if require_turn_coverage and pending_dais_turn:
+                violations.append({"event": idx, "reason": "unanswered_dais_before_end"})
+            pending_dais_turn = False
             if not started or ended:
                 violations.append({"event": idx, "reason": "invalid_end_cue"})
             ended = True
         elif speaker == "dais" and started and not ended and utterance.strip():
+            if require_turn_coverage and pending_dais_turn:
+                violations.append({"event": idx, "reason": "unanswered_dais_turn"})
+            pending_dais_turn = True
             dais_turns += 1
             last_replied_to_dais = False
             third_party_speech_since_dais = False
@@ -70,6 +78,7 @@ def validate(events: list[dict]) -> dict:
         if third_party_speech_since_dais and not last_replied_to_dais:
             violations.append({"event": idx, "reason": "ambiguous_third_party_speech_between_dais_and_ai"})
         ai_count += 1
+        pending_dais_turn = False
         last_replied_to_dais = True
         if ai_count == 1 and utterance != OPENING:
             violations.append({"event": idx, "reason": "opening_not_exact"})
@@ -91,6 +100,7 @@ def validate(events: list[dict]) -> dict:
     return {
         "gate": "PASS" if not violations else "FAIL", "violations": violations,
         "ai_turns": ai_count, "dais_turns": dais_turns,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS" if require_turn_coverage else "NOT_REQUESTED",
         "scope": "annotated_text_transcript_only", "laughter": "NOT_MEASURED",
         "voice": "NOT_MEASURED", "phone_ai_comprehension": "NOT_MEASURED",
     }
@@ -101,12 +111,14 @@ def main() -> int:
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--require-turn-coverage", action="store_true",
+                        help="Opt in only for transcripts annotated as complete Dais turns, not ASR fragments")
     args = parser.parse_args()
     try:
         data = json.loads(args.input.read_text(encoding="utf-8"))
         if not isinstance(data, dict) or not isinstance(data.get("events"), list):
             raise ValueError("Input must be an object with events list")
-        result = {"scenario_id": data.get("scenario_id"), **validate(data["events"])}
+        result = {"scenario_id": data.get("scenario_id"), **validate(data["events"], require_turn_coverage=args.require_turn_coverage)}
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
             json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
