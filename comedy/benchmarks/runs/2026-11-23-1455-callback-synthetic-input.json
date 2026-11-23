@@ -441,8 +441,12 @@
         },
         {
           "speaker": "audience",
-          "kind": "laughter",
-          "text": "笑い"
+          "text": "笑い",
+          "kind": "laughter"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
         },
         {
           "speaker": "ai",
@@ -465,7 +469,7 @@
       "chains": [
         {
           "setup_ai_event": 5,
-          "callback_ai_event": 9,
+          "callback_ai_event": 10,
           "entity": "おもち34号",
           "setup_any": [
             "式場"
