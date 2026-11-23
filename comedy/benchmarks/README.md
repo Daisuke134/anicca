@@ -1,5 +1,13 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 18:02 JST：ASRチャンク分割を舞台の誤FAILにしないターン復元
+- 新規 `normalize_asr_turns.py` は、明示的な `turn_id`・話者・時間境界が一致する連続断片だけを連結する。観客やスタッフの発言を跨ぐ結合、話者混同、曖昧な時間差は拒否。既存の `validate_stage_dialogue` に完全発話を渡して開始合図・第一/第二声・アドリブの反応機会・終幕を判定。
+- **合成11断片 → 7イベント（4連結）で静的舞台ゲートPASS**。原断片を直接渡した場合はFAIL。別の脚本改変・第三者発話の人工負例は正しくFAILまたは入力エラー。新規17件を含め **Python 263/263 PASS**（ローカルのGitHub main由来ソースで実行）。音声録音・ASR品質の実測ではない。
+- 固定ベンチ**未使用**、新規オリジナル8題（一般4、舞台4）×各2候補をチャット内で生成、形式**16/16 PASS**。ChatGPT GPT-6製品ラベルのみ、正確なモデルビルド・独立APIレシートは未取得。Reason Network 3接続HTTP 409によりGrok/Muse未実行、比較は `NOT_COMPARABLE`。
+- 電話先AIの観客理解・後方可聴性・実機Voice・観客の笑いは `NOT_MEASURED`。v8、9/6確定稿、選択中2分稿、Skill本文は無変更。publish/auto-replyはOFF。
+- [研究報告](../research/2026-11-23-1755-jst-asr-turn-boundaries.md) / [新規17テスト](./test_normalize_asr_turns.py) / [合成実行結果](./runs/2026-11-23-1755-asr-normalization-report.json)。
+
+
 ## 2026-11-23 17:04 JST：長い一文でダイスの反応時間を奪うリスクの静的検査
 - `validate_stage_dialogue.validate` に任意の `max_ai_turn_chars` を追加。総合舞台監査では冒頭の固定2声を除くAI発話を**96文字以下**で保守的に検査。句点1つの122文字という従来PASSした人工発話を `ai_turn_exceeds_char_budget_proxy` でFAIL。
 - **Python 100/100 PASS**（新規6、既存94）、現行2分稿の静的検査PASS（22発話、714文字、AI最大68文字）。新規**独自内部開発8題×2案=16テキスト**の形式検査16/16 PASS。固定ベンチ未使用。

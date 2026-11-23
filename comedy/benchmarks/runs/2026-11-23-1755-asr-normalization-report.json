@@ -1,0 +1,123 @@
+{
+  "scenario_id": "synthetic-asr-two-voice-replies",
+  "source_provenance_claim": "synthetic",
+  "source_chunk_count": 11,
+  "normalized_event_count": 7,
+  "actor_turns": 5,
+  "joined_chunk_count": 4,
+  "normalized_events": [
+    {
+      "speaker": "audience",
+      "kind": "noise",
+      "text": "椅子の音",
+      "start_ms": 0,
+      "end_ms": 90,
+      "source_chunk_indexes": [
+        0
+      ],
+      "chunk_count": 1
+    },
+    {
+      "speaker": "dais",
+      "text": "痛い痛い！ もしもし！",
+      "cue": "start",
+      "turn_id": "d1",
+      "start_ms": 100,
+      "end_ms": 500,
+      "source_chunk_indexes": [
+        1,
+        2
+      ],
+      "chunk_count": 2
+    },
+    {
+      "speaker": "ai",
+      "text": "はい、救急指令センターです。火事ですか、救急ですか？",
+      "turn_id": "a1",
+      "start_ms": 550,
+      "end_ms": 1400,
+      "source_chunk_indexes": [
+        3,
+        4
+      ],
+      "chunk_count": 2
+    },
+    {
+      "speaker": "dais",
+      "text": "救急！ 痛い痛い！",
+      "turn_id": "d2",
+      "start_ms": 1450,
+      "end_ms": 1750,
+      "source_chunk_indexes": [
+        5,
+        6
+      ],
+      "chunk_count": 2
+    },
+    {
+      "speaker": "ai",
+      "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+      "turn_id": "a2",
+      "start_ms": 1800,
+      "end_ms": 3100,
+      "source_chunk_indexes": [
+        7,
+        8
+      ],
+      "chunk_count": 2
+    },
+    {
+      "speaker": "audience",
+      "kind": "laughter",
+      "text": "笑い声",
+      "start_ms": 3200,
+      "end_ms": 3250,
+      "source_chunk_indexes": [
+        9
+      ],
+      "chunk_count": 1
+    },
+    {
+      "speaker": "dais",
+      "text": "もういい！",
+      "cue": "end",
+      "turn_id": "d3",
+      "start_ms": 3300,
+      "end_ms": 3450,
+      "source_chunk_indexes": [
+        10
+      ],
+      "chunk_count": 1
+    }
+  ],
+  "stage_gate": {
+    "gate": "PASS",
+    "violations": [],
+    "ai_turns": 2,
+    "dais_turns": 2,
+    "ai_turn_char_counts": [
+      {
+        "event": 2,
+        "characters": 26
+      },
+      {
+        "event": 4,
+        "characters": 68
+      }
+    ],
+    "max_ai_turn_chars": "NOT_REQUESTED",
+    "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+    "scope": "annotated_text_transcript_only",
+    "laughter": "NOT_MEASURED",
+    "voice": "NOT_MEASURED",
+    "phone_ai_comprehension": "NOT_MEASURED"
+  },
+  "gate": "PASS",
+  "scope": "explicit_turn_id_text_reconstruction_only",
+  "raw_audio_verified": false,
+  "speaker_identity_verified": false,
+  "voice_reproducibility": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED",
+  "rear_intelligibility": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED"
+}
