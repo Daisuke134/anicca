@@ -305,3 +305,10 @@ measure_stage_timing.py の entry_during_laughter_ms は「AI発話開始時に�
 - 新規オリジナル開発8題（大喜利4、電話先AIアドリブ4）×2案=16テキスト候補：形式ゲート16/16 PASS、出自監査 `NOT_COMPARABLE`、文字3-gram監査は過去16回答に対し要確認フラグ0。固定ベンチ未使用。
 - ChatGPT GPT-6のチャット内生成のみ。Grok/MuseはReason Networkの3接続が409 `agent_network_offline`、独立API比較は未実施。実録Voice・客席笑い・金子さんの導入効果は未測定。外部投稿 `publish_enabled=false`、自動返信 `auto_reply_enabled=false`。
 - [今回の研究ログ](../research/2026-11-23-0455-jst-silence-provenance.md) と [監査結果](./runs/2026-11-23-0455-provenance-report.json)。
+
+### 2026-11-23 20:00 JST：ASR断片の0ms音声・同一話者の異ID時間重複を入力拒否
+
+- `normalize_asr_turns.py` は同一の`turn_id`を結合する際のギャップ検査に加え、文字のあるダイス／AI断片で `end_ms == start_ms` を拒否。同じ話者の別`turn_id`の時間重複も拒否する。ターン境界の接触は許容し、**ダイスとAIの別話者間のかぶりは従来どおり時間監査へ渡す**。
+- 新規6テスト：修正前は4件FAIL、修正後は全Python **273/273 PASS**。旧・新に同じ合成7ケースを実行し、旧版で総合PASSの不正注釈3件を新版が入力拒否。入力拒否と、正規化された舞台対話のFAILは別。
+- 新規オリジナル開発8題×2=16テキスト回答は形式16/16 PASS。**固定ベンチ未使用**。Grok/MuseのReason Network接続3件は409、`NOT_RUN`。ChatGPT GPT-6は単一チャット内生成のみで`NOT_COMPARABLE`。実機Voice・観客の笑い・後方可聴性は`NOT_MEASURED`。
+- [研究記録](../research/2026-11-23-2000-jst-asr-annotation-integrity.md) と [旧新版の合成監査](./runs/2026-11-23-2000-asr-annotation-regression.json)。外部投稿／返信はOFF。

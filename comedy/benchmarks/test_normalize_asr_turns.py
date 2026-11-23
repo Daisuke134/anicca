@@ -194,5 +194,50 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(report["audience_laughter"], "NOT_MEASURED")
 
 
+
+    def test_zero_duration_dais_speech_is_not_evidence_of_voice(self):
+        data = fixture()
+        data["events"][1]["end_ms"] = data["events"][1]["start_ms"]
+        with self.assertRaisesRegex(ValueError, "zero-duration actor speech"):
+            evaluate(data)
+
+    def test_zero_duration_ai_speech_is_not_evidence_of_voice(self):
+        data = fixture()
+        data["events"][4]["end_ms"] = data["events"][4]["start_ms"]
+        with self.assertRaisesRegex(ValueError, "zero-duration actor speech"):
+            evaluate(data)
+
+    def test_distinct_dais_turns_cannot_overlap_in_annotated_timeline(self):
+        data = fixture()
+        # A long d1 interval overlaps d2 despite different explicit IDs.
+        data["events"][2]["end_ms"] = 1500
+        with self.assertRaisesRegex(ValueError, "overlapping distinct dais turns"):
+            evaluate(data)
+
+    def test_distinct_ai_turns_cannot_overlap_in_annotated_timeline(self):
+        data = fixture()
+        data["events"][4]["end_ms"] = 1900
+        with self.assertRaisesRegex(ValueError, "overlapping distinct ai turns"):
+            evaluate(data)
+
+    def test_distinct_actor_turns_touching_are_not_overlaps(self):
+        data = fixture()
+        # d1 ends at d2 start; the same speaker is not simultaneously
+        # labelled as producing two separate turns.
+        data["events"][2]["end_ms"] = data["events"][5]["start_ms"]
+        data["events"][4]["end_ms"] = data["events"][7]["start_ms"]
+        result = evaluate(data)
+        self.assertEqual(result["source_chunk_count"], 11)
+        self.assertEqual(result["normalized_event_count"], 7)
+
+    def test_cross_speaker_interruption_still_reaches_timing_gate(self):
+        data = fixture()
+        data["events"][3]["start_ms"] = 450
+        result = evaluate(data)
+        self.assertEqual(result["stage_gate"]["gate"], "PASS")
+        self.assertEqual(result["timing_gate"], "FAIL")
+        self.assertIn("ai_overlaps_dais_speech",
+                      str(result["timing_audit"]["timing_violations"]))
+
 if __name__ == "__main__":
     unittest.main()

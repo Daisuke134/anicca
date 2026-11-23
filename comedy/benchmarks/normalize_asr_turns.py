@@ -30,6 +30,7 @@ def normalize(events: list[dict], *, max_gap_ms: int = 250) -> list[dict]:
 
     turns: list[dict] = []
     seen_turn_ids: set[str] = set()
+    last_actor_end: dict[str, int] = {}
     prev_start = -1
     for index, original in enumerate(events):
         if not isinstance(original, dict):
@@ -53,6 +54,10 @@ def normalize(events: list[dict], *, max_gap_ms: int = 250) -> list[dict]:
         prev_start = start
 
         groupable = speaker in {"dais", "ai"} and kind == "speech"
+        # A nonempty spoken fragment requires positive annotated duration.
+        # Zero-length actor speech is not evidence of a completed voice turn.
+        if groupable and end == start:
+            raise ValueError(f"events[{index}] zero-duration actor speech")
         if groupable:
             turn_id = event.get("turn_id")
             if not isinstance(turn_id, str) or not turn_id.strip():
@@ -72,6 +77,7 @@ def normalize(events: list[dict], *, max_gap_ms: int = 250) -> list[dict]:
                     raise ValueError(f"events[{index}] ambiguous fragment gap {gap}ms")
                 previous["text"] += text
                 previous["end_ms"] = end
+                last_actor_end[speaker] = end
                 previous["source_chunk_indexes"].append(index)
                 previous["chunk_count"] += 1
                 if cue == "end":
@@ -79,7 +85,14 @@ def normalize(events: list[dict], *, max_gap_ms: int = 250) -> list[dict]:
                 continue
             if turn_id in seen_turn_ids:
                 raise ValueError(f"events[{index}] noncontiguous reused turn_id")
+            # ASR may emit duplicate hypotheses with distinct turn IDs.
+            # Two different turns from the same actor cannot occupy the
+            # same annotated time interval. Cross-speaker overlap is legal
+            # input and is handled by the separate timing gate.
+            if start < last_actor_end.get(speaker, -1):
+                raise ValueError(f"events[{index}] overlapping distinct {speaker} turns")
             seen_turn_ids.add(turn_id)
+            last_actor_end[speaker] = end
         elif event.get("turn_id") is not None:
             raise ValueError(f"events[{index}] third-party events must not claim turn_id")
 
