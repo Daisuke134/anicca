@@ -114,5 +114,45 @@ class NegativeActionProxyRegression(unittest.TestCase):
         self.assertEqual(audit(scene("会田アイタロウへ連絡しました。"))["gate"], "PASS")
 
 
+class UncommittedActionProxyRegression(unittest.TestCase):
+    def test_question_about_completed_action_is_not_execution(self):
+        r = audit(scene("会田アイタロウへ連絡しましたか？"))
+        self.assertEqual(r["gate"], "FAIL")
+        self.assertIn("immediate_reply_only_uncommitted_action", [v["reason"] for v in r["violations"]])
+        self.assertEqual(r["checks"][0]["uncommitted_action_mentions"], ["連絡"])
+
+    def test_offer_without_dispatch_does_not_count(self):
+        r = audit(scene("会田アイタロウへ連絡しましょうか？"))
+        self.assertEqual(r["gate"], "FAIL")
+
+    def test_permission_question_does_not_count(self):
+        r = audit(scene("会田アイタロウへ連絡してもいいですか？"))
+        self.assertEqual(r["gate"], "FAIL")
+
+    def test_request_for_someone_else_is_not_completed_action(self):
+        r = audit(scene("会田アイタロウへ連絡してください。"))
+        self.assertEqual(r["gate"], "FAIL")
+
+    def test_future_plan_is_not_completed_action(self):
+        r = audit(scene("会田アイタロウへ連絡する予定です。"))
+        self.assertEqual(r["gate"], "FAIL")
+
+    def test_denial_plus_question_remains_fail(self):
+        r = audit(scene("会田アイタロウへ連絡しません。連絡しますか？"))
+        self.assertEqual(r["gate"], "FAIL")
+        self.assertEqual(r["checks"][0]["negated_action_mentions"], ["連絡"])
+        self.assertEqual(r["checks"][0]["uncommitted_action_mentions"], ["連絡"])
+
+    def test_independent_action_after_question_survives(self):
+        r = audit(scene("会田アイタロウへ連絡しますか？ 代わりに車を手配しました。"))
+        self.assertEqual(r["gate"], "PASS")
+        self.assertEqual(r["checks"][0]["matched_actions"], ["手配"])
+
+    def test_actual_report_with_unrelated_question_remains_pass(self):
+        r = audit(scene("会田アイタロウへ連絡しました。今の調子はどうですか？"))
+        self.assertEqual(r["gate"], "PASS")
+
+
+
 if __name__ == "__main__":
     unittest.main()

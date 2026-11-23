@@ -22,19 +22,43 @@ NEGATED_ACTION_SUFFIX = re.compile(
 )
 
 
-def action_mentions(text: str, actions: list[str]) -> tuple[list[str], list[str]]:
+# Narrow cues that an action was *asked about* or proposed, not reported done.
+# This lexical proxy deliberately does not infer speaker intent or real-world execution.
+UNCOMMITTED_ACTION_SUFFIX = re.compile(
+    r"^(?:[のをにはがも]?"
+    r"(?:しましたか|しますか|しましょうか|できますか|"
+    r"して(?:もいい|もよろしい)ですか|"
+    r"してくれませんか|していただけますか|"
+    r"してください(?=$|[。！!])|する予定です))"
+)
+
+
+def action_mentions(text: str, actions: list[str]) -> tuple[list[str], list[str], list[str]]:
     """Separate affirmative-looking lexical mentions from explicit denials."""
-    present, denied = [], []
+    present, denied, uncommitted = [], [], []
     for action in actions:
         needle = norm(action)
         positions = [m.end() for m in re.finditer(re.escape(needle), text)]
         if not positions:
             continue
-        if any(not NEGATED_ACTION_SUFFIX.match(text[pos:]) for pos in positions):
+        kinds = []
+        for pos in positions:
+            tail = text[pos:]
+            if NEGATED_ACTION_SUFFIX.match(tail):
+                kinds.append("denied")
+            elif UNCOMMITTED_ACTION_SUFFIX.match(tail):
+                kinds.append("uncommitted")
+            else:
+                kinds.append("positive_looking")
+        # An independently mentioned positive-looking action can still count.
+        # Never promote a question, request, or explicit denial to completed action.
+        if "positive_looking" in kinds:
             present.append(action)
-        else:
+        if "denied" in kinds:
             denied.append(action)
-    return present, denied
+        if "uncommitted" in kinds:
+            uncommitted.append(action)
+    return present, denied, uncommitted
 
 
 def terms(event: dict, key: str, index: int) -> list[str]:
@@ -79,16 +103,18 @@ def audit(events: list[dict]) -> dict:
         matched_anchor = []
         matched_action = []
         negated_actions = []
+        uncommitted_actions = []
         if reply_index is None:
             violations.append({"event": index, "reason": "missing_immediate_ai_reply"})
         else:
             text = norm(events[reply_index]["text"])
             matched_anchor = [a for a in anchors if norm(a) in text]
-            matched_action, negated_actions = action_mentions(text, actions)
+            matched_action, negated_actions, uncommitted_actions = action_mentions(text, actions)
             if not matched_anchor:
                 violations.append({"event": index, "reason": "immediate_reply_missing_anchor"})
             if not matched_action:
-                reason = ("immediate_reply_only_negated_action" if negated_actions
+                reason = ("immediate_reply_only_uncommitted_action" if uncommitted_actions
+                          else "immediate_reply_only_negated_action" if negated_actions
                           else "immediate_reply_missing_action")
                 violations.append({"event": index, "reason": reason})
         if intervening_speech:
@@ -99,6 +125,7 @@ def audit(events: list[dict]) -> dict:
             "matched_anchors": matched_anchor,
             "matched_actions": matched_action,
             "negated_action_mentions": negated_actions,
+            "uncommitted_action_mentions": uncommitted_actions,
             "third_party_speech_intervened": intervening_speech,
         })
     if not checks:
@@ -112,7 +139,7 @@ def audit(events: list[dict]) -> dict:
         "voice": "NOT_MEASURED",
         "laughter": "NOT_MEASURED",
         "semantic_understanding": "NOT_MEASURED",
-        "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns.",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns.",
     }
 
 

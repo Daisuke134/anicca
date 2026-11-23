@@ -1,5 +1,12 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 13:55 JST：アドリブ回収の「質問・提案・依頼＝実行済み」誤PASS回帰
+
+- `audit_adlib_anchors.py` の新しい `uncommitted_action_mentions` は「会田へ連絡しましたか？」「連絡しましょうか？」「連絡してください」「連絡する予定です」など**限定された文字列パターン**を実行済み行動と区別する。独立した肯定的な「手配しました」があれば維持。意味理解・行動実行の証明ではない。
+- Python単体テスト**修正前26件中7件FAIL→修正後26/26 PASS**（既存18、新規8）。人工舞台8ケースで期待判定8/8。**新規オリジナル開発題8題・テキスト16候補**の形式ゲート16/16 PASS、固定ベンチ未使用。
+- ChatGPT GPT-6製品ラベルの単一チャット内作成のみ。Grok/MuseはReason Network HTTP 409で未実行、比較 `NOT_COMPARABLE`。実機Voice・観客笑い・客席後方可聴性・金子さん指摘の実測効果は**NOT_MEASURED**。
+- [研究ログ](../research/2026-11-23-1355-jst-uncommitted-action-uptake.md)。外部投稿・自動返信OFF。
+
 ## 2026-11-23 12:55 JST：アドリブ回収の「否定された行動」誤PASS回帰
 
 - `audit_adlib_anchors.py` が「会田アイタロウへ**連絡しません**」を「会田」＋「連絡」の文字一致だけでPASSした誤判定を修正。動作語直後の限定的な否定形を `negated_action_mentions` として分け、否定だけなら `immediate_reply_only_negated_action` でFAIL。別の肯定行動がある場合は除外しない。
