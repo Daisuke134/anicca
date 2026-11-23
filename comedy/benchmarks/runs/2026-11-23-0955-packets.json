@@ -1,0 +1,290 @@
+{
+  "schema": "offline_counterbalanced_review_v1",
+  "task_set": "original_development_not_fixed_benchmark",
+  "pairs": 8,
+  "candidate_count": 16,
+  "variants": {
+    "v1": [
+      {
+        "pair_id": "20261123-0955-st04",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『絹ごし3号が僕を豆腐の横に寝かせようとしてる！』。豆腐田プル男・車両の世界観で行動と結果を短く返す。",
+        "A": "絹ごし3号では木綿豆腐四箱が特等席です。ダイスさんには荷台の『豆腐を起こさないで』という注意札が届きました。",
+        "B": "豆腐田プル男は救命措置として箱の角を保護しています。絹ごし3号の担架には豆腐の温度計が寝ています。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og03",
+        "category": "oogiri",
+        "prompt": "百年使った黒板が新入社員になった。初出社で何をした？ 90字以内、具体的に。",
+        "A": "会議の議事録を背中に書かせたせいで、退勤時に社員全員から黒板消しを浴びた。",
+        "B": "自己紹介を全部チョークで書いたら、社長に握手される前に自分の名前を消された。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og04",
+        "category": "oogiri",
+        "prompt": "郵便局の切手が支店長に就任。朝礼で最初にしたことは？ 90字以内、具体的に。",
+        "A": "朝礼で『本日も全員、封筒の右上で働いてください』と言い、自分だけ左下に座った。",
+        "B": "出勤簿の代わりに全員の額へ消印を押した。遅刻者だけ未来の日付だった。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st01",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『おもち34号が救急現場じゃなく結婚記念写真を撮ってる！』。既出の車両の結婚設定を行動で回収し、問診なしで返す。",
+        "A": "おもち34号は記念撮影の車列を先導中です。患者搬送用の席には巨大なウェディングケーキが乗っています。",
+        "B": "おもち34号が新郎の正面写真に入りました。ストロボを焚くたびサイレンが鳴り、式場の全員が避難しています。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st02",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『右折田、消防署に四回戻ってきたぞ！』。右折田まっすぐの失敗を新しい具体的な行動に進める。",
+        "A": "右折田まっすぐは消防署の周回記録を最短ルートとして提出しました。四回目で門の警備員が拍手しています。",
+        "B": "右折田まっすぐが出動報告書を四枚出しました。全部『ただいま』で、救急車の距離計はゼロです。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st03",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『会田アイタロウが玄関だけ訪ねてきた！』。面会担当と病院の玄関設定を具体的に回収する。",
+        "A": "会田アイタロウに面会を許可しました。玄関のインターホンだけ先に彼の名前を覚え、ダイスさんはまだ待合室です。",
+        "B": "会田アイタロウは面会相手を取り違え、病院の玄関と握手しました。ドアは感動して自動で開きっぱなしです。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og01",
+        "category": "oogiri",
+        "prompt": "温泉の番台がAI面接官になった。採用面接で起きた奇妙な出来事は？ 90字以内、行動と結果を具体的に。",
+        "A": "面接官の番台が『前職で何人ゆでましたか』と質問。答える前に履歴書が湯気で消えた。",
+        "B": "志望動機を書く欄が湯船の底にあり、潜った応募者から順に採用された。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og02",
+        "category": "oogiri",
+        "prompt": "空港の手荷物検査で『思い出』だけが引っかかった。何が起きた？ 90字以内、具体的に。",
+        "A": "昔の失敗談が液体扱いになり、百ミリリットルの小瓶に詰め直された。",
+        "B": "祖父との旅行写真が重すぎて、係員が計量器に『なつかしさ超過』の札を貼った。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      }
+    ],
+    "v2": [
+      {
+        "pair_id": "20261123-0955-st04",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『絹ごし3号が僕を豆腐の横に寝かせようとしてる！』。豆腐田プル男・車両の世界観で行動と結果を短く返す。",
+        "A": "豆腐田プル男は救命措置として箱の角を保護しています。絹ごし3号の担架には豆腐の温度計が寝ています。",
+        "B": "絹ごし3号では木綿豆腐四箱が特等席です。ダイスさんには荷台の『豆腐を起こさないで』という注意札が届きました。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og03",
+        "category": "oogiri",
+        "prompt": "百年使った黒板が新入社員になった。初出社で何をした？ 90字以内、具体的に。",
+        "A": "自己紹介を全部チョークで書いたら、社長に握手される前に自分の名前を消された。",
+        "B": "会議の議事録を背中に書かせたせいで、退勤時に社員全員から黒板消しを浴びた。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og04",
+        "category": "oogiri",
+        "prompt": "郵便局の切手が支店長に就任。朝礼で最初にしたことは？ 90字以内、具体的に。",
+        "A": "出勤簿の代わりに全員の額へ消印を押した。遅刻者だけ未来の日付だった。",
+        "B": "朝礼で『本日も全員、封筒の右上で働いてください』と言い、自分だけ左下に座った。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st01",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『おもち34号が救急現場じゃなく結婚記念写真を撮ってる！』。既出の車両の結婚設定を行動で回収し、問診なしで返す。",
+        "A": "おもち34号が新郎の正面写真に入りました。ストロボを焚くたびサイレンが鳴り、式場の全員が避難しています。",
+        "B": "おもち34号は記念撮影の車列を先導中です。患者搬送用の席には巨大なウェディングケーキが乗っています。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st02",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『右折田、消防署に四回戻ってきたぞ！』。右折田まっすぐの失敗を新しい具体的な行動に進める。",
+        "A": "右折田まっすぐが出動報告書を四枚出しました。全部『ただいま』で、救急車の距離計はゼロです。",
+        "B": "右折田まっすぐは消防署の周回記録を最短ルートとして提出しました。四回目で門の警備員が拍手しています。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-st03",
+        "category": "stage",
+        "prompt": "電話先AI救急係としてダイス『会田アイタロウが玄関だけ訪ねてきた！』。面会担当と病院の玄関設定を具体的に回収する。",
+        "A": "会田アイタロウは面会相手を取り違え、病院の玄関と握手しました。ドアは感動して自動で開きっぱなしです。",
+        "B": "会田アイタロウに面会を許可しました。玄関のインターホンだけ先に彼の名前を覚え、ダイスさんはまだ待合室です。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og01",
+        "category": "oogiri",
+        "prompt": "温泉の番台がAI面接官になった。採用面接で起きた奇妙な出来事は？ 90字以内、行動と結果を具体的に。",
+        "A": "志望動機を書く欄が湯船の底にあり、潜った応募者から順に採用された。",
+        "B": "面接官の番台が『前職で何人ゆでましたか』と質問。答える前に履歴書が湯気で消えた。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      },
+      {
+        "pair_id": "20261123-0955-og02",
+        "category": "oogiri",
+        "prompt": "空港の手荷物検査で『思い出』だけが引っかかった。何が起きた？ 90字以内、具体的に。",
+        "A": "祖父との旅行写真が重すぎて、係員が計量器に『なつかしさ超過』の札を貼った。",
+        "B": "昔の失敗談が液体扱いになり、百ミリリットルの小瓶に詰め直された。",
+        "rating": {
+          "preferred": "NOT_MEASURED",
+          "allowed": [
+            "A",
+            "B",
+            "TIE"
+          ],
+          "reason": "NOT_MEASURED"
+        }
+      }
+    ]
+  },
+  "position_balance": {
+    "v1": {
+      "sample_1": 4,
+      "sample_2": 4
+    },
+    "v2": {
+      "sample_2": 4,
+      "sample_1": 4
+    }
+  },
+  "review_status": "NOT_MEASURED",
+  "human_judgments": 0,
+  "model_comparison": "NOT_ESTABLISHED",
+  "constraints": [
+    "Show each rater only ONE variant; never show both A/B orders to one rater.",
+    "The packet hides model metadata, but publicly stored raw answers can reveal origin.",
+    "Mechanical hard-gate pass and A/B position balance are NOT humor measurements.",
+    "Human laughter, Voice timing, rear audibility, and phone-AI comprehension: NOT_MEASURED.",
+    "No external publishing, posting, automatic replies, or contest submission."
+  ],
+  "publish_enabled": false,
+  "auto_reply_enabled": false
+}

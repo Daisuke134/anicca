@@ -3,6 +3,14 @@
 Canonical: 2026-11-22。Skill正本：[`skills/comedy-agent/SKILL.md`](../../skills/comedy-agent/SKILL.md)。
 目的：**既存ベンチで外部モデル比較しつつ、独自の日本語・音声・舞台能力を再現可能に検証する**。点数の出ていないものはNOT_MEASUREDで保存。実行前にライセンスと同意・利用規約を確認。
 
+## 2026-11-23 09:55 JST：盲検A/B回答の「票の真正性」監査
+
+- New: audit_blind_ballots.py and test_audit_blind_ballots.py. Offline A/B packet results are **NOT automatically human judgments**. Audits mirrored A/B text, packet SHA-256, pseudonymous reviewer, one review variant per reviewer, duplicate votes, missing/invalid votes, and publication OFF.
+- New **original development prompts**, not the fixed benchmark: 8 tasks (4 oogiri, 4 telephone-dispatcher improv), 2 GPT-6-chat text candidates each; existing format gate **16/16 PASS**. New integrity unittest **14/14 PASS**. 8 reversed-order packets, 16 deliberately **synthetic** ballot fixtures, **zero human** ballots. Human laughter and Voice are **NOT_MEASURED**.
+- Provenance comparison remains **NOT_COMPARABLE**; one chat product label is not a multi-model API run. Models Grok and Muse were not run. No external posts or automated replies.
+- Run: python3 comedy/benchmarks/audit_blind_ballots.py --packets comedy/benchmarks/runs/2026-11-23-0955-packets.json --ballots comedy/benchmarks/runs/2026-11-23-0955-empty-ballots.jsonl --output /tmp/comedy-ballots-audit.json
+- [Research report](../research/2026-11-23-0955-jst-blind-ballot-integrity.md). Both selected and protected historic stage scripts were left untouched.
+
 ## 2026-11-23 08:53 JST：大喜利・電話先AI即興のA/B順序バイアスを制御する内部レビュー準備
 
 - 新しい `prepare_blind_pairs.py` は**オリジナル開発題のみ**（固定ベンチではない）の2候補について、問題の表示順を決定論的にシャッフルし、候補1/2がA欄へ表示される回数を均衡化する。反対順の`v1`/`v2`を作るが、同じ評価者に両方を見せない。
