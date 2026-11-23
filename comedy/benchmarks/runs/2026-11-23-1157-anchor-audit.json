@@ -1,0 +1,221 @@
+{
+  "source_type": "synthetic",
+  "total_cases": 8,
+  "expectations_met": 8,
+  "all_expectations_met": true,
+  "cases": [
+    {
+      "scenario_id": "st01-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st01-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "手配"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st02-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "右折田"
+          ],
+          "matched_actions": [
+            "周"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st02-2",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "右折田"
+          ],
+          "matched_actions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 4,
+          "reason": "immediate_reply_missing_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st03-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "絹ごし3号"
+          ],
+          "matched_actions": [
+            "搬送"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st03-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "絹ごし3号"
+          ],
+          "matched_actions": [
+            "手配"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st04-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "おもち34号"
+          ],
+          "matched_actions": [
+            "向か"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st04-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "おもち34号"
+          ],
+          "matched_actions": [
+            "出動"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Matching words is neither proof of understanding nor a humor score. Apply only to fully annotated turns."
+    }
+  ],
+  "voice": "NOT_MEASURED",
+  "laughter": "NOT_MEASURED"
+}
