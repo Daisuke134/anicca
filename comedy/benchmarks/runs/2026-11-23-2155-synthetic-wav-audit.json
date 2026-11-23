@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "input_count": 2,
+  "verified_wav_count": 2,
+  "synthetic_fixture_count": 2,
+  "claimed_real_rehearsal_count": 0,
+  "wav_byte_integrity": "PASS",
+  "repeated_config_consistency": "CONSISTENT",
+  "audio_origin_authenticity": "NOT_VERIFIED",
+  "voice_reproducibility": "NOT_MEASURED",
+  "opening_cue_compliance": "NOT_MEASURED",
+  "phone_ai_role_understanding": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "back_row_intelligibility": "NOT_MEASURED",
+  "publication_enabled": false,
+  "auto_reply_enabled": false,
+  "items": [
+    {
+      "trial_id": "SYNTHETIC-ONLY-1",
+      "source_kind_claimed": "synthetic_fixture",
+      "file": "synthetic-voice-1.wav",
+      "wav_sha256_computed": "328e2747aa8138f49c14592ac5c045d7c2f7cda777a40234687554d0f2ffbdfd",
+      "checks": "PASS",
+      "issues": [],
+      "sample_domain_metrics": {
+        "duration_s": 1,
+        "sample_rate_hz": 8000,
+        "channels": 1,
+        "sample_count": 8000,
+        "rms_dbfs": -28.03,
+        "sample_peak_dbfs": -28.03,
+        "sample_clip_fraction": 0,
+        "digital_silence": false
+      }
+    },
+    {
+      "trial_id": "SYNTHETIC-ONLY-2",
+      "source_kind_claimed": "synthetic_fixture",
+      "file": "synthetic-voice-2.wav",
+      "wav_sha256_computed": "7f7c17c74ad94f09f2958a7e2e9c3002a1e78bbde88e4781edbed4e6c53bf556",
+      "checks": "PASS",
+      "issues": [],
+      "sample_domain_metrics": {
+        "duration_s": 1,
+        "sample_rate_hz": 8000,
+        "channels": 1,
+        "sample_count": 8000,
+        "rms_dbfs": -23.46,
+        "sample_peak_dbfs": -23.46,
+        "sample_clip_fraction": 0,
+        "digital_silence": false
+      }
+    }
+  ],
+  "limitations": "RMS/peak/clipping are digital sample proxies; no LUFS, SPL, hearing test, speech recognition, human reaction or audience judgement."
+}
