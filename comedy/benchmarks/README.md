@@ -1,5 +1,11 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-24 01:00 JST：独立モデルの比較資格を保守的に監査
+- 新規 `audit_run_comparability.py` は共通タスク・各候補・Skill blob SHA・モデル版・モダリティ・推論設定・独立APIレシートの申告を検査。レシートの実在性はオフラインでは未検証なので、条件を満たす人工正例でも `CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED` に留める。
+- 新規回帰12/12 PASS、Python全309/309 PASS。固定ベンチは使用せず、新作オリジナル開発8題×2回答の静的形式16/16 PASS。
+- 実際の独立モデル比較は `NOT_COMPARABLE`。ChatGPT GPT-6製品ラベルのみ・正確なbuild不明・外部APIレシートなし。Reason Network 3接続HTTP409でGrok/Muse未実行。Voice・笑い・後方可聴性・金子さん指摘の役割理解は `NOT_MEASURED`。外部publish・自動返信はOFF。
+- [研究全文](../research/2026-11-24-0100-jst-comparison-eligibility.md) / [オリジナル題](./runs/2026-11-24-0055-original-tasks.jsonl) / [回答全文](./runs/2026-11-24-0055-chat-responses.jsonl) / [比較資格監査](./runs/2026-11-24-0055-comparability.json)。
+
 ## 2026-11-23 23:57 JST：有効な無音WAVを「発話した稽古」と誤認しない
 - `audit_voice_wav_evidence.py` はWAVバイト整合性と、`claimed_real_rehearsal` が会話を含む証拠として使えるかを別ゲートに分離。有効な**完全無音WAV**は `wav_byte_integrity=PASS` だが `claimed_rehearsal_audio_evidence=FAIL` としてCLI終了1。非ゼロ波形は `NEEDS_SPEECH_VERIFICATION` であり話し声を証明しない。新たにPCM非ゼロサンプル割合を診断値として記録。
 - 新規7テストは旧mainで1 FAIL/6 ERROR、修正後は既存17件を含め **24/24 PASS**。合成WAVのみ。金子さんの指摘した電話先AIの設定理解、客席後方の可聴性、ダイスの演技、観客の笑い、Voice実機再現率は **NOT_MEASURED**。
