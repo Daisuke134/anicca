@@ -1,5 +1,13 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 12:55 JST：アドリブ回収の「否定された行動」誤PASS回帰
+
+- `audit_adlib_anchors.py` が「会田アイタロウへ**連絡しません**」を「会田」＋「連絡」の文字一致だけでPASSした誤判定を修正。動作語直後の限定的な否定形を `negated_action_mentions` として分け、否定だけなら `immediate_reply_only_negated_action` でFAIL。別の肯定行動がある場合は除外しない。
+- 事前追加した新規4件によって**修正前15/18（3 FAIL）→修正後18/18 PASS**。既存舞台対話6件を含む24/24 PythonテストPASS。新規**オリジナル開発題8題**×2案（固定ベンチ不使用）の形式検査16/16 PASS。人工舞台会話12ケースの期待判定12/12一致、舞台対話静的検査12/12 PASS。
+- ChatGPT GPT-6製品ラベルの単一チャット内生成のみ。モデル比較 `NOT_COMPARABLE`、Grok/MuseはReason Network 3接続すべて409。これは否定語の**字面の検査**であり意味理解・面白さ・実機Voiceの測定ではない。笑い・声・客席後方の明瞭さ・金子さんの設定理解率は `NOT_MEASURED`。
+- [研究報告](../research/2026-11-23-1255-jst-negated-action.md)、[合成監査](./runs/2026-11-23-1255-negation-anchor-audit.json)、[16候補全文](./runs/2026-11-23-1255-negation-responses.jsonl)。X・外部応募・自動返信はOFF。
+
+
 ## 2026-11-23 11:57 JST：即興回収の「単語＋行動」オプトイン監査
 
 - New `audit_adlib_anchors.py`: ダイスの**完全なアドリブ発話**に事前注釈した `anchor_any` と `action_any` を、次のダイス発話前の**最初の非空AI回答**で照合。単なる返答の有無だけでは見逃す「人物名は出したが何も進めない」ケースを静的なレビュー対象にする。注釈が0件ならFAIL。

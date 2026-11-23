@@ -1,0 +1,525 @@
+{
+  "source_type": "synthetic",
+  "source_note": "text_only_constructed_stage_transcripts_not_real_voice_or_audience",
+  "cases": [
+    {
+      "scenario_id": "st01-1",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『会田アイタロウがまだ来ない！式場にいるの？』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "呼び"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウへ連絡しました。おもち34号の結婚式で、新郎席を二つ予約してしまいました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st01-2",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『会田アイタロウがまだ来ない！式場にいるの？』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "呼び"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウを呼びました。ところが参列者名簿に『会いたい気持ち』だけ出席しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st02-1",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『おもち34号、また式場に行った？僕はまだ道端！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "おもち34号"
+          ],
+          "action_any": [
+            "出動",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は現場へ出動しましたが、式場からブーケを回収しに戻りました。今、救急車の屋根に載っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st02-2",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『おもち34号、また式場に行った？僕はまだ道端！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "おもち34号"
+          ],
+          "action_any": [
+            "出動",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号を再手配しました。運転手は『新婦のお父さん』の腕章を外せず、病院までバージンロードを敷いています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st03-1",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『右折田まっすぐ、今度こそ左折して！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "右折田"
+          ],
+          "action_any": [
+            "左折",
+            "右折",
+            "指示",
+            "走"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは左折の代わりに四回右折しました。救急車はダイスさんの前を通過して車庫へ戻りました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st03-2",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『右折田まっすぐ、今度こそ左折して！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "右折田"
+          ],
+          "action_any": [
+            "左折",
+            "右折",
+            "指示",
+            "走"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐに左折を指示しました。本人が右手に『左』と書いて、右へ三キロ走りました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st04-1",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『絹ごし3号、豆腐じゃなく僕を運んで！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "絹ごし3号"
+          ],
+          "action_any": [
+            "配車",
+            "搬送",
+            "命令"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "絹ごし3号をダイスさんへ配車しました。荷台の豆腐田プル男が『人間は崩れます』と言って、先に豆腐へシートベルトを締めました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "st04-2",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "ダイス『絹ごし3号、豆腐じゃなく僕を運んで！』電話先のAI救急係として短く返す。",
+          "anchor_any": [
+            "絹ごし3号"
+          ],
+          "action_any": [
+            "配車",
+            "搬送",
+            "命令"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "絹ごし3号に搬送命令を出しました。ダイスさんは『大豆由来ではない』という理由で、豆腐の後ろに並ばされています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "negated_simple",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウへ連絡しません。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "negated_inability",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウへの連絡はできません。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "negated_and_affirmative",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウへの連絡はできません。会田の車を手配しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "scenario_id": "affirmative",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田アイタロウへ連絡しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ]
+    }
+  ]
+}

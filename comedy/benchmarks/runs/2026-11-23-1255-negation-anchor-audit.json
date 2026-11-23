@@ -1,0 +1,351 @@
+{
+  "source_type": "synthetic",
+  "total_cases": 12,
+  "expectations_met": 12,
+  "all_expectations_met": true,
+  "cases": [
+    {
+      "scenario_id": "st01-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "連絡"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st01-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "呼び"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st02-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "おもち34号"
+          ],
+          "matched_actions": [
+            "出動"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st02-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "おもち34号"
+          ],
+          "matched_actions": [
+            "手配"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st03-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "右折田"
+          ],
+          "matched_actions": [
+            "左折",
+            "右折"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st03-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "右折田"
+          ],
+          "matched_actions": [
+            "左折",
+            "右折",
+            "指示",
+            "走"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st04-1",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "絹ごし3号"
+          ],
+          "matched_actions": [
+            "配車"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "st04-2",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "絹ごし3号"
+          ],
+          "matched_actions": [
+            "搬送",
+            "命令"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "negated_simple",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 4,
+          "reason": "immediate_reply_only_negated_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "negated_inability",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [],
+          "negated_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [
+        {
+          "event": 4,
+          "reason": "immediate_reply_only_negated_action"
+        }
+      ],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "negated_and_affirmative",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "手配"
+          ],
+          "negated_action_mentions": [
+            "連絡"
+          ],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    },
+    {
+      "scenario_id": "affirmative",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "annotated_adlibs": 1,
+      "checks": [
+        {
+          "dais_event": 4,
+          "immediate_ai_event": 5,
+          "matched_anchors": [
+            "会田"
+          ],
+          "matched_actions": [
+            "連絡"
+          ],
+          "negated_action_mentions": [],
+          "third_party_speech_intervened": false
+        }
+      ],
+      "violations": [],
+      "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+      "voice": "NOT_MEASURED",
+      "laughter": "NOT_MEASURED",
+      "semantic_understanding": "NOT_MEASURED",
+      "warning": "Lexical action and denial heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+    }
+  ],
+  "voice": "NOT_MEASURED",
+  "laughter": "NOT_MEASURED"
+}
