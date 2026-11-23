@@ -7,6 +7,7 @@ provider receipts cannot be cryptographically verified by this offline tool.
 from __future__ import annotations
 
 import argparse
+import hashlib
 from collections import defaultdict
 import json
 from pathlib import Path
@@ -16,6 +17,7 @@ import sys
 from validate_run import jsonl
 
 SHA40 = re.compile(r"^[a-f0-9]{40}$")
+SHA256 = re.compile(r"^[a-f0-9]{64}$")
 INDEPENDENT_SOURCES = {"independent_provider_api", "independent_connected_model_call"}
 UNKNOWN = {"", "UNKNOWN", "NOT_EXPOSED", "NOT_MEASURED", "NOT_AVAILABLE", "UNVERIFIED"}
 
@@ -34,6 +36,18 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
     if len(set(task_ids)) != len(task_ids):
         raise ValueError("duplicate task ID")
     task_kinds = {task["id"]: task.get("kind") for task in tasks}
+    # A task_id alone cannot prove that two models received identical prompts.
+    # The task manifest is the local reference, but the provider input is still
+    # unverified without an independently captured request/receipt.
+    task_prompt_digests = {}
+    missing_manifest_prompts = []
+    for task in tasks:
+        prompt = task.get("prompt")
+        if not isinstance(prompt, str) or not prompt.strip():
+            missing_manifest_prompts.append(task["id"])
+        else:
+            task_prompt_digests[task["id"]] = hashlib.sha256(
+                prompt.encode("utf-8")).hexdigest()
     if any(not isinstance(row, dict) for row in responses):
         raise ValueError("each response must be an object")
 
@@ -45,6 +59,8 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
         by_model[model].append(row)
 
     reasons = []
+    if missing_manifest_prompts:
+        reasons.append("MISSING_CANONICAL_TASK_PROMPT")
     if len(by_model) < 2:
         reasons.append("FEWER_THAN_TWO_EXECUTED_MODELS")
 
@@ -61,6 +77,13 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
             candidate = r.get("candidate")
             if task not in task_ids:
                 issues.append("UNKNOWN_TASK")
+            else:
+                claimed_digest = r.get("task_prompt_sha256")
+                if not isinstance(claimed_digest, str) or not SHA256.fullmatch(claimed_digest):
+                    issues.append("MISSING_TASK_PROMPT_SHA256")
+                elif (task in task_prompt_digests
+                      and claimed_digest != task_prompt_digests[task]):
+                    issues.append("TASK_PROMPT_SHA256_MISMATCH")
             if not isinstance(candidate, str) or not candidate.strip():
                 issues.append("MISSING_CANDIDATE_ID")
             pair = (task, candidate)
@@ -142,6 +165,9 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
         ),
         "reasons": sorted(set(reasons)),
         "task_count": len(task_ids),
+        "prompt_fingerprint_policy": "sha256_exact_utf8_of_manifest_prompt",
+        "task_prompt_digest_coverage": len(task_prompt_digests),
+        "task_prompt_digest_missing_manifest_ids": missing_manifest_prompts,
         "response_count": len(responses),
         "models": model_rows,
         "actual_provider_receipts_verified": False,
@@ -153,6 +179,8 @@ def audit(tasks: list[dict], responses: list[dict]) -> dict:
         "warning": (
             "Offline audit of self-declared metadata only. Conditional eligibility is NOT "
             "verified execution, fairness proof, a model ranking, or a humor measurement. "
+            "A matching prompt SHA only verifies agreement with local self-declared "
+            "metadata; the actual sent provider request and receipts remain unverified. "
             "Provider receipts and sampling settings require independent verification."
         ),
     }

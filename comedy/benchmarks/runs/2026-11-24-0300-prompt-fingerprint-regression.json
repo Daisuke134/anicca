@@ -1,0 +1,61 @@
+{
+  "source_type": "synthetic",
+  "models": "fixture-only, never invoked",
+  "provider_receipts": "fabricated fixture identifiers, no model execution",
+  "skill_blob_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "comparison": {
+    "matching_synthetic_claims": {
+      "old": "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED",
+      "new": "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED",
+      "new_reasons": [],
+      "new_model_issues": [
+        [],
+        []
+      ]
+    },
+    "swapped_task_fingerprints": {
+      "old": "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED",
+      "new": "NOT_COMPARABLE",
+      "new_reasons": [
+        "MODEL_PROVENANCE_OR_COVERAGE_GAPS"
+      ],
+      "new_model_issues": [
+        [],
+        [
+          "TASK_PROMPT_SHA256_MISMATCH"
+        ]
+      ]
+    },
+    "missing_task_fingerprint": {
+      "old": "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED",
+      "new": "NOT_COMPARABLE",
+      "new_reasons": [
+        "MODEL_PROVENANCE_OR_COVERAGE_GAPS"
+      ],
+      "new_model_issues": [
+        [],
+        [
+          "MISSING_TASK_PROMPT_SHA256"
+        ]
+      ]
+    },
+    "same_wrong_fingerprint": {
+      "old": "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED",
+      "new": "NOT_COMPARABLE",
+      "new_reasons": [
+        "MODEL_PROVENANCE_OR_COVERAGE_GAPS"
+      ],
+      "new_model_issues": [
+        [
+          "TASK_PROMPT_SHA256_MISMATCH"
+        ],
+        [
+          "TASK_PROMPT_SHA256_MISMATCH"
+        ]
+      ]
+    }
+  },
+  "voice": "NOT_MEASURED",
+  "laughter": "NOT_MEASURED",
+  "publish_enabled": false
+}
