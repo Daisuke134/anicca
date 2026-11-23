@@ -20,6 +20,11 @@ struct HomeDeckCard: Identifiable {
         case selectedIntervention
         /// The words a tapped notification delivered.
         case notification
+        /// Bundled words shown when the Manager engine cannot deliver a
+        /// word (unreachable, error, or a `none` decision). The living home
+        /// must never be blank: 1.11.0 shipped an empty home to every user
+        /// because an unavailable engine suppressed all words.
+        case bundledFallback
     }
 
     let quote: Quote
@@ -32,7 +37,24 @@ struct HomeDeckCard: Identifiable {
     var selectionCaptionKey: String {
         switch origin {
         case .selectedIntervention, .notification: return "feed_chosen_from_answers"
+        case .bundledFallback: return "feed_default_words"
         }
+    }
+}
+
+/// The bundled fallback deck. Pure and deterministic so it can be unit
+/// tested: given the bundled catalog, the deck starts at today's word
+/// (same day-rotation as `QuoteProvider.todayQuote`) and continues through
+/// the catalog, so the living home rotates on the normal cadence fully
+/// offline. It never returns an empty deck while the catalog is non-empty.
+enum HomeFallbackDeck {
+    static func quotes(language: LanguagePreference, date: Date, count: Int = 8, calendar: Calendar = .current) -> [Quote] {
+        let pool = QuoteProvider.shared.all(preferredLanguage: language).filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !pool.isEmpty else { return [] }
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+        let start = (dayOfYear - 1) % pool.count
+        let take = min(count, pool.count)
+        return (0..<take).map { pool[(start + $0) % pool.count] }
     }
 }
 
@@ -210,13 +232,16 @@ struct FeedRootView: View {
             }
         }
         // The identifier names the home screen itself, not the deck pager.
-        // Since the Manager switch (PR #9399) the deck is legitimately empty
-        // whenever there is no intervention to show — a `none` decision, an
+        // Since the Manager switch (PR #9399) the deck could be empty
+        // whenever there was no intervention to show — a `none` decision, an
         // unavailable engine, or a signed-out session (sign-in is skippable
         // by design) — and the home must still be the identifiable screen
         // onboarding lands on. Attached to the pager only, `feed-today`
         // never existed in those states and the onboarding ship gate failed
         // at the paywall-close assertion on the #9399 merge run.
+        // 1.11.1: the deck is no longer allowed to stay empty — bundled
+        // fallback words fill it whenever the engine delivers nothing —
+        // but the identifier stays on the screen for the same reason.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-today")
         .environmentObject(themeStore)
@@ -345,6 +370,12 @@ struct FeedRootView: View {
         deckModel.cards = []
         applyPendingQuoteNavigation()
         guard wordRequest == request else { return }
+        // The home must never be blank. Bundled words go up immediately —
+        // before any network answer — and stay up unless the Manager
+        // delivers a chosen word to replace them. This works offline, on
+        // first launch, and while signed out. (1.11.0 regression: an
+        // unavailable engine left the deck empty for every user.)
+        if deckModel.cards.isEmpty { buildFallbackDeck(language: language, now: now) }
         Task { @MainActor in
             do {
                 let decision = try await ModelWordsService.shared.today(user: user, language: language.rawValue, now: now)
@@ -357,17 +388,44 @@ struct FeedRootView: View {
                 if let quote = decision.quote {
                     buildDeck(selected: .init(quote: quote, deliveryId: decision.deliveryID), language: language, now: now)
                 }
+                // A `none` decision (quote == nil) keeps the bundled words:
+                // the person still gets words today; only the personalized
+                // intervention is withheld.
             } catch {
-                // An unavailable engine suppresses the intervention. Never rotate
-                // a catalog word or reuse a previous person's cached selection.
+                // Engine unreachable or error: the bundled fallback deck
+                // built above stays on screen.
             }
-            if wordRequest == request { applyPendingQuoteNavigation() }
+            if wordRequest == request {
+                applyPendingQuoteNavigation()
+                if deckModel.cards.isEmpty { buildFallbackDeck(language: language, now: now) }
+            }
         }
+    }
+
+    private func buildFallbackDeck(language: LanguagePreference, now: Date) {
+        let quotes = HomeFallbackDeck.quotes(language: language, date: now)
+        guard !quotes.isEmpty else { return }
+        endDisplay(cause: .replaced)
+        deckModel.cards = quotes.map { HomeDeckCard(quote: $0, origin: .bundledFallback) }
+        currentIndex = 0
+        navigationRevision += 1
+        lastInteractionAt = Date()
+        beginDisplay(at: 0)
     }
 
     private func buildDeck(selected presentation: DailyAffirmationStore.Presentation, language: LanguagePreference, now: Date, firstOrigin: HomeDeckCard.Origin = .selectedIntervention) {
         endDisplay(cause: .replaced)
-        deckModel.cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        // Behind the chosen word, the rest of today's deck: bundled words,
+        // so the living home keeps changing on its own at the established
+        // cadence. A single-card deck freezes on one phrase all day, which
+        // the founder rejected (2026-11-23): the home is a garden — never
+        // empty, never frozen. The Manager's word stays first and is the
+        // recorded intervention; the tail is labelled bundledFallback.
+        for quote in HomeFallbackDeck.quotes(language: language, date: now) where quote.id != presentation.quote.id {
+            cards.append(HomeDeckCard(quote: quote, origin: .bundledFallback))
+        }
+        deckModel.cards = cards
         currentIndex = 0
         navigationRevision += 1
         lastInteractionAt = Date()
@@ -409,7 +467,10 @@ struct FeedRootView: View {
         displayedIndex = index
         displayedAt = Date()
         // Older cached presentations have no assignment ID or propensity.
-        if deckModel.cards[index].deliveryId == nil {
+        // Bundled fallback cards are not Manager deliveries: never mint a
+        // delivery id for them, or the bench would count words the engine
+        // never assigned.
+        if deckModel.cards[index].deliveryId == nil, deckModel.cards[index].origin != .bundledFallback {
             deckModel.cards[index].deliveryId = UUID().uuidString
         }
         let deliveredCard = deckModel.cards[index]
