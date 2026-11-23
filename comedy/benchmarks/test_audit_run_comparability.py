@@ -95,5 +95,51 @@ class ComparableRunTests(unittest.TestCase):
             audit([], rows("A"))
 
 
+    def test_symmetric_missing_candidate_per_task_is_rejected(self):
+        # Both claimed models omit the same candidate on the same task.
+        sample = [r for r in rows("A") + rows("B")
+                  if not (r["task_id"] == "new-s1" and r["candidate"] == "B")]
+        out = audit(TASKS, sample)
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+        self.assertIn("LESS_THAN_TWO_CANDIDATES_PER_TASK", out["models"][0]["issues"])
+        self.assertIn("UNEQUAL_CANDIDATES_PER_TASK", out["models"][0]["issues"])
+
+    def test_single_candidate_for_every_task_is_rejected(self):
+        sample = [r for r in rows("A") + rows("B") if r["candidate"] == "A"]
+        out = audit(TASKS, sample)
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+        self.assertIn("LESS_THAN_TWO_CANDIDATES_PER_TASK", out["models"][0]["issues"])
+
+    def test_whitespace_non_silence_response_is_rejected(self):
+        sample = rows("A") + rows("B")
+        sample[0]["response"] = " 　"
+        out = audit(TASKS, sample)
+        self.assertIn("EMPTY_NON_SILENCE_RESPONSE", out["models"][0]["issues"])
+
+    def test_empty_silence_response_is_valid_for_claimed_conditions(self):
+        tasks = deepcopy(TASKS)
+        tasks[1]["kind"] = "silence"
+        sample = rows("A") + rows("B")
+        for r in sample:
+            if r["task_id"] == "new-s1":
+                r["response"] = ""
+        out = audit(tasks, sample)
+        self.assertEqual(out["comparison_eligibility"],
+                         "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED")
+
+    def test_nonempty_silence_response_is_rejected(self):
+        tasks = deepcopy(TASKS)
+        tasks[1]["kind"] = "silence"
+        sample = rows("A") + rows("B")
+        out = audit(tasks, sample)
+        self.assertIn("UNEXPECTED_RESPONSE_TO_SILENCE", out["models"][0]["issues"])
+
+    def test_missing_nonstring_response_still_rejected(self):
+        sample = rows("A") + rows("B")
+        sample[0]["response"] = None
+        out = audit(TASKS, sample)
+        self.assertIn("MISSING_RESPONSE_TEXT", out["models"][0]["issues"])
+
+
 if __name__ == "__main__":
     unittest.main()
