@@ -1,0 +1,67 @@
+{
+  "source": "synthetic_timestamps_not_recorded_voice",
+  "baseline_main_commit": "6e852740b817830e76f3f7335c4dbe3eb7f89a84",
+  "checks": [
+    {
+      "id": "correct_split",
+      "source": "synthetic_manually_annotated",
+      "old_text_gate": "PASS",
+      "old_overall_gate": "PASS",
+      "new_text_gate": "PASS",
+      "new_timing_gate": "PASS",
+      "new_overall_gate": "PASS",
+      "new_timing_violations": [],
+      "measured_audio": false
+    },
+    {
+      "id": "ai_interrupts_cue",
+      "source": "synthetic_manually_annotated",
+      "old_text_gate": "PASS",
+      "old_overall_gate": "PASS",
+      "new_text_gate": "PASS",
+      "new_timing_gate": "FAIL",
+      "new_overall_gate": "FAIL",
+      "new_timing_violations": [
+        {
+          "event": 2,
+          "reason": "ai_overlaps_dais_speech",
+          "overlap_ms": 50
+        }
+      ],
+      "measured_audio": false
+    },
+    {
+      "id": "ai_audio_spills_beyond_end",
+      "source": "synthetic_manually_annotated",
+      "old_text_gate": "PASS",
+      "old_overall_gate": "PASS",
+      "new_text_gate": "PASS",
+      "new_timing_gate": "FAIL",
+      "new_overall_gate": "FAIL",
+      "new_timing_violations": [
+        {
+          "event": 4,
+          "reason": "ai_audio_after_end_cue",
+          "spillover_ms": 50
+        }
+      ],
+      "measured_audio": false
+    },
+    {
+      "id": "touching_no_overlap",
+      "source": "synthetic_manually_annotated",
+      "old_text_gate": "PASS",
+      "old_overall_gate": "PASS",
+      "new_text_gate": "PASS",
+      "new_timing_gate": "PASS",
+      "new_overall_gate": "PASS",
+      "new_timing_violations": [],
+      "measured_audio": false
+    }
+  ],
+  "voice_technical_compliance": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "real_time_latency": "NOT_MEASURED",
+  "publish_enabled": false,
+  "auto_reply_enabled": false
+}
