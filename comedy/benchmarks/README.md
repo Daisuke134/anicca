@@ -1,5 +1,13 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-24 03:00 JST：問題文が異なるのに同条件比較可能と誤判定しない
+- `audit_run_comparability.py` は問題文 `prompt` の**厳密UTF-8 SHA-256**を正本タスク側で計算し、各回答の `task_prompt_sha256` を照合する。IDだけ共通・プロンプト入れ替え・両モデル同じ誤ハッシュ・ハッシュ欠測を `NOT_COMPARABLE` にする。ローカルのSHA一致でもプロバイダへの送信実証ではなく、人工正例は引き続き `CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED`。
+- 合成4比較で旧版は誤条件付き許可3件、修正後は3件とも拒否。新規回帰7件を含めPython **322/322 PASS**。現行2分稿静的検査22発話・714文字でPASS。
+- **固定ベンチ未使用**。新規オリジナル8題（一般4/電話先AI4）×2テキスト案、形式 **16/16 PASS**。GPT-6製品名の単一チャット出力のみ、正確なモデルビルド/独立APIレシート未取得。ReasonのGrok/Muse接続3件は409で未実行、比較は `NOT_COMPARABLE`。
+- 実機Voice・観客の笑い・電話先AIの理解・客席後方の聞き取り・ダイスのアドリブへの反応は **NOT_MEASURED**。v8・9/6確定稿・選択中2分稿・Skill本文は変更なし。外部publish/auto-replyはOFF。
+- [研究報告](../research/2026-11-24-0300-jst-prompt-identity.md) / [実行済み旧新版合成回帰](./runs/2026-11-24-0300-prompt-fingerprint-regression.json) / [新作16回答](./runs/2026-11-24-0300-chat-responses.jsonl)。
+
+
 ## 2026-11-24 02:00 JST：比較対象双方の同一欠測・空回答を見逃さない
 - `audit_run_comparability.py` で**各題2候補以上・各題の候補数均衡**を検査。比較対象の全モデルが同じ候補を落とした場合でも `NOT_COMPARABLE`。沈黙課題の空文字は正当な回答として許容する一方、それ以外の空白回答や沈黙課題の発話を拒否する。
 - 人工回帰18件は旧mainで **14/18 PASS（4 FAIL）** → 修正後 **18/18 PASS**。全Pythonテスト **315/315 PASS**。新規オリジナル開発題8題×2テキスト回答は形式 **16/16 PASS**、**固定ベンチ未使用**。
