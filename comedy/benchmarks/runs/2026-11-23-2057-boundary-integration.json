@@ -1,0 +1,24 @@
+{
+  "test_type": "synthetic_annotated_GitHub_main_end_to_end",
+  "raw_audio_used": false,
+  "source_chunk_count": 11,
+  "normalized_events": 7,
+  "canonical_nominal_gate": "PASS",
+  "nominal_reply_gaps_ms": [
+    50,
+    50
+  ],
+  "normal_error_0ms": "ROBUST_NONOVERLAP_FOR_TESTED_BOUNDARIES",
+  "normal_error_100ms": "BOUNDARY_SENSITIVE",
+  "early_50ms_nominal_gate": "FAIL",
+  "early_50ms_error_10ms": "ROBUST_OVERLAP_PRESENT",
+  "early_50ms_error_100ms": "BOUNDARY_SENSITIVE",
+  "end_spill_50ms_nominal_gate": "FAIL",
+  "end_spill_50ms_error_100ms": "BOUNDARY_SENSITIVE",
+  "voice_reproducibility": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "assumed_annotation_endpoint_errors_not_calibrated": true,
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "source_main_commit": "098ce6666854aae2ff7bfbba3420c61101c088db",
+  "publish": false
+}

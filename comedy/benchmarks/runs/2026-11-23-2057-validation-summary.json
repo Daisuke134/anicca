@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "evaluated_at": "2026-11-23T21:02:05+09:00",
+  "evaluator": "comedy/benchmarks/validate_run.py",
+  "evaluator_blob_sha": "c0472dea7f4b0bd24a7d80a03948f70497d241a7",
+  "mode": "in_memory_Python_from_GitHub_main",
+  "task_origin": "NEW_ORIGINAL_INTERNAL_DEV",
+  "fixed_benchmark": false,
+  "task_count": 8,
+  "model": "ChatGPT GPT-6 (single chat session text)",
+  "candidate_groups": 2,
+  "responses_count": 16,
+  "hard_gate_pass": 16,
+  "hard_gate_fail": 0,
+  "humor_score": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "grok": "NOT_RUN",
+  "muse": "NOT_RUN",
+  "cross_model_comparison": "NOT_COMPARABLE",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "source_main_commit": "098ce6666854aae2ff7bfbba3420c61101c088db",
+  "publish": false
+}

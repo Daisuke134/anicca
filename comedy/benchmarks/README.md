@@ -1,5 +1,13 @@
 # COMEDY BENCHMARK v1 — 4つの違う能力を混同しない
 
+## 2026-11-23 20:57 JST：音声発話境界の注釈誤差に対する感度監査
+
+- 新規 `audit_endpoint_uncertainty.py` は `normalize_asr_turns.py` の既存JSON評価結果を入力し、**仮定上の各時刻端点誤差±u ms**に対して、発話被りと終幕後残留の判定が頑健かを分析する。元の舞台ハードゲートは変更しない。**u=100msは実機の誤差実測ではない**。
+- Python回帰アサーション15/15 PASS。main由来の既存合成ASR 11断片→7イベントの+50ms応答は、誤差ゼロ仮定なら非重複、各端点±100ms仮定なら `BOUNDARY_SENSITIVE`。50ms早い発声も±100ms仮定では被りを断定できない。
+- **新規オリジナル開発8題**（一般4/舞台4）×2テキスト候補の既存 `validate_run.py` ハードゲート16/16 PASS。固定ベンチ未使用、GPT-6チャット内生成のみ。Grok/Museは接続HTTP409で未実行、モデル間比較`NOT_COMPARABLE`。実機音声・観客笑い・後方可聴性は`NOT_MEASURED`、外部publishはOFF。
+- [研究報告](../research/2026-11-23-2057-asr-boundary-uncertainty.md) / [合成注釈統合実測](./runs/2026-11-23-2057-boundary-integration.json) / [16回答原文](./runs/2026-11-23-2057-chat-responses.jsonl)。
+
+
 ## 2026-11-23 18:55 JST：ASR復元後に隠れた時間的舞台違反を検出
 - `normalize_asr_turns.evaluate` は従来の文字列ゲートに加え、復元後の手動時刻注釈を `measure_stage_timing.measure` で監査。台本第一声が完全一致しても、ダイスの合図終了前のAI発話開始、終幕後まで続くAI音声なら総合FAIL。`stage_gate` と `timing_gate` を分離して記録。
 - 合成の2負例：旧テキストゲート誤PASS → 新時間ゲートFAIL（開演の50ms被り／終幕後50ms残留）。通常の11断片→7イベントと境界一致の正例はPASS。**実音声ではなく人工タイムコード**。
