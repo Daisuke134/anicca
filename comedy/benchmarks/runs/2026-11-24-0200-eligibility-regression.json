@@ -1,0 +1,26 @@
+{
+  "old_main": {
+    "test_count": 18,
+    "exit_code": 1,
+    "failed_test_names": [
+      "test_nonempty_silence_response_is_rejected",
+      "test_single_candidate_for_every_task_is_rejected",
+      "test_symmetric_missing_candidate_per_task_is_rejected",
+      "test_whitespace_non_silence_response_is_rejected"
+    ],
+    "failures": 4,
+    "errors": 0
+  },
+  "patched": {
+    "test_count": 18,
+    "exit_code": 0,
+    "failed_test_names": [],
+    "failures": 0,
+    "errors": 0
+  },
+  "source_main_sha": "39eb770202790472a09a185852d8e31933c32f07",
+  "test_type": "synthetic_unit_tests_only",
+  "model_execution": "NOT_PERFORMED_BY_TESTS",
+  "funniness": "NOT_MEASURED",
+  "voice": "NOT_MEASURED"
+}
