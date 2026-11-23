@@ -86,6 +86,13 @@ class VoiceEvidenceTests(unittest.TestCase):
         r = self.audit_rows([self.row(a, "one"), row])
         self.assertEqual(r["repeated_config_consistency"], "DIFFERENT_CONFIGS")
 
+    def test_different_actual_sample_rates_are_not_same_conditions(self):
+        a = self.wav("a.wav", [1] * 80, rate=8000)
+        b = self.wav("b.wav", [2] * 80, rate=16000)
+        result = self.audit_rows([self.row(a, "one"), self.row(b, "two")])
+        self.assertEqual(result["wav_byte_integrity"], "PASS")
+        self.assertEqual(result["repeated_config_consistency"], "DIFFERENT_CONFIGS")
+
     def test_path_traversal_rejected(self):
         p = self.wav("tone.wav", [400] * 80)
         row = self.row(p, "one")
