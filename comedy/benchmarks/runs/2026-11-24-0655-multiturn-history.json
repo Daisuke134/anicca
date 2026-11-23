@@ -1,0 +1,162 @@
+{
+  "run_id": "2026-11-24-0655-multiturn-history",
+  "base": "66674ebe385b65f0fa178070a69115601d28ba6b",
+  "skill_version": "0.2.1",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "model": "ChatGPT GPT-6.2",
+  "exact_model_build": null,
+  "independent_api_receipt": null,
+  "temperature": null,
+  "effort": null,
+  "modality": "text",
+  "generation": "single chat, jointly authored complete paths, not independent sequential live inference",
+  "rights": "original internal development prompts and responses; no third-party entries",
+  "comparison": "NOT_COMPARABLE",
+  "other_models": {
+    "Grok": "NOT_RUN: Reason team lookup 409 agent_network_offline",
+    "Muse": "NOT_RUN: Reason team lookup 409 agent_network_offline"
+  },
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "scenes": [
+    {
+      "id": "stamp",
+      "anchor": "右折田まっすぐ",
+      "cues": [
+        "右折田まっすぐがスタンプカード持ってきた！",
+        "もう満タンだって！",
+        "俺にもその特典使わせて！"
+      ],
+      "cue_terms": [
+        [
+          "スタンプカード"
+        ],
+        [
+          "満タン"
+        ],
+        [
+          "特典"
+        ]
+      ],
+      "variants": [
+        {
+          "id": "A",
+          "state": "右折無料券",
+          "lines": [
+            "右折田まっすぐのスタンプカードは右折一回で一個押します。病院へ向かう前に八個たまりました。",
+            "満タンなので右折田まっすぐに右折無料券を発行しました。次の一周はサービスです。",
+            "右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。"
+          ]
+        },
+        {
+          "id": "B",
+          "state": "車庫無料券",
+          "lines": [
+            "右折田まっすぐのスタンプカードは車庫へ戻るたびに一個押します。出発地点だけで会員になりました。",
+            "満タンなので右折田まっすぐに車庫無料券を発行しました。明日まで車庫にいられます。",
+            "右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "partition",
+      "anchor": "豆腐田プル男",
+      "cues": [
+        "豆腐田プル男、車に仕切り板積んでるよ！",
+        "もう全部埋まったって！",
+        "俺の分も一つ空けてよ！"
+      ],
+      "cue_terms": [
+        [
+          "仕切り板"
+        ],
+        [
+          "埋ま"
+        ],
+        [
+          "空け"
+        ]
+      ],
+      "variants": [
+        {
+          "id": "A",
+          "state": "木綿専用席",
+          "lines": [
+            "豆腐田プル男は仕切り板で荷台を六つに分けました。木綿専用席を六席設置済みです。",
+            "豆腐田プル男の木綿専用席は全部埋まりました。豆腐一丁ずつにシートベルトを締めました。",
+            "豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。"
+          ]
+        },
+        {
+          "id": "B",
+          "state": "絹ごし個室",
+          "lines": [
+            "豆腐田プル男は仕切り板で荷台に絹ごし個室を作りました。相部屋だと豆腐が崩れるそうです。",
+            "豆腐田プル男の絹ごし個室は全部埋まりました。各部屋に冷奴用の小皿を配りました。",
+            "豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "photo",
+      "anchor": "会田アイタロウ",
+      "cues": [
+        "会田アイタロウが記念写真を持ってきた！",
+        "写真だけ増えてるよ！",
+        "俺にも一枚くれよ！"
+      ],
+      "cue_terms": [
+        [
+          "記念写真"
+        ],
+        [
+          "写真"
+        ],
+        [
+          "一枚"
+        ]
+      ],
+      "variants": [
+        {
+          "id": "A",
+          "state": "等身大パネル",
+          "lines": [
+            "会田アイタロウの記念写真から等身大パネルを作成しました。面会相手が来なくても撮影できます。",
+            "会田アイタロウは等身大パネル同士で写真を撮っています。毎回二人とも面会済みになります。",
+            "会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。"
+          ]
+        },
+        {
+          "id": "B",
+          "state": "証明写真",
+          "lines": [
+            "会田アイタロウの記念写真は面会済みの証明写真として登録しました。本人確認は写真同士で行います。",
+            "会田アイタロウの証明写真を複製しています。写真の枚数だけ面会実績が増えました。",
+            "会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。"
+          ]
+        }
+      ]
+    }
+  ],
+  "forbidden": [
+    "深呼吸",
+    "吸って",
+    "吐いて",
+    "住所を教えて",
+    "窓の外",
+    "台本を確認"
+  ],
+  "max_chars": 90,
+  "notes": "All cues occur after locked opening in fictional rehearsal. Real emergency overrides acting. State terms are developer-authored lexical proxies, not semantic labels.",
+  "evaluator_source": "import json\ndef evaluate(data, score, audit, fixed):\n    tasks=[]; responses=[]; details=[]\n    for s in data[\"scenes\"]:\n        for i,cue in enumerate(s[\"cues\"]):\n            tasks.append({\"id\":f'{s[\"id\"]}-{i+1}',\"category\":\"phone_ai_stage\",\"kind\":\"continuation\",\"prompt\":cue,\"any_of\":[s[\"anchor\"]],\"cue_ack_any_of\":s[\"cue_terms\"][i],\"action_any_of\":[\"押します\",\"たまりました\",\"発行\",\"適用\",\"確保\",\"分けました\",\"設置\",\"締めました\",\"空けました\",\"作りました\",\"配りました\",\"入室\",\"作成\",\"撮っています\",\"お渡し\",\"登録\",\"複製\"],\"forbidden\":data[\"forbidden\"],\"max_chars\":data[\"max_chars\"],\"max_questions\":0})\n            for v in s[\"variants\"]:\n                responses.append({\"task_id\":f'{s[\"id\"]}-{i+1}',\"candidate\":v[\"id\"],\"response\":v[\"lines\"][i]})\n    index={t[\"id\"]:t for t in tasks}\n    format_result=lambda rows:sum(not score(index[r[\"task_id\"]],r[\"response\"]) for r in rows)\n    original_audit=audit(tasks,responses)\n    swapped=[]\n    for s in data[\"scenes\"]:\n        for v,other in [(s[\"variants\"][0],s[\"variants\"][1]),(s[\"variants\"][1],s[\"variants\"][0])]:\n            for i in range(3):\n                line=other[\"lines\"][i] if i==2 else v[\"lines\"][i]\n                swapped.append({\"task_id\":f'{s[\"id\"]}-{i+1}',\"candidate\":v[\"id\"],\"response\":line})\n            original=v[\"lines\"][2]\n            foreign=other[\"lines\"][2]\n            history=\" \".join(v[\"lines\"][:2])\n            assert v[\"state\"] in history and other[\"state\"] not in history\n            rule=lambda line: v[\"state\"] in line and other[\"state\"] not in line\n            details.append({\"scene\":s[\"id\"],\"candidate\":v[\"id\"],\"expected_state\":v[\"state\"],\"foreign_state\":other[\"state\"],\"original\":rule(original),\"swapped\":rule(foreign),\"original_text\":original,\"swapped_text\":foreign})\n    swapped_audit=audit(tasks,swapped)\n    # Fixed stage tasks are synthetic contract checks, never model runs.\n    contract=[]\n    for t in fixed:\n        positive=t.get(\"expected_exact\",\"\")\n        negative=positive+\"追加の質問です。\"\n        contract.append({\"task\":t[\"id\"],\"positive_accepted\":not score(t,positive),\"negative_rejected\":bool(score(t,negative))})\n    return {\"original_format\":format_result(responses),\"swapped_format\":format_result(swapped),\"original_lexical\":original_audit[\"passed\"],\"swapped_lexical\":swapped_audit[\"passed\"],\"original_count\":len(responses),\"swapped_count\":len(swapped),\"changed_final_count\":len(details),\"original_state_pass\":sum(x[\"original\"] for x in details),\"swapped_state_rejected\":sum(not x[\"swapped\"] for x in details),\"state_details\":details,\"original_lexical_failures\":[x for x in original_audit[\"items\"] if x[\"gate\"]!=\"PASS\"],\"swapped_lexical_failures\":[x for x in swapped_audit[\"items\"] if x[\"gate\"]!=\"PASS\"],\"fixed_contract\":contract,\"humor\":\"NOT_MEASURED\",\"voice\":\"NOT_MEASURED\",\"human_evaluation_count\":0}\n",
+  "source_blobs": {
+    "validator": "c0472dea7f4b0bd24a7d80a03948f70497d241a7",
+    "fixed_contract": "a8381ea1eef99edeb72f854a458603a88fbe8e03",
+    "lexical": "eed5fa6622bcbd9cd2b2f627f0fa136ff831fae8"
+  },
+  "execution_tool_result": {
+    "text": "Process started with PID 51392 (shell: /bin/zsh)\nInitial output:\nRESULT_JSON={\"original_format\":18,\"swapped_format\":18,\"original_lexical\":18,\"swapped_lexical\":18,\"original_count\":18,\"swapped_count\":18,\"changed_final_count\":6,\"original_state_pass\":6,\"swapped_state_rejected\":6,\"state_details\":[{\"scene\":\"stamp\",\"candidate\":\"A\",\"expected_state\":\"右折無料券\",\"foreign_state\":\"車庫無料券\",\"original\":true,\"swapped\":false,\"original_text\":\"右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。\",\"swapped_text\":\"右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。\"},{\"scene\":\"stamp\",\"candidate\":\"B\",\"expected_state\":\"車庫無料券\",\"foreign_state\":\"右折無料券\",\"original\":true,\"swapped\":false,\"original_text\":\"右折田まっすぐの特典、車庫無料券をお客様にも適用しました。車庫の空きだけ確保しました。\",\"swapped_text\":\"右折田まっすぐの特典、右折無料券をお客様にも適用しました。お迎えの車がもう一周します。\"},{\"scene\":\"partition\",\"candidate\":\"A\",\"expected_state\":\"木綿専用席\",\"foreign_state\":\"絹ごし個室\",\"original\":true,\"swapped\":false,\"original_text\":\"豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。\",\"swapped_text\":\"豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。\"},{\"scene\":\"partition\",\"candidate\":\"B\",\"expected_state\":\"絹ごし個室\",\"foreign_state\":\"木綿専用席\",\"original\":true,\"swapped\":false,\"original_text\":\"豆腐田プル男の絹ごし個室を一つ空けました。小皿と薬味だけ先に入室しています。\",\"swapped_text\":\"豆腐田プル男の木綿専用席を一つ空けました。次の豆腐が座るために予約してあります。\"},{\"scene\":\"photo\",\"candidate\":\"A\",\"expected_state\":\"等身大パネル\",\"foreign_state\":\"証明写真\",\"original\":true,\"swapped\":false,\"original_text\":\"会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。\",\"swapped_text\":\"会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。\"},{\"scene\":\"photo\",\"candidate\":\"B\",\"expected_state\":\"証明写真\",\"foreign_state\":\"等身大パネル\",\"original\":true,\"swapped\":false,\"original_text\":\"会田アイタロウから一枚お渡しします。証明写真のお客様だけ救急車に会えたことになりました。\",\"swapped_text\":\"会田アイタロウから一枚お渡しします。等身大パネルのお客様が救急車と面会済みになりました。\"}],\"original_lexical_failures\":[],\"swapped_lexical_failures\":[],\"fixed_contract\":[{\"task\":\"exact-stage-first-01\",\"positive_accepted\":true,\"negative_rejected\":true},{\"task\":\"exact-stage-second-02\",\"positive_accepted\":true,\"negative_rejected\":true},{\"task\":\"exact-stage-silence-03\",\"positive_accepted\":true,\"negative_rejected\":true}],\"humor\":\"NOT_MEASURED\",\"voice\":\"NOT_MEASURED\",\"human_evaluation_count\":0}\nPYTHON=3.14.7\n\n✅ Process 51392 has finished execution\n\n[executed on device: AniccanoMac-mini.local (e38f34d7-64a7-4608-85dd-b0ff2c57e109)]"
+  }
+}
