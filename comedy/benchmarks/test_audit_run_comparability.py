@@ -2,11 +2,12 @@
 """Synthetic comparison eligibility regressions; no provider calls or humor scoring."""
 import unittest
 from copy import deepcopy
+from hashlib import sha256
 
 from audit_run_comparability import audit
 
 SKILL = "a" * 40
-TASKS = [{"id": "new-g1"}, {"id": "new-s1"}]
+TASKS = [{"id": "new-g1", "prompt": "架空のお題①"}, {"id": "new-s1", "prompt": "架空のお題②"}]
 
 
 def rows(model, source="independent_provider_api"):
@@ -16,6 +17,7 @@ def rows(model, source="independent_provider_api"):
             result.append({
                 "model": model, "model_version": model + "-2026-11",
                 "task_id": task["id"], "candidate": candidate,
+                "task_prompt_sha256": sha256(task["prompt"].encode("utf-8")).hexdigest(),
                 "response": "架空の回答です。",
                 "invocation_source": source,
                 "provider_receipt": "fixture-receipt-" + model,
@@ -139,6 +141,57 @@ class ComparableRunTests(unittest.TestCase):
         sample[0]["response"] = None
         out = audit(TASKS, sample)
         self.assertIn("MISSING_RESPONSE_TEXT", out["models"][0]["issues"])
+
+
+    def test_identical_candidate_ids_but_swapped_prompts_rejected(self):
+        sample = rows("A") + rows("B")
+        for r in sample[4:]:
+            new_id = "new-s1" if r["task_id"] == "new-g1" else "new-g1"
+            r["task_prompt_sha256"] = next(
+                x["task_prompt_sha256"] for x in sample[:4] if x["task_id"] == new_id)
+        out = audit(TASKS, sample)
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+        self.assertIn("TASK_PROMPT_SHA256_MISMATCH", out["models"][1]["issues"])
+
+    def test_one_model_missing_prompt_fingerprint_rejected(self):
+        sample = rows("A") + rows("B")
+        sample[-1].pop("task_prompt_sha256")
+        out = audit(TASKS, sample)
+        self.assertIn("MISSING_TASK_PROMPT_SHA256", out["models"][1]["issues"])
+
+    def test_all_models_share_same_wrong_fingerprint_rejected(self):
+        sample = rows("A") + rows("B")
+        for r in sample:
+            r["task_prompt_sha256"] = "f" * 64
+        out = audit(TASKS, sample)
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+        self.assertIn("TASK_PROMPT_SHA256_MISMATCH", out["models"][0]["issues"])
+
+    def test_fake_short_digest_rejected(self):
+        sample = rows("A") + rows("B")
+        sample[0]["task_prompt_sha256"] = "deadbeef"
+        out = audit(TASKS, sample)
+        self.assertIn("MISSING_TASK_PROMPT_SHA256", out["models"][0]["issues"])
+
+    def test_missing_manifest_prompt_rejected(self):
+        tasks = deepcopy(TASKS)
+        tasks[0].pop("prompt")
+        out = audit(tasks, rows("A") + rows("B"))
+        self.assertIn("MISSING_CANONICAL_TASK_PROMPT", out["reasons"])
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+
+    def test_blank_manifest_prompt_rejected(self):
+        tasks = deepcopy(TASKS)
+        tasks[1]["prompt"] = "   "
+        out = audit(tasks, rows("A") + rows("B"))
+        self.assertEqual(out["comparison_eligibility"], "NOT_COMPARABLE")
+
+    def test_exact_unicode_utf8_prompt_hash_remains_conditional(self):
+        out = audit(TASKS, rows("A") + rows("B"))
+        self.assertEqual(out["comparison_eligibility"],
+                         "CONDITIONALLY_COMPARABLE_RECEIPTS_UNVERIFIED")
+        self.assertEqual(out["task_prompt_digest_coverage"], len(TASKS))
+        self.assertFalse(out["actual_provider_receipts_verified"])
 
 
 if __name__ == "__main__":
