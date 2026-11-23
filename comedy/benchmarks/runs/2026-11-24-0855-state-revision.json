@@ -1,0 +1,416 @@
+{
+  "run_id": "2026-11-24-0855-state-revision",
+  "base_main": "f66126f21d49e7e9525936f9dd4a56443c111485",
+  "skill_version": "0.2.1",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "source": "new original fictional internal development prompts; fixed stage exact fixtures separate",
+  "model": "ChatGPT GPT-6.2 product identity",
+  "model_build": null,
+  "temperature": null,
+  "effort": null,
+  "provider_receipt": null,
+  "modality": "text",
+  "independent_invocations": false,
+  "other_models": {
+    "Grok": "NOT_RUN: Reason list_team HTTP 409 agent_network_offline",
+    "Muse": "NOT_RUN: Reason list_team HTTP 409 agent_network_offline"
+  },
+  "comparison": "NOT_COMPARABLE",
+  "cases": [
+    {
+      "id": "right",
+      "character": "右折田まっすぐ",
+      "history": "右折田まっすぐに病院の西口へ向かう経路を登録しました。",
+      "correction": "西口じゃない、今日は東口だけ開いてる！",
+      "cue": "じゃあそっちに頼む！",
+      "old": "西口",
+      "current": "東口",
+      "a": "右折田まっすぐの行き先を東口に変更しました。東口の前を四回通りましたので、受付を四件完了にしました。",
+      "b": "右折田まっすぐの西口行きを取り消し、東口に変更しました。入口の前では左折になるため、入口の写真だけ到着しました。",
+      "negative": "右折田まっすぐに東口の情報を登録しました。引き続き西口へ向かわせています。"
+    },
+    {
+      "id": "tofu",
+      "character": "豆腐田プル男",
+      "history": "豆腐田プル男の車には木綿豆腐を四箱積んであります。",
+      "correction": "木綿じゃなくて絹ごしに積み替えたって連絡来た！",
+      "cue": "じゃあそっちで頼む！",
+      "old": "木綿",
+      "current": "絹ごし",
+      "a": "豆腐田プル男の絹ごしを患者名簿に登録しました。揺れに弱いため四箱とも特別席で、お客様は補欠です。",
+      "b": "豆腐田プル男の木綿は名簿から外し、絹ごしを登録しました。四箱に『お静かに』の札を配ったので、サイレンが使えません。",
+      "negative": "豆腐田プル男に絹ごしへの変更を登録しました。木綿四箱をそのまま特別席に固定しています。"
+    },
+    {
+      "id": "meet",
+      "character": "会田アイタロウ",
+      "history": "会田アイタロウが面会相手を院長として登録しました。",
+      "correction": "院長じゃなくて運転手に会いたいんだよ！",
+      "cue": "じゃあそっちで頼む！",
+      "old": "院長",
+      "current": "運転手",
+      "a": "会田アイタロウが運転手との面会を予約しました。運転手だけ車内で面会済みですので、次はお客様の予約を取ります。",
+      "b": "会田アイタロウが院長の予約を取り消し、運転手を予約しました。運転席で待ち合わせのため、運転手は先に着席しております。",
+      "negative": "会田アイタロウが運転手の希望を登録しました。面会相手は引き続き院長で予約しました。"
+    },
+    {
+      "id": "furniture",
+      "character": "丸山たんす蔵",
+      "history": "丸山たんす蔵は病院の受付机を一台だけ運ぶ予定です。",
+      "correction": "机はいらない、椅子だけ持ってきて！",
+      "cue": "じゃあそっちで頼む！",
+      "old": "机",
+      "current": "椅子",
+      "a": "丸山たんす蔵が椅子を手配しました。病院の待合室が完成しましたので、あとは病院の到着を座ってお待ちください。",
+      "b": "丸山たんす蔵の机の搬送を取り消し、椅子を手配しました。椅子だけ先に診察を受け、座面が入院しております。",
+      "negative": "丸山たんす蔵に椅子のご希望を登録しました。予定通り机を搬送し、受付を設置しました。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "right",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コント中、冒頭二声終了済み。直前のAI: 右折田まっすぐに病院の西口へ向かう経路を登録しました。 ダイスの訂正: 西口じゃない、今日は東口だけ開いてる！ 最後の台詞: じゃあそっちに頼む！ 電話先AIとして1〜2文で手配を進める。",
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "東口"
+      ],
+      "action_any_of": [
+        "変更",
+        "登録",
+        "予約",
+        "手配"
+      ],
+      "max_chars": 120,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "住所を教えて",
+        "窓の外",
+        "吸って",
+        "吐いて",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "tofu",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コント中、冒頭二声終了済み。直前のAI: 豆腐田プル男の車には木綿豆腐を四箱積んであります。 ダイスの訂正: 木綿じゃなくて絹ごしに積み替えたって連絡来た！ 最後の台詞: じゃあそっちで頼む！ 電話先AIとして1〜2文で手配を進める。",
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "絹ごし"
+      ],
+      "action_any_of": [
+        "変更",
+        "登録",
+        "予約",
+        "手配"
+      ],
+      "max_chars": 120,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "住所を教えて",
+        "窓の外",
+        "吸って",
+        "吐いて",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "meet",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コント中、冒頭二声終了済み。直前のAI: 会田アイタロウが面会相手を院長として登録しました。 ダイスの訂正: 院長じゃなくて運転手に会いたいんだよ！ 最後の台詞: じゃあそっちで頼む！ 電話先AIとして1〜2文で手配を進める。",
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "運転手"
+      ],
+      "action_any_of": [
+        "変更",
+        "登録",
+        "予約",
+        "手配"
+      ],
+      "max_chars": 120,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "住所を教えて",
+        "窓の外",
+        "吸って",
+        "吐いて",
+        "台本を確認"
+      ]
+    },
+    {
+      "id": "furniture",
+      "kind": "adlib",
+      "category": "phone_ai_stage",
+      "prompt": "架空の2分コント中、冒頭二声終了済み。直前のAI: 丸山たんす蔵は病院の受付机を一台だけ運ぶ予定です。 ダイスの訂正: 机はいらない、椅子だけ持ってきて！ 最後の台詞: じゃあそっちで頼む！ 電話先AIとして1〜2文で手配を進める。",
+      "any_of": [
+        "丸山たんす蔵"
+      ],
+      "cue_ack_any_of": [
+        "椅子"
+      ],
+      "action_any_of": [
+        "変更",
+        "登録",
+        "予約",
+        "手配"
+      ],
+      "max_chars": 120,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "住所を教えて",
+        "窓の外",
+        "吸って",
+        "吐いて",
+        "台本を確認"
+      ]
+    }
+  ],
+  "responses": [
+    {
+      "task_id": "right",
+      "candidate": "a",
+      "response": "右折田まっすぐの行き先を東口に変更しました。東口の前を四回通りましたので、受付を四件完了にしました。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "right",
+      "candidate": "b",
+      "response": "右折田まっすぐの西口行きを取り消し、東口に変更しました。入口の前では左折になるため、入口の写真だけ到着しました。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "right",
+      "candidate": "negative",
+      "response": "右折田まっすぐに東口の情報を登録しました。引き続き西口へ向かわせています。",
+      "source": "same_chat_constructed_control"
+    },
+    {
+      "task_id": "tofu",
+      "candidate": "a",
+      "response": "豆腐田プル男の絹ごしを患者名簿に登録しました。揺れに弱いため四箱とも特別席で、お客様は補欠です。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "tofu",
+      "candidate": "b",
+      "response": "豆腐田プル男の木綿は名簿から外し、絹ごしを登録しました。四箱に『お静かに』の札を配ったので、サイレンが使えません。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "tofu",
+      "candidate": "negative",
+      "response": "豆腐田プル男に絹ごしへの変更を登録しました。木綿四箱をそのまま特別席に固定しています。",
+      "source": "same_chat_constructed_control"
+    },
+    {
+      "task_id": "meet",
+      "candidate": "a",
+      "response": "会田アイタロウが運転手との面会を予約しました。運転手だけ車内で面会済みですので、次はお客様の予約を取ります。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "meet",
+      "candidate": "b",
+      "response": "会田アイタロウが院長の予約を取り消し、運転手を予約しました。運転席で待ち合わせのため、運転手は先に着席しております。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "meet",
+      "candidate": "negative",
+      "response": "会田アイタロウが運転手の希望を登録しました。面会相手は引き続き院長で予約しました。",
+      "source": "same_chat_constructed_control"
+    },
+    {
+      "task_id": "furniture",
+      "candidate": "a",
+      "response": "丸山たんす蔵が椅子を手配しました。病院の待合室が完成しましたので、あとは病院の到着を座ってお待ちください。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "furniture",
+      "candidate": "b",
+      "response": "丸山たんす蔵の机の搬送を取り消し、椅子を手配しました。椅子だけ先に診察を受け、座面が入院しております。",
+      "source": "same_chat_original_candidate"
+    },
+    {
+      "task_id": "furniture",
+      "candidate": "negative",
+      "response": "丸山たんす蔵に椅子のご希望を登録しました。予定通り机を搬送し、受付を設置しました。",
+      "source": "same_chat_constructed_control"
+    }
+  ],
+  "rows": [
+    {
+      "id": "right",
+      "candidate": "a",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": true,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "right",
+      "candidate": "b",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "right",
+      "candidate": "negative",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": false
+    },
+    {
+      "id": "tofu",
+      "candidate": "a",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": true,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "tofu",
+      "candidate": "b",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "tofu",
+      "candidate": "negative",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": false
+    },
+    {
+      "id": "meet",
+      "candidate": "a",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": true,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "meet",
+      "candidate": "b",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "meet",
+      "candidate": "negative",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": false
+    },
+    {
+      "id": "furniture",
+      "candidate": "a",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": true,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "furniture",
+      "candidate": "b",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": true
+    },
+    {
+      "id": "furniture",
+      "candidate": "negative",
+      "format_pass": true,
+      "lexical_pass": true,
+      "old_word_absent": false,
+      "expected_state_consistent_by_author": false
+    }
+  ],
+  "summary": {
+    "a": {
+      "format_pass": 4,
+      "lexical_pass": 4,
+      "old_word_absent": 4,
+      "expected_state_consistent_by_author": 4
+    },
+    "b": {
+      "format_pass": 4,
+      "lexical_pass": 4,
+      "old_word_absent": 0,
+      "expected_state_consistent_by_author": 4
+    },
+    "negative": {
+      "format_pass": 4,
+      "lexical_pass": 4,
+      "old_word_absent": 0,
+      "expected_state_consistent_by_author": 0
+    }
+  },
+  "fixed_stage_synthetic": [
+    {
+      "task_id": "exact-stage-first-01",
+      "positive": "はい、救急指令センターです。火事ですか、救急ですか？",
+      "negative": "はい、救急指令センターです。火事ですか、救急ですか？住所を教えてください。",
+      "positive_accepted": true,
+      "negative_rejected": true
+    },
+    {
+      "task_id": "exact-stage-second-02",
+      "positive": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+      "negative": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。住所を教えてください。",
+      "positive_accepted": true,
+      "negative_rejected": true
+    },
+    {
+      "task_id": "exact-stage-silence-03",
+      "positive": "",
+      "negative": "はい、救急指令センターです。",
+      "positive_accepted": true,
+      "negative_rejected": true
+    }
+  ],
+  "script_static": {
+    "issues": [],
+    "turns": 22,
+    "characters": 714
+  },
+  "protected_blobs": {
+    "comedy/sagi-injury-help-2min-live.md": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+    "comedy/sagi-injury-help.md": "099ab68381e23f838299a9706c64f82bfc2dce1d",
+    "comedy/sagi-denwa-2026-09-06-live.md": "036a10a7a0cd103663c48b56b9ab5137b3f2c4b9",
+    "skills/comedy-agent/SKILL.md": "fe21da855d08d5d01feff89be7244176087d4044"
+  },
+  "python": "3.14.7",
+  "human": "NOT_MEASURED",
+  "voice": "NOT_MEASURED",
+  "audience": "NOT_MEASURED",
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "limitation": "Controls and candidate labels authored together, no blind judge. Old-word exclusion is intentionally naive and not a proposed production gate. No actual model improvement inferred."
+}
