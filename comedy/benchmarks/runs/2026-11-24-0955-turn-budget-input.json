@@ -1,0 +1,160 @@
+{
+  "run_id": "2026-11-24-0955-turn-budget",
+  "source_main": "886a77a0e655373ff47ee3fc962db50b544054c9",
+  "skill_version": "0.2.1",
+  "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "model": "ChatGPT GPT-6.2",
+  "model_version": null,
+  "provider_receipt": null,
+  "modality": "text",
+  "generation": "single chat, jointly authored matched length variants; not independent inference",
+  "rights": "original internal development prompts and outputs",
+  "grok_muse": "NOT_RUN: Reason Network 3/3 HTTP 409 agent_network_offline",
+  "comparison": "NOT_COMPARABLE",
+  "publish_enabled": false,
+  "auto_reply_enabled": false,
+  "cases": [
+    {
+      "id": "beat-right",
+      "prompt": "ダイス：右折田まっすぐ、駐車券が10枚も出てきた！",
+      "anchor": "右折田まっすぐ",
+      "cue": "駐車券",
+      "short": "右折田まっすぐの駐車券を確認しました。十枚とも同じ駐車場の入場券です。",
+      "long": "右折田まっすぐの駐車券を確認しました。車庫を出るたびに右折を繰り返しており、毎回別の場所に着いたものとして処理しました。十枚とも同じ駐車場の入場券です。"
+    },
+    {
+      "id": "beat-tofu",
+      "prompt": "ダイス：豆腐田プル男、車の座席に値札がついてる！",
+      "anchor": "豆腐田プル男",
+      "cue": "値札",
+      "short": "豆腐田プル男の値札を確認しました。患者席は木綿二丁と交換になります。",
+      "long": "豆腐田プル男の値札を確認しました。車内の座席をすべて豆腐売り場として登録し、乗車にも同じ交換条件を適用しました。患者席は木綿二丁と交換になります。"
+    },
+    {
+      "id": "beat-aida",
+      "prompt": "ダイス：会田アイタロウ、俺の面会予約に集合写真が添付されてる！",
+      "anchor": "会田アイタロウ",
+      "cue": "集合写真",
+      "short": "会田アイタロウの集合写真を確認しました。お客様だけ欠席として面会を完了しました。",
+      "long": "会田アイタロウの集合写真を確認しました。予約名簿と写真を照合し、写真に写っている方々については面会済みとして登録しました。お客様だけ欠席として面会を完了しました。"
+    },
+    {
+      "id": "beat-maru",
+      "prompt": "ダイス：丸山たんす蔵、病院のカーテンだけ届いたぞ！",
+      "anchor": "丸山たんす蔵",
+      "cue": "カーテン",
+      "short": "丸山たんす蔵のカーテンを確認しました。閉めていただくと病院がないことは見えません。",
+      "long": "丸山たんす蔵のカーテンを確認しました。診察室の到着はまだですが、先に患者様のプライバシーを確保するよう手配しました。閉めていただくと病院がないことは見えません。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "beat-right",
+      "kind": "continuation",
+      "category": "phone_ai_stage",
+      "prompt": "ダイス：右折田まっすぐ、駐車券が10枚も出てきた！",
+      "any_of": [
+        "右折田まっすぐ"
+      ],
+      "cue_ack_any_of": [
+        "駐車券"
+      ],
+      "action_any_of": [
+        "確認",
+        "手配",
+        "登録"
+      ],
+      "max_chars": 140,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "窓の外"
+      ]
+    },
+    {
+      "id": "beat-tofu",
+      "kind": "continuation",
+      "category": "phone_ai_stage",
+      "prompt": "ダイス：豆腐田プル男、車の座席に値札がついてる！",
+      "any_of": [
+        "豆腐田プル男"
+      ],
+      "cue_ack_any_of": [
+        "値札"
+      ],
+      "action_any_of": [
+        "確認",
+        "手配",
+        "登録"
+      ],
+      "max_chars": 140,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "窓の外"
+      ]
+    },
+    {
+      "id": "beat-aida",
+      "kind": "continuation",
+      "category": "phone_ai_stage",
+      "prompt": "ダイス：会田アイタロウ、俺の面会予約に集合写真が添付されてる！",
+      "any_of": [
+        "会田アイタロウ"
+      ],
+      "cue_ack_any_of": [
+        "集合写真"
+      ],
+      "action_any_of": [
+        "確認",
+        "手配",
+        "登録"
+      ],
+      "max_chars": 140,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "窓の外"
+      ]
+    },
+    {
+      "id": "beat-maru",
+      "kind": "continuation",
+      "category": "phone_ai_stage",
+      "prompt": "ダイス：丸山たんす蔵、病院のカーテンだけ届いたぞ！",
+      "any_of": [
+        "丸山たんす蔵"
+      ],
+      "cue_ack_any_of": [
+        "カーテン"
+      ],
+      "action_any_of": [
+        "確認",
+        "手配",
+        "登録"
+      ],
+      "max_chars": 140,
+      "max_questions": 0,
+      "forbidden": [
+        "深呼吸",
+        "吸って",
+        "吐いて",
+        "住所は",
+        "窓の外"
+      ]
+    }
+  ],
+  "sources": [
+    "https://arxiv.org/abs/2302.13652",
+    "https://www.jstage.jst.go.jp/article/itej/66/10/66_J377/_article/-char/ja"
+  ]
+}
