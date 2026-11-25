@@ -11,7 +11,13 @@ tags: [e2e-gate]
 ---
 - launchApp:
     arguments:
-      - "-uiTesting"
+      uiTesting: "true"
+# A fresh simulator can present the system "Sign in to Apple Account"
+# sheet over the app (observed on the CI runner, 2026-11-25); dismiss
+# it if present. Optional: a no-op when it is not shown.
+- tapOn:
+    text: "Cancel"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "feed-today"
