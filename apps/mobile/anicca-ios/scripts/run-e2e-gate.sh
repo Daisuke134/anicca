@@ -54,6 +54,33 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
 
 # --- 2. Build the app from this checkout ----------------------------
+run_capped() {
+  # $1 = cap in seconds; the rest is the command. Returns the
+  # command's exit code, or 124 when the cap was exceeded (the
+  # command is killed). Run 45638567807 wedged for 2h+ somewhere in
+  # this step with no observable wedge point in the retained logs;
+  # every long command here is capped so a wedge fails its stage in
+  # bounded time WITH the evidence written up to that point, and the
+  # workflow's job timeout is the outer backstop.
+  local cap=$1; shift
+  "$@" &
+  local pid=$!
+  local waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [[ $waited -ge $cap ]]; then
+      echo "run_capped: exceeded ${cap}s, killing: $*" >&2
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 10
+      kill -KILL "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null
+      return 124
+    fi
+    sleep 5; waited=$((waited + 5))
+  done
+  wait "$pid"
+  return $?
+}
+
 fail_manifest() {
   # $1 = detail. Writes a failed gate-result.json and exits 1: a build
   # or install failure must fail the gate HERE, not cascade into
@@ -77,7 +104,7 @@ PY
   exit 1
 }
 
-xcodebuild build -project aniccaios.xcodeproj -scheme aniccaios \
+run_capped 2700 xcodebuild build -project aniccaios.xcodeproj -scheme aniccaios \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$EVIDENCE/DerivedData" \
   CODE_SIGNING_ALLOWED=NO > "$EVIDENCE/logs/build.log" 2>&1
@@ -115,7 +142,7 @@ OVERALL=0
 run_flow() {
   local name=$1
   echo "== maestro: $name =="
-  maestro test --device "$UDID" "maestro/gate/$name.yaml" \
+  run_capped 900 maestro test --device "$UDID" "maestro/gate/$name.yaml" \
     --format junit --output "$EVIDENCE/junit/$name.xml" \
     --test-output-dir "$EVIDENCE/maestro-tests" \
     > "$EVIDENCE/logs/$name.log" 2>&1
@@ -130,13 +157,13 @@ run_flow "03-living-home-words"
 # Words-change proof: dump hierarchy now (T0), wait with the app in the
 # foreground, then 03b + T1 dump. The deck dwell is ~20s; 35s of wait
 # guarantees at least one autonomous advance if the home is alive.
-maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null \
-  || maestro hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null || true
+run_capped 120 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null \
+  || run_capped 120 maestro hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null || true
 echo "== waiting 35s in foreground for autonomous word change =="
 sleep 35
 run_flow "03b-living-home-words-changed"
-maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null \
-  || maestro hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || true
+run_capped 120 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null \
+  || run_capped 120 maestro hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || true
 WORDS_JSON=$(python3 scripts/e2e_gate_quote_check.py "$EVIDENCE/hierarchy-t0.txt" "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || echo '{"status":"failed","t0":null,"t1":null,"detail":"quote check crashed"}')
 echo "words-change: $WORDS_JSON"
 echo "$WORDS_JSON" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['status']=='passed' else 1)" || OVERALL=1
