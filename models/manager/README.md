@@ -24,6 +24,14 @@ measure → learn**.
   uplift protocol against prior / random / classical baselines, and a
   product-side case format that lets Anicca deliveries flow into the
   same eval and training shape. See [`v0/`](v0/README.md).
+- **v1 (2026-11-17)** — measured on ManagerBench's first same-conditions
+  run. An honest negative result: intervention-prediction Brier 0.3827
+  (prior 0.3869, best frontier model 0.3547) and comedy 1.92 / 10. The
+  bottleneck is training data, not the harness. Full tables:
+  [`benchmarks/managerbench/RESULTS.md`](../../benchmarks/managerbench/RESULTS.md).
+- **ManagerBench (2026-11-25)** — the benchmark is now public in this
+  repository: frozen harness, receipts, integrity tests and results,
+  runnable offline. See [`benchmarks/managerbench/`](../../benchmarks/managerbench/).
 
 ## Feedback welcome
 
