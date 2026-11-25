@@ -26,10 +26,10 @@ tags: [e2e-gate]
     text: "許可しない|Don't Allow|Don’t Allow"
     optional: true
     retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible:
-      id: "feed-scroll"
-    timeout: 20000
+# (No "feed-scroll" id exists in this build's home — run
+# 45682131989's final hierarchy shows feed-today/feed-daily/
+# feed-saved/feed-themes/feed-reminders/feed-settings only, with
+# the home fully rendered behind the failed wait.)
 - extendedWaitUntil:
     visible:
       id: "feed-today"

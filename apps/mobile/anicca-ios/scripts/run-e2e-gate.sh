@@ -54,6 +54,12 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
 
 # --- 2. Build the app from this checkout ----------------------------
+# Maestro's XCTest driver can be slow to start after several
+# successive runs on a loaded CI simulator — flows 04/05 of run
+# 45682131989 died with IOSDriverTimeoutException before executing a
+# single step. Give the driver a generous startup budget.
+export MAESTRO_DRIVER_STARTUP_TIMEOUT=${MAESTRO_DRIVER_STARTUP_TIMEOUT:-240000}
+
 run_capped() {
   # $1 = cap in seconds; the rest is the command. Returns the
   # command's exit code, or 124 when the cap was exceeded (the
