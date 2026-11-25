@@ -1,0 +1,77 @@
+{
+  "source": "https://raw.githubusercontent.com/klasnja/HeartStepsV1/3016391de426116bdef41880d72bc8cd4b9b2477/data_files/suggestions.csv",
+  "source_sha256": "60ee7896183d7084a084f9a6e8ef2d0afea2e7fecdb41d6b15382ce1745c5ddb",
+  "original_source_documentation": "https://github.com/klasnja/HeartStepsV1/wiki/Documentation-for-suggestions.csv",
+  "original_paper": "https://doi.org/10.1093/abm/kay067",
+  "source_n_rows": 8274,
+  "strict_available_indexed_0_to_209_decisions": 6061,
+  "original_paper_available_decisions": 6061,
+  "cohort_difference_vs_paper": 0,
+  "participants": 37,
+  "eligible_decision_count": 6061,
+  "n_binary_assigned_no_suggestion": 2473,
+  "n_binary_assigned_suggestion": 3588,
+  "empirical_assignment_rate": 0.5919815212011219,
+  "assignment_probability_used": 0.6,
+  "assignment_delivery_disagreement": 6,
+  "assignment_mean_steps_no": 214.27335220380104,
+  "assignment_mean_steps_yes": 225.87792642140468,
+  "unadjusted_assigned_mean_difference_steps": 11.604574217603641,
+  "fit": {
+    "n_decisions": 6061,
+    "beta_assignment_day0": 0.5063086352133179,
+    "beta_assignment_day_interaction": -0.763663864140478,
+    "log_pre_coefficient": 0.4122440842511288,
+    "log_steps_ratio_day0": 1.6591553294954837,
+    "log_steps_ratio_day21": 1.1325556351663115,
+    "per_study_day_ratio_change": 0.9819818308819365,
+    "estimation": "centered OLS on log(jbsteps30.zero+.5), 0.6 assignment"
+  },
+  "average_binary_assignment_no_interaction": {
+    "log_beta": 0.1369045926259868,
+    "average_log_ratio": 1.1467187378776775,
+    "method": "four-variable centered OLS; not exact original GEE/WCLS"
+  },
+  "cluster_bootstrap_95ci_ratio_day0": [
+    1.2395722515570131,
+    2.1995895061664084
+  ],
+  "cluster_bootstrap_95ci_ratio_day21": [
+    0.9920170844170857,
+    1.281740887724435
+  ],
+  "cluster_bootstrap_95ci_daily_ratio": [
+    0.9703601463381788,
+    0.9929663733171111
+  ],
+  "bootstrap_reps": 1000,
+  "bootstrap_valid": 1000,
+  "bootstrap_resampling_unit": "participant",
+  "bootstrap_seed": 20261107,
+  "causal_status": "ASSIGNMENT_ANALYSIS_NOT_ORIGINAL_PAPER_REPLICATION",
+  "original_6061_cohort_exactly_reproduced": false,
+  "published_35_steps_causally_reproduced": false,
+  "original_three_arm_assignment_recovered": false,
+  "published_35_steps_original_reference": 35,
+  "published_day0_ratio_original_reference": 1.66,
+  "published_day_decay_original_reference": 0.98,
+  "limitations": "The public is.randomized flag records randomized selection and is distinct from corrected delivery send. The 0.6 binary selection is not the original three-arm 0.4/0.3/0.3 assignment record. The accessible 0..209 index/availability cohort differs from the paper's 6061; author exclusions and GEE/WCLS covariance are not fully reconstructed. Historical assignment data support a limited comparison only conditional on documented randomization.",
+  "participant_rows_exported": false,
+  "manager_policy_effect_measured": false,
+  "author_cohort_count_reconstruction": {
+    "source_records": 8274,
+    "travel_or_technical_unindexed": 390,
+    "after_study_day_42": 340,
+    "anomaly_rows": 4,
+    "startup_undated_rows": 1,
+    "cohort_included": 7540,
+    "cohort_available": 6061,
+    "cohort_unavailable": 1479,
+    "send_true_available": 3594,
+    "walking_suggestion": 2015,
+    "antisedentary_suggestion": 1579,
+    "cohort_counts_match_paper": true,
+    "scope": "exact published aggregate inclusion counts reconstructed; original individual row identities and GEE estimates not independently verified"
+  },
+  "author_protocol_reported_numbers_reconciled": true
+}

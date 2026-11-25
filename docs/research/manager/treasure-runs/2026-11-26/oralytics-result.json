@@ -1,0 +1,64 @@
+{
+  "scope": "actual upstream Bayesian update/action/reward functions; synthetic 70-day trajectory; Flask/DB import seams; not service E2E or clinical replication",
+  "seed": 42,
+  "decisions": 140,
+  "posterior_updates": 10,
+  "action_count": 92,
+  "replay_ok": 140,
+  "min_probability": 0.4689471442548486,
+  "max_probability": 0.7054331913558388,
+  "mean_reward": 95.042717935005,
+  "mean_quality": 98.61414650643358,
+  "updates": [
+    {
+      "decision": 14,
+      "mean_probability": 0.6756220183843482,
+      "mean_reward": 103.17290160183532
+    },
+    {
+      "decision": 28,
+      "mean_probability": 0.6737036263014039,
+      "mean_reward": 81.9672858420981
+    },
+    {
+      "decision": 42,
+      "mean_probability": 0.6302226528637181,
+      "mean_reward": 103.64785871563004
+    },
+    {
+      "decision": 56,
+      "mean_probability": 0.5681516084951632,
+      "mean_reward": 72.8347975515292
+    },
+    {
+      "decision": 70,
+      "mean_probability": 0.5168159111033085,
+      "mean_reward": 98.71631165970314
+    },
+    {
+      "decision": 84,
+      "mean_probability": 0.6114692089839746,
+      "mean_reward": 99.79754898259628
+    },
+    {
+      "decision": 98,
+      "mean_probability": 0.5775493256868058,
+      "mean_reward": 92.37899330372218
+    },
+    {
+      "decision": 112,
+      "mean_probability": 0.6236002218796833,
+      "mean_reward": 97.12524559201128
+    },
+    {
+      "decision": 126,
+      "mean_probability": 0.632916502457466,
+      "mean_reward": 98.37122105388706
+    },
+    {
+      "decision": 140,
+      "mean_probability": 0.6743265559068506,
+      "mean_reward": 102.41501504703758
+    }
+  ]
+}
