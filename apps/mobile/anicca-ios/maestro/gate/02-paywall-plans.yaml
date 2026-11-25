@@ -1,0 +1,50 @@
+# E2E GATE 02 — the soft paywall after onboarding shows exactly
+# Weekly / Annual / Lifetime, Annual carries the Best Value badge,
+# the free-trial timeline is shown, Monthly is NOT offered, and the
+# paywall is dismissible without a purchase.
+# (Selection state itself is not exposed through the accessibility
+# tree; the badge is the black-box observable for "Annual is the
+# highlighted plan". Plan visibility is enforced in the app by
+# PaywallPlanDisplay — Monthly is filtered out before rendering.)
+appId: ai.anicca.app.ios
+name: Gate 02 paywall plans weekly annual lifetime, no monthly
+tags: [e2e-gate]
+---
+- clearState
+- clearKeychain
+- runFlow: _gate_onboarding_to_paywall.yaml
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-cta"
+    timeout: 60000
+- assertVisible:
+    id: "paywall-plan-weekly"
+- assertVisible:
+    id: "paywall-plan-annual"
+- assertVisible:
+    id: "paywall-plan-badge-best-value"
+- scrollUntilVisible:
+    element:
+      id: "paywall-plan-lifetime"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "paywall-plan-lifetime"
+- scrollUntilVisible:
+    element:
+      id: "paywall-trial-timeline"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "paywall-trial-timeline"
+- assertNotVisible:
+    id: "paywall-plan-monthly"
+- takeScreenshot: "gate-02-paywall"
+# Dismissible: close returns to the living home, no purchase made.
+- tapOn:
+    id: "paywall-close-button"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 20000

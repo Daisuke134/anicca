@@ -1,0 +1,27 @@
+# E2E GATE 04 — Poyo is resident on the living home.
+# PoyoView exposes accessibilityLabel "ぽよ" (the mascot's name);
+# Maestro matches it as text on iOS.
+# LIMIT (documented, accepted): Poyo's *expression* is chosen on-device
+# from the intervention context + time of day (PoyoExpression.select)
+# and is rendered as a raster image with no accessibility value, so a
+# black-box flow cannot force or read an expression switch. Expression
+# mapping is covered by the app's unit tests; this gate asserts the
+# mascot is present on the home — the user-visible contract.
+appId: ai.anicca.app.ios
+name: Gate 04 Poyo present on home
+tags: [e2e-gate]
+---
+- launchApp:
+    arguments:
+      - "-uiTesting"
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      text: "ぽよ"
+    timeout: 20000
+- assertVisible:
+    text: "ぽよ"
+- takeScreenshot: "gate-04-poyo-home"

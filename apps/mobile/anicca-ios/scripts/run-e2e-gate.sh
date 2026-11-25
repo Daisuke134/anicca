@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# Anicca E2E release gate runner (Maestro).
+#
+# Builds the app from THIS checkout for a fresh iOS simulator, installs
+# it, runs the gate flows in maestro/gate/ in filename order, proves the
+# living-home words change on their own (hierarchy quote-text diff over
+# a 35s foreground wait), and writes a machine-readable verdict to
+#   $EVIDENCE/gate-result.json
+# Exit code is 0 only if every gate flow passed AND the words-changed
+# check passed. The e2e-gate checker (tools/e2e-gate) certifies App
+# Store submissions against the record this run produces — a build
+# with no fresh passing gate-result.json cannot be submitted.
+#
+# Usage: run-e2e-gate.sh EVIDENCE_DIR
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+APP_DIR=$(pwd)
+EVIDENCE=${1:?Usage: run-e2e-gate.sh EVIDENCE_DIR}
+mkdir -p "$EVIDENCE/junit" "$EVIDENCE/logs" "$EVIDENCE/maestro-tests"
+EVIDENCE=$(cd "$EVIDENCE" && pwd)
+STARTED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+echo "== e2e-gate: started $STARTED_AT =="
+
+# --- 1. Fresh simulator: latest iOS runtime + latest iPhone type ----
+RUNTIME=$(xcrun simctl list runtimes available --json | python3 -c "
+import json,sys
+rs=[r for r in json.load(sys.stdin)['runtimes'] if r['name'].startswith('iOS')]
+print(rs[-1]['identifier'])")
+DEVICE_TYPE=$(xcrun simctl list devicetypes --json | python3 -c "
+import json,sys,re
+ds=json.load(sys.stdin)['devicetypes']
+cands=sorted((int(m.group(1)), d['name'], d['identifier']) for d in ds for m in [re.match(r'iPhone (\d+)', d['name'])] if m)
+print(cands[-1][2])")
+echo "runtime=$RUNTIME device_type=$DEVICE_TYPE"
+# Remove a stale gate device from an earlier run, then create fresh so
+# TCC permissions and app state are factory-clean.
+OLD_UDID=$(xcrun simctl list devices --json | python3 -c "
+import json,sys
+for rt, devs in json.load(sys.stdin)['devices'].items():
+    for d in devs:
+        if d['name'] == 'AniccaE2EGate':
+            print(d['udid']); sys.exit(0)
+" || true)
+if [[ -n "${OLD_UDID:-}" ]]; then
+  xcrun simctl shutdown "$OLD_UDID" >/dev/null 2>&1 || true
+  xcrun simctl delete "$OLD_UDID" || true
+fi
+xcrun simctl shutdown all >/dev/null 2>&1 || true
+UDID=$(xcrun simctl create AniccaE2EGate "$DEVICE_TYPE" "$RUNTIME")
+echo "simulator=$UDID"
+xcrun simctl bootstatus "$UDID" -b
+xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
+
+# --- 2. Build the app from this checkout ----------------------------
+xcodebuild build -project aniccaios.xcodeproj -scheme aniccaios \
+  -destination "platform=iOS Simulator,id=$UDID" \
+  -derivedDataPath "$EVIDENCE/DerivedData" \
+  CODE_SIGNING_ALLOWED=NO > "$EVIDENCE/logs/build.log" 2>&1
+BUILD_RC=$?
+if [[ $BUILD_RC != 0 ]]; then
+  echo "BUILD FAILED (see logs/build.log)" >&2
+  python3 - "$EVIDENCE" "$STARTED_AT" <<'PY'
+import json, sys, datetime
+ev, started = sys.argv[1], sys.argv[2]
+json.dump({
+  "app_id": "ai.anicca.app.ios", "version": None, "build": None,
+  "source_commit": None, "started_at": started,
+  "finished_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+  "flows": [], "extra_checks": [{"name": "app-build", "status": "failed",
+             "detail": "xcodebuild failed; see logs/build.log"}],
+}, open(f"{ev}/gate-result.json", "w"), indent=2)
+PY
+  exit 1
+fi
+APP_PATH="$EVIDENCE/DerivedData/Build/Products/Debug-iphonesimulator/aniccaios.app"
+VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Info.plist")
+BUILD_NUM=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$APP_PATH/Info.plist")
+SOURCE_COMMIT=$(git rev-parse HEAD)
+echo "built version=$VERSION build=$BUILD_NUM commit=$SOURCE_COMMIT"
+xcrun simctl install "$UDID" "$APP_PATH"
+
+# --- 3. Run the gate flows ------------------------------------------
+MAESTRO_VERSION=$(maestro --version 2>/dev/null || echo "unknown")
+FLOWS=(
+  "01-onboarding-first-words"
+  "02-paywall-plans"
+  "03-living-home-words"
+  "03b-living-home-words-changed"
+  "04-poyo-on-home"
+  "05-settings-round-trip"
+)
+declare -a FLOW_STATUS
+OVERALL=0
+run_flow() {
+  local name=$1
+  echo "== maestro: $name =="
+  maestro test --device "$UDID" "maestro/gate/$name.yaml" \
+    --format junit --output "$EVIDENCE/junit/$name.xml" \
+    --test-output-dir "$EVIDENCE/maestro-tests" \
+    > "$EVIDENCE/logs/$name.log" 2>&1
+  local rc=$?
+  if [[ $rc == 0 ]]; then FLOW_STATUS+=("$name=passed"); else FLOW_STATUS+=("$name=failed"); OVERALL=1; fi
+  echo "   -> rc=$rc"
+}
+
+run_flow "01-onboarding-first-words"
+run_flow "02-paywall-plans"
+run_flow "03-living-home-words"
+# Words-change proof: dump hierarchy now (T0), wait with the app in the
+# foreground, then 03b + T1 dump. The deck dwell is ~20s; 35s of wait
+# guarantees at least one autonomous advance if the home is alive.
+maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null \
+  || maestro hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null || true
+echo "== waiting 35s in foreground for autonomous word change =="
+sleep 35
+run_flow "03b-living-home-words-changed"
+maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null \
+  || maestro hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || true
+WORDS_JSON=$(python3 scripts/e2e_gate_quote_check.py "$EVIDENCE/hierarchy-t0.txt" "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || echo '{"status":"failed","t0":null,"t1":null,"detail":"quote check crashed"}')
+echo "words-change: $WORDS_JSON"
+echo "$WORDS_JSON" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['status']=='passed' else 1)" || OVERALL=1
+run_flow "04-poyo-on-home"
+run_flow "05-settings-round-trip"
+
+# --- 4. Verdict ------------------------------------------------------
+FINISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+FLOW_STATUS_CSV=$(IFS=,; echo "${FLOW_STATUS[*]}")
+python3 - "$EVIDENCE" "$STARTED_AT" "$FINISHED_AT" "$VERSION" "$BUILD_NUM" \
+  "$SOURCE_COMMIT" "$MAESTRO_VERSION" "$RUNTIME" "$DEVICE_TYPE" "$FLOW_STATUS_CSV" "$WORDS_JSON" <<'PY'
+import json, os, sys
+(ev, started, finished, version, build, commit, maestro_v,
+ runtime, device_type, flows_csv, words_json) = sys.argv[1:12]
+flows = []
+for pair in flows_csv.split(","):
+    if not pair:
+        continue
+    name, status = pair.rsplit("=", 1)
+    flows.append({"name": name, "status": status})
+try:
+    words = json.loads(words_json)
+except Exception:
+    words = {"status": "failed", "detail": "unparseable quote-check output"}
+run_url = None
+if os.environ.get("GITHUB_RUN_ID"):
+    run_url = "{}/{}/actions/runs/{}".format(
+        os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
+        os.environ.get("GITHUB_REPOSITORY", ""),
+        os.environ["GITHUB_RUN_ID"])
+manifest = {
+    "app_id": "ai.anicca.app.ios",
+    "version": version,
+    "build": build,
+    "source_commit": commit,
+    "maestro_version": maestro_v,
+    "simulator": {"runtime": runtime, "device_type": device_type},
+    "started_at": started,
+    "finished_at": finished,
+    "ci_run_url": run_url,
+    "flows": flows,
+    "extra_checks": [{
+        "name": "living-home-words-changed",
+        "status": words.get("status", "failed"),
+        "detail": words.get("detail", ""),
+        "t0_quote": words.get("t0"),
+        "t1_quote": words.get("t1"),
+    }],
+}
+with open(f"{ev}/gate-result.json", "w") as f:
+    json.dump(manifest, f, indent=2, ensure_ascii=False)
+print(json.dumps(manifest, indent=2, ensure_ascii=False))
+PY
+echo "== e2e-gate: finished $FINISHED_AT overall_rc=$OVERALL =="
+exit $OVERALL
