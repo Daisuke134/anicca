@@ -54,32 +54,51 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
 
 # --- 2. Build the app from this checkout ----------------------------
+fail_manifest() {
+  # $1 = detail. Writes a failed gate-result.json and exits 1: a build
+  # or install failure must fail the gate HERE, not cascade into
+  # misleading per-flow failures (run 45596746084 did exactly that:
+  # the app was built as Release-iphonesimulator while the runner
+  # looked in Debug-iphonesimulator, install failed, and every flow
+  # then "failed" against an app that was never installed).
+  local detail=$1
+  echo "E2E GATE BUILD STAGE FAILED: $detail" >&2
+  python3 - "$EVIDENCE" "$STARTED_AT" "$detail" <<'PY'
+import json, sys, datetime
+ev, started, detail = sys.argv[1], sys.argv[2], sys.argv[3]
+json.dump({
+  "app_id": "ai.anicca.app.ios", "version": None, "build": None,
+  "source_commit": None, "started_at": started,
+  "finished_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+  "flows": [], "extra_checks": [{"name": "app-build", "status": "failed",
+             "detail": detail}],
+}, open(f"{ev}/gate-result.json", "w"), indent=2)
+PY
+  exit 1
+}
+
 xcodebuild build -project aniccaios.xcodeproj -scheme aniccaios \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$EVIDENCE/DerivedData" \
   CODE_SIGNING_ALLOWED=NO > "$EVIDENCE/logs/build.log" 2>&1
 BUILD_RC=$?
 if [[ $BUILD_RC != 0 ]]; then
-  echo "BUILD FAILED (see logs/build.log)" >&2
-  python3 - "$EVIDENCE" "$STARTED_AT" <<'PY'
-import json, sys, datetime
-ev, started = sys.argv[1], sys.argv[2]
-json.dump({
-  "app_id": "ai.anicca.app.ios", "version": None, "build": None,
-  "source_commit": None, "started_at": started,
-  "finished_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-  "flows": [], "extra_checks": [{"name": "app-build", "status": "failed",
-             "detail": "xcodebuild failed; see logs/build.log"}],
-}, open(f"{ev}/gate-result.json", "w"), indent=2)
-PY
-  exit 1
+  fail_manifest "xcodebuild failed (rc=$BUILD_RC); see logs/build.log"
 fi
-APP_PATH="$EVIDENCE/DerivedData/Build/Products/Debug-iphonesimulator/aniccaios.app"
+# The scheme builds Release, not Debug — never hardcode the
+# configuration directory; locate the product.
+APP_PATH=$(find "$EVIDENCE/DerivedData/Build/Products" -maxdepth 2 \
+  -name "aniccaios.app" -type d 2>/dev/null | head -1)
+if [[ -z "$APP_PATH" ]]; then
+  fail_manifest "aniccaios.app not found under DerivedData/Build/Products after a successful xcodebuild; see logs/build.log"
+fi
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Info.plist")
 BUILD_NUM=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$APP_PATH/Info.plist")
 SOURCE_COMMIT=$(git rev-parse HEAD)
-echo "built version=$VERSION build=$BUILD_NUM commit=$SOURCE_COMMIT"
-xcrun simctl install "$UDID" "$APP_PATH"
+echo "built version=$VERSION build=$BUILD_NUM commit=$SOURCE_COMMIT app=$APP_PATH"
+if ! xcrun simctl install "$UDID" "$APP_PATH" > "$EVIDENCE/logs/install.log" 2>&1; then
+  fail_manifest "simctl install failed; see logs/install.log"
+fi
 
 # --- 3. Run the gate flows ------------------------------------------
 MAESTRO_VERSION=$(maestro --version 2>/dev/null || echo "unknown")

@@ -71,6 +71,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-gate-${{ inputs.version }}-${{ inputs.build }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/e2e-gate-evidence
+          # Evidence only — never DerivedData (run 45596746084 produced
+          # a 2.0 GB artifact because the whole evidence dir was taken).
+          path: |
+            ${{ runner.temp }}/e2e-gate-evidence/gate-result.json
+            ${{ runner.temp }}/e2e-gate-evidence/logs
+            ${{ runner.temp }}/e2e-gate-evidence/junit
+            ${{ runner.temp }}/e2e-gate-evidence/maestro-tests
+            ${{ runner.temp }}/e2e-gate-evidence/hierarchy-t0.txt
+            ${{ runner.temp }}/e2e-gate-evidence/hierarchy-t1.txt
           if-no-files-found: warn
           retention-days: 90
