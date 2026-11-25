@@ -1,0 +1,120 @@
+{
+  "backend": "reference",
+  "scope": "synthetic only",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "train_per_seed": 4000,
+  "test_per_seed": 2000,
+  "python": "3.13.5",
+  "numpy": "2.3.5",
+  "sklearn": "1.8.0",
+  "runs": [
+    {
+      "ate": {
+        "pehe": 1.1354386598774784,
+        "policy_regret": 0.2567509661399537,
+        "treat_rate": 0
+      },
+      "linear": {
+        "pehe": 0.8408363101744794,
+        "policy_regret": 0.0812052531886111,
+        "treat_rate": 0.3275
+      },
+      "hgb": {
+        "pehe": 0.49706675582726867,
+        "policy_regret": 0.03237166291862845,
+        "treat_rate": 0.4175
+      }
+    },
+    {
+      "ate": {
+        "pehe": 1.1183384089721107,
+        "policy_regret": 0.24742227333670502,
+        "treat_rate": 0
+      },
+      "linear": {
+        "pehe": 0.7855368176124979,
+        "policy_regret": 0.08612368399885423,
+        "treat_rate": 0.3265
+      },
+      "hgb": {
+        "pehe": 0.4694482125968034,
+        "policy_regret": 0.039874127910977886,
+        "treat_rate": 0.407
+      }
+    },
+    {
+      "ate": {
+        "pehe": 1.1172381167677923,
+        "policy_regret": 0.24187526560551229,
+        "treat_rate": 0
+      },
+      "linear": {
+        "pehe": 0.8022600117770939,
+        "policy_regret": 0.07876774432602521,
+        "treat_rate": 0.291
+      },
+      "hgb": {
+        "pehe": 0.4777623885870544,
+        "policy_regret": 0.030735777535728953,
+        "treat_rate": 0.3705
+      }
+    },
+    {
+      "ate": {
+        "pehe": 1.1068580570676412,
+        "policy_regret": 0.22240740713316678,
+        "treat_rate": 0
+      },
+      "linear": {
+        "pehe": 0.8145347676191795,
+        "policy_regret": 0.0855922506267234,
+        "treat_rate": 0.256
+      },
+      "hgb": {
+        "pehe": 0.4807960297315304,
+        "policy_regret": 0.033684523329083255,
+        "treat_rate": 0.379
+      }
+    },
+    {
+      "ate": {
+        "pehe": 1.1655205178939663,
+        "policy_regret": 0.2691599395288689,
+        "treat_rate": 0
+      },
+      "linear": {
+        "pehe": 0.8809017255922381,
+        "policy_regret": 0.10764356492189342,
+        "treat_rate": 0.376
+      },
+      "hgb": {
+        "pehe": 0.5169651334666848,
+        "policy_regret": 0.031383967752903225,
+        "treat_rate": 0.4555
+      }
+    }
+  ],
+  "mean": {
+    "ate": {
+      "pehe": 1.128678752115798,
+      "policy_regret": 0.24752317034884133,
+      "treat_rate": 0
+    },
+    "linear": {
+      "pehe": 0.8248139265550977,
+      "policy_regret": 0.08786649941242147,
+      "treat_rate": 0.3154
+    },
+    "hgb": {
+      "pehe": 0.4884077040418683,
+      "policy_regret": 0.03361001188946435,
+      "treat_rate": 0.40590000000000004
+    }
+  }
+}
