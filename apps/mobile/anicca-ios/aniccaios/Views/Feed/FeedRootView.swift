@@ -19,6 +19,9 @@ struct FeedRootView: View {
     /// Unique affirmations seen this launch — used as a lightweight "session finished" signal.
     @State private var viewedQuoteIDsThisSession: Set<String> = []
     @State private var didRequestReviewForSession = false
+    /// Poyo: true when this launch is a return after a long absence
+    /// (the face is then always happy — a reunion that does not blame).
+    @State private var isReturningAfterAbsence = false
 
     /// Apple のお支払い更新ページ。RevenueCat の managementURL があればそれを優先。
     private var managePaymentURL: URL {
@@ -46,6 +49,27 @@ struct FeedRootView: View {
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
                 .accessibilityIdentifier("feed-scroll")
+
+                // Poyo — resident beside the words, bottom-right, clear of the
+                // top chrome (zIndex 10) and the billing banner (zIndex 11).
+                // Decorative layer: if the asset ever fails to load, the words
+                // are unaffected (home must never be empty because of Poyo).
+                if quotes.indices.contains(currentIndex) {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            PoyoView(expression: currentPoyoExpression,
+                                     size: 72,
+                                     seed: quotes[currentIndex].id)
+                        }
+                    }
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 28)
+                    .zIndex(5)
+                    .allowsHitTesting(false)
+                }
 
                 // Top chrome — single settings button pinned top-right.
                 HStack {
@@ -76,6 +100,9 @@ struct FeedRootView: View {
             if quotes.isEmpty {
                 quotes = QuoteProvider.shared.all()
             }
+            isReturningAfterAbsence = PoyoPresence.isReturningAfterAbsence(now: Date())
+            PoyoPresence.markSeen(now: Date())
+            PoyoAttachmentStore.exportExpressionsIfNeeded()
             applyPendingQuoteNavigation()
             recordViewedQuoteIfNeeded()
         }
@@ -106,6 +133,19 @@ struct FeedRootView: View {
                 .navigationViewStyle(.stack)
             }
         }
+    }
+
+    /// Poyo's face for the currently visible quote (wiring spec §4):
+    /// time of day + the no-blame reunion rule. The affirmation feed carries
+    /// no intervention type, so the selector's context rules fall through to
+    /// the time-of-day rules.
+    private var currentPoyoExpression: PoyoExpression {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return PoyoExpression.select(
+            interventionType: nil,
+            hour: hour,
+            isReturningAfterAbsence: isReturningAfterAbsence
+        )
     }
 
     private func applyPendingQuoteNavigation() {

@@ -21,7 +21,12 @@ struct ValuePropStepView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
-                .padding(.bottom, 24)
+                .padding(.bottom, 8)
+
+            // Poyo rides along on the 7-day journey pitch (excited face —
+            // the invitation to a new challenge, spec §4). No screen added.
+            PoyoView(expression: .excited, size: 56)
+                .padding(.bottom, 16)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
