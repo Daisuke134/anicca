@@ -85,3 +85,16 @@ skills/capafy-autopublish/vendor/capafy-publisher/.temp/
 skills/capafy-autopublish/vendor/capafy-user/.temp/
 runtime/openclaw/.sdk-inspect/
 .DS_Store
+
+# --- Single-repo consolidation guardrails (2026-11-25, Phase 0) ---
+# Private layer lives in the private anicca-ops repo only. Never commit these here.
+private/
+credentials.json
+**/credentials.json
+**/credentials-*.json
+me-data/
+**/me-data/
+*.kyc.jpg
+*.kyc.png
+id-documents/
+# --- end consolidation guardrails ---
