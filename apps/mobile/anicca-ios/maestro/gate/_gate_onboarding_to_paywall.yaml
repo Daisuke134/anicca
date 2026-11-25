@@ -13,6 +13,14 @@ appId: ai.anicca.app.ios
 - launchApp:
     arguments:
       uiTesting: "true"
+# A fresh simulator can present the system "Sign in to Apple Account"
+# sheet over the app (observed on the CI runner, 2026-11-25: the
+# step hierarchy contained only that sheet, no app elements, and the
+# welcome CTA never appeared). Dismiss it if present; optional, so a
+# no-op when it is not shown.
+- tapOn:
+    text: "Cancel"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
