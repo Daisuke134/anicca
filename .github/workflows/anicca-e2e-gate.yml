@@ -25,8 +25,12 @@ on:
 permissions:
   contents: read
 
+# One gate run per (version, build): a single shared group made
+# parallel dispatches cancel each other — GitHub keeps only one
+# pending run per group, and on 2026-11-25 a multi-version dispatch
+# storm cancelled the run for the submitted build.
 concurrency:
-  group: anicca-e2e-gate
+  group: anicca-e2e-gate-${{ inputs.version }}-${{ inputs.build }}
   cancel-in-progress: false
 
 jobs:
