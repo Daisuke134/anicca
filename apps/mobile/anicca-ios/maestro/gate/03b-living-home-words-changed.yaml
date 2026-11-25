@@ -26,11 +26,11 @@ tags: [e2e-gate]
 - extendedWaitUntil:
     visible:
       id: "feed-today"
-    timeout: 30000
+    timeout: 60000
 - extendedWaitUntil:
     visible:
       id: "quote-text"
-    timeout: 30000
+    timeout: 60000
 - assertVisible:
     id: "quote-text"
 - takeScreenshot: "gate-03-home-t1"

@@ -28,39 +28,63 @@ QUOTE_ID = "quote-text"
 TEXT_ATTRS = ("accessibilityText", "text", "value", "label")
 
 
+def _node_text(node):
+    attrs = node.get("attributes") or {}
+    for attr in TEXT_ATTRS:
+        value = attrs.get(attr)
+        if value and str(value).strip():
+            return str(value).strip()
+    return None
+
+
+def _find_quote_text(node):
+    """Depth-first: the quote-text node's own text, else its subtree's."""
+    if not isinstance(node, dict):
+        return None
+    attrs = node.get("attributes") or {}
+    if attrs.get("resource-id") == QUOTE_ID:
+        text = _node_text(node)
+        if text:
+            return text
+        for child in node.get("children") or []:
+            text = _find_quote_text(child)
+            if text:
+                return text
+        return None
+    for child in node.get("children") or []:
+        text = _find_quote_text(child)
+        if text:
+            return text
+    return None
+
+
 def extract_quote_text(hierarchy: str):
     """Return the visible text of the quote-text element, or None.
 
-    Tolerant of both serializations Maestro emits (XML-ish attribute
-    lists and indented node lines): find the node mentioning the id,
-    then read a text-ish attribute from that same node span.
+    `maestro hierarchy` on iOS emits a JSON tree
+    ({"attributes": {"resource-id": ..., "accessibilityText": ...},
+    "children": [...]}) — parse it as JSON. (The first version of
+    this checker regex-searched for XML-style attr="value" pairs and
+    could never match the JSON serialization; run 45682131989's T0
+    dump contained the quote yet extraction failed.) The regex path
+    below remains only as a fallback for non-JSON dumps.
     """
     if not hierarchy:
         return None
-    # Node spans: split on '<' for XML-ish dumps; if the dump is an
-    # indented text tree, each line is a node.
-    if "<" in hierarchy:
-        spans = hierarchy.split("<")
-    else:
-        spans = hierarchy.splitlines()
-    for span in spans:
+    try:
+        tree = json.loads(hierarchy)
+    except json.JSONDecodeError:
+        tree = None
+    if tree is not None:
+        return _find_quote_text(tree)
+    for span in hierarchy.split("<") if "<" in hierarchy \
+            else hierarchy.splitlines():
         if QUOTE_ID not in span:
             continue
         for attr in TEXT_ATTRS:
             m = re.search(attr + r'="([^"]*)"', span)
             if m and m.group(1).strip():
                 return m.group(1).strip()
-        # Node found but carries no text attribute in this span; on
-        # iOS the text may sit in a child node — keep looking at the
-        # following spans until the next sibling with an id appears.
-        idx = spans.index(span)
-        for nxt in spans[idx + 1 : idx + 4]:
-            if 'id="' in nxt or "accessibilityIdentifier" in nxt:
-                break
-            for attr in TEXT_ATTRS:
-                m = re.search(attr + r'="([^"]*)"', nxt)
-                if m and m.group(1).strip():
-                    return m.group(1).strip()
         return None
     return None
 
