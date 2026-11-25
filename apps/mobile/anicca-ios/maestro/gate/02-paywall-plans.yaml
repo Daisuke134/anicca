@@ -23,20 +23,24 @@ tags: [e2e-gate]
     id: "paywall-plan-annual"
 - assertVisible:
     id: "paywall-plan-badge-best-value"
-- scrollUntilVisible:
-    element:
-      id: "paywall-plan-lifetime"
-    direction: DOWN
-    timeout: 15000
-- assertVisible:
-    id: "paywall-plan-lifetime"
-- scrollUntilVisible:
-    element:
+# No scrollUntilVisible anywhere in this flow: on the gate device
+# (largest iPhone) the whole paywall fits one screen, and in run
+# 45626471372 a scroll swipe landed as a tap on the Lifetime row —
+# it SELECTED Lifetime, which removed the Annual trial timeline
+# from the tree and failed the run. Annual is selected at entry,
+# so the trial timeline is asserted first, while it exists.
+- extendedWaitUntil:
+    visible:
       id: "paywall-trial-timeline"
-    direction: DOWN
     timeout: 15000
 - assertVisible:
     id: "paywall-trial-timeline"
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-lifetime"
+    timeout: 15000
+- assertVisible:
+    id: "paywall-plan-lifetime"
 - assertNotVisible:
     id: "paywall-plan-monthly"
 - takeScreenshot: "gate-02-paywall"

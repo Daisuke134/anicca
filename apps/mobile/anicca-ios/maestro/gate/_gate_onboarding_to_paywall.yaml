@@ -325,8 +325,13 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-notifications-allow"
     retryTapIfNoChange: false
-# System permission dialog: decline (the gate never grants and never
-# purchases; same handling as the proven 04 flow).
+# System permission dialog: decline if it appears (the gate never
+# grants and never purchases). Optional: on the Maestro CI route the
+# dialog did NOT appear before the paywall in run 45626471372 — the
+# flow reached the paywall directly and this step failed the run.
+# When the dialog does appear (04 flow's environment), the tap
+# declines it exactly as before.
 - tapOn:
     text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
     retryTapIfNoChange: false
