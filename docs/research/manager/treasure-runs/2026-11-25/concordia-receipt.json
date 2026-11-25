@@ -1,0 +1,79 @@
+{
+  "date": "2026-11-25",
+  "revision": "d7da4499dd323fc51fce10b38105b3d17fb3651c",
+  "concordia": "2.4.0",
+  "python": "3.12.13",
+  "ollama": "0.18.3",
+  "model": "smollm2:135m",
+  "model_digest": "9077fe9d2ae1a4a41a868836b56b8163731a8fe16621397028c2c76f838c6907",
+  "quantization": "F16",
+  "scenario": "network",
+  "mode": "standard",
+  "seed": 42,
+  "agents": 8,
+  "scope": "actual local model, modified decoding, dummy embedder, one configured cycle; no human data",
+  "runs": [
+    {
+      "name": "official-no-model",
+      "cycles": 2,
+      "exit": 0,
+      "html_sha256": [
+        "fe05f24664f99f9351472f66cb9c8cde12adfb1520617c338a482fe8df60608a",
+        "962e23cb60382be926a4663fbc34a45697310cf76d398400d31d4097bab536d1",
+        "4e03feeb78e00716f5c12b978e5f477ef9aa0af0552e096f0df4f033571d5edb"
+      ]
+    },
+    {
+      "name": "bounded",
+      "receipts": 20,
+      "unique_call_ids": 20,
+      "generated_tokens": 889,
+      "prompt_tokens": 22060,
+      "terminal": false,
+      "exit": 1,
+      "log_sha256": "48ab6af9dd64697550baa091c73ca47198ad717f94d997001545ccd2d3645ffa"
+    },
+    {
+      "name": "constrained",
+      "receipts": 53,
+      "unique_call_ids": 46,
+      "generated_tokens": 2619,
+      "prompt_tokens": 52358,
+      "terminal": false,
+      "reason": "time budget",
+      "log_sha256": "1d831ce63279a0817e2ac8ea4e84b80cc30eb352ced36de97860f751e38532c5"
+    },
+    {
+      "name": "short",
+      "receipts": 79,
+      "unique_call_ids": 79,
+      "generated_tokens": 1688,
+      "prompt_tokens": 68718,
+      "terminal": true,
+      "cycles": 1,
+      "exit": 0,
+      "actions": 8,
+      "strict_valid": 0,
+      "log_sha256": "568cfda69a684ab509a6577fe5025e04e468f3c84cd241a83ce28c781c4c75c4",
+      "files": [
+        {
+          "name": "network_standard_log.html",
+          "bytes": 5678,
+          "sha256": "3c2234148f270fe86aceffa8ffb4112221b788fa418254bfe5d64be4c9473d2a"
+        },
+        {
+          "name": "network_standard_log_discuss.html",
+          "bytes": 4496,
+          "sha256": "c505331dc1583fc01e63c3e1ae7293008b2141760c3d04206bc0b2e8937969e9"
+        },
+        {
+          "name": "network_standard_log_harvest.html",
+          "bytes": 9594,
+          "sha256": "eb041d421ae96bf855b86332724981d6325e01e5afec3739616478dcba8cd62e"
+        }
+      ]
+    }
+  ],
+  "behavior_quality": "FAIL",
+  "human_fidelity": "UNMEASURED"
+}
