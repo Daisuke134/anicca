@@ -155,6 +155,9 @@ struct FeedRootView: View {
     @State private var showReminders = false
     @State private var showThemes = false
     @State private var lastTrackedQuoteID: String?
+    /// Poyo: true when this launch is a return after a long absence
+    /// (the face is then always happy — a reunion that does not blame).
+    @State private var isReturningAfterAbsence = false
 
     private let autoAdvanceTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -170,6 +173,19 @@ struct FeedRootView: View {
     private var displayedWordID: String? {
         guard deckModel.cards.indices.contains(currentIndex) else { return nil }
         return deckModel.cards[currentIndex].id
+    }
+
+    /// Poyo's face for the currently visible card (wiring spec §4):
+    /// time of day + the no-blame reunion rule. The home deck carries no
+    /// intervention type, so the selector's context rules fall through to
+    /// the time-of-day rules.
+    private var currentPoyoExpression: PoyoExpression {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return PoyoExpression.select(
+            interventionType: nil,
+            hour: hour,
+            isReturningAfterAbsence: isReturningAfterAbsence
+        )
     }
 
     var body: some View {
@@ -230,6 +246,20 @@ struct FeedRootView: View {
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
             }
+            .overlay(alignment: .bottomTrailing) {
+                // Poyo — resident beside the words, bottom-right, clear of
+                // the bottom action bar. Decorative layer: if the asset
+                // ever fails to load, the words are unaffected (the home
+                // must never be empty because of Poyo).
+                if deckModel.cards.indices.contains(currentIndex) {
+                    PoyoView(expression: currentPoyoExpression,
+                             size: 72,
+                             seed: deckModel.cards[currentIndex].id)
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 96)
+                        .allowsHitTesting(false)
+                }
+            }
         }
         // The identifier names the home screen itself, not the deck pager.
         // Since the Manager switch (PR #9399) the deck could be empty
@@ -251,6 +281,9 @@ struct FeedRootView: View {
             // Ambient drift is motion, so under Reduce Motion the theme
             // stays still (apple-design §14; swiftui-animation checklist).
             if !reduceMotion { backgroundDrift = true }
+            isReturningAfterAbsence = PoyoPresence.isReturningAfterAbsence(now: Date())
+            PoyoPresence.markSeen(now: Date())
+            PoyoAttachmentStore.exportExpressionsIfNeeded()
             refreshToday()
         }
         .onReceive(autoAdvanceTimer) { now in
