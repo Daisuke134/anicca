@@ -1,0 +1,50 @@
+# E2E GATE 05 — settings round-trip smoke: open Settings from the
+# home, switch the theme (sandWave was chosen in onboarding; pick
+# oceanSunset here), see the selection land, close, and land back on
+# a living home that still shows words. Catches dead navigation and
+# broken sheets — the class of bug that ships silently without E2E.
+appId: ai.anicca.app.ios
+name: Gate 05 settings round-trip
+tags: [e2e-gate]
+---
+- launchApp:
+    arguments:
+      - "-uiTesting"
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+- tapOn:
+    id: "feed-settings"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme"
+    timeout: 15000
+- tapOn:
+    id: "settings-theme"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "theme-oceanSunset"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "theme-oceanSunset"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "theme-selected-oceanSunset"
+    timeout: 15000
+- assertVisible:
+    id: "theme-selected-oceanSunset"
+- tapOn:
+    id: "settings-done"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 20000
+- assertVisible:
+    id: "quote-text"
+- takeScreenshot: "gate-05-settings-round-trip"

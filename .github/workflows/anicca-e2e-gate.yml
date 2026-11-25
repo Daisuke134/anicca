@@ -1,0 +1,76 @@
+name: Anicca E2E gate (Maestro)
+
+# The release gate suite. Runs the Maestro flows in
+# apps/mobile/anicca-ios/maestro/gate/ against a simulator build of
+# this exact source and produces gate-result.json — the only evidence
+# the e2e-gate checker (tools/e2e-gate) accepts when certifying an App
+# Store submission. Dispatched by the e2e watchdog when a new build
+# lands VALID in App Store Connect, or manually with the version and
+# build that must be certified. The job FAILS if the built app's
+# version/build do not match the dispatch inputs, so a run can never
+# silently certify the wrong build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version to certify (e.g. 1.11.2)
+        required: true
+        type: string
+      build:
+        description: Build number to certify (e.g. 841)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anicca-e2e-gate
+  cancel-in-progress: false
+
+jobs:
+  e2e-gate:
+    name: Maestro gate suite
+    runs-on: macos-15-intel
+    timeout-minutes: 240
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install the free Maestro CLI
+        run: brew install mobile-dev-inc/tap/maestro
+      - name: Inject private real SDK configuration
+        env:
+          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_E2E_XCCONFIG_B64 }}
+        run: |
+          bash ci_scripts/ci_post_clone.sh
+          cp Configs/Production.xcconfig Configs/Staging.xcconfig
+      - name: Build, run the gate suite, write gate-result.json
+        run: bash scripts/run-e2e-gate.sh "$RUNNER_TEMP/e2e-gate-evidence"
+      - name: Verify the run certified the requested build
+        run: |
+          python3 - "$RUNNER_TEMP/e2e-gate-evidence/gate-result.json" "${{ inputs.version }}" "${{ inputs.build }}" <<'PY'
+          import json, sys
+          m = json.load(open(sys.argv[1]))
+          want_v, want_b = sys.argv[2], sys.argv[3]
+          assert m["version"] == want_v and m["build"] == want_b, (
+              f"gate run certified {m['version']} ({m['build']}), "
+              f"but the dispatch asked for {want_v} ({want_b})")
+          print(f"verified: gate run is for {want_v} ({want_b})")
+          PY
+      - name: Preserve gate evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-gate-${{ inputs.version }}-${{ inputs.build }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/e2e-gate-evidence
+          if-no-files-found: warn
+          retention-days: 90
