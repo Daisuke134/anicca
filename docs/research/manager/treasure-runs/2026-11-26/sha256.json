@@ -1,0 +1,22 @@
+[
+  {
+    "name": "wcls_reference.py",
+    "sha256": "07d94f95163703c2b5f2c4f36ee6a388c0dda49556168b0234026e1378e09cdf"
+  },
+  {
+    "name": "oralytics_replay.py",
+    "sha256": "f3bd900cbea3a9bfcbd04324b83fe7d7bc6b5a501f1003b84e5fe45c43486ea0"
+  },
+  {
+    "name": "wcls-result.json",
+    "sha256": "2bf90c6567a446d99eea82dbb1a2200238e9505f221abfc7fe803d75e6b85df8"
+  },
+  {
+    "name": "oralytics-result.json",
+    "sha256": "29ede62c3820a87cb147f08bf1acf143f20fb5b28d75e4d6c2d7eb456671b3c0"
+  },
+  {
+    "name": "heartsteps-real.json",
+    "sha256": "0a1eb5e564f6133f3fbc3cb2e2113065dd8d6dff96756a7974c0bbd7b5fb799b"
+  }
+]
