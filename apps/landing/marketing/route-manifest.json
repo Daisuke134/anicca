@@ -95,13 +95,13 @@
       "source": "pages/about.html",
       "public_route": "/about",
       "export_path": "about.html",
-      "sha256": "8c12de0da77e624a2515e15dfc5b7283112d67a81416c8ac3e4db50c0cd44bc4"
+      "sha256": "fb6e858454c2796a46b50ecc9205f87d3ab73c10e053ab3fcbe7625f36f0dcd4"
     },
     {
       "source": "pages/about-ja.html",
       "public_route": "/about/ja",
       "export_path": "about/ja.html",
-      "sha256": "0fbdc09c7b317f2fd606e0b03dfd6aff506aa0e69e58cb158e03159540cf0bf2"
+      "sha256": "0d77cd3425854279ab5c450d1dd76d43e9f96302fc8aacfe66e628437df34902"
     },
     {
       "source": "assets/public-resume.pdf",
