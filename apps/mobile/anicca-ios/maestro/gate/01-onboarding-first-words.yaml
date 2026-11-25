@@ -20,6 +20,12 @@ tags: [e2e-gate]
 - tapOn:
     id: "paywall-close-button"
     retryTapIfNoChange: false
+# If the system notification dialog was deferred until after the
+# paywall, decline it here too (optional; no-op when absent).
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: "feed-scroll"

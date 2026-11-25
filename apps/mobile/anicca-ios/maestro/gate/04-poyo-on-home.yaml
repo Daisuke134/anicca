@@ -20,6 +20,11 @@ tags: [e2e-gate]
 - tapOn:
     text: "Cancel"
     optional: true
+# Same for a deferred system notification-permission dialog.
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: "feed-today"
