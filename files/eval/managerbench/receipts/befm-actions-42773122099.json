@@ -1,0 +1,43 @@
+{
+  "status": "REAL_GGUF_CPU_TEXT_ONLY_HUMAN_AGGREGATE_EVAL",
+  "model_forward_pass_executed": true,
+  "model_label": "Be.FM 1.5-4B (LoRA on Qwen3-4B-Instruct-2507, Q4_K_M GGUF base)",
+  "model_repo": "befm/BeFM1.5-4B",
+  "model_sha256": "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e",
+  "model_bytes": 2497280736,
+  "adapter_label": "BeFM1.5-4B adapter_model.safetensors converted to GGUF",
+  "adapter_repo": "befm/BeFM1.5-4B",
+  "adapter_sha256": "2029457fe5c6112f13dbb2c468b92b9d35bd98d5607cc4f4f686446a6b8a5a38",
+  "adapter_bytes": 66094944,
+  "llama_cpp_release": "b12137",
+  "prompt_format": "chatml",
+  "chat_template_file": null,
+  "chat_template_sha256": null,
+  "extra_llama_flags": [],
+  "n_cases": 24,
+  "scores": {
+    "n_total": 24,
+    "n_human_non_tied": 18,
+    "n_ties": 6,
+    "n_model_invalid": 0,
+    "model_strict_win_accuracy_including_invalid": 0.5555555555555556,
+    "model_conditional_accuracy_among_valid": 0.5555555555555556,
+    "baseline_strict_win_accuracy": 0.6111111111111112,
+    "mean_model_regret_invalid_counted": 0.13333333333333333,
+    "mean_baseline_regret": 0.1222222222222222,
+    "mean_random_expected_regret": 0.1388888888888889,
+    "ground_truth": "Winner determined by difference of two independently aggregated 5-human binary-funny fractions. NOT a 5-rater pairwise head-to-head comparison.",
+    "no_target_labels_seen_when_selecting_candidates": true
+  },
+  "dataset": "CyberAgent AI Lab MaMe-Re",
+  "file_sha256": {
+    "score.csv": "aad13533093fe9d2fcf80d0299c1abcaf751d3016e7d897b37604924abf56568",
+    "context.csv": "9bcacaf1547ac95b4df9a1eb30b2d6013570c603322490a14678d79d4b1a41af",
+    "image.csv": "4067278c6d6a03ad13fa61ab62befdf9010570e6984679c87aeb6fccfefcd326"
+  },
+  "holdout": "frozen prior P09-5 context-disjoint 160 train/40 valid/50 test; identical 24 selected heldout contexts, seed 20261107, identical prompts and scoring as BFM-02",
+  "wall_time_seconds": 467.8929999999999,
+  "limitation": "24 context-level pilot; text-only (no manga images or dialogue); the Japanese instruction text is identical for every model, wrapped in each model family's native chat template (prompt_format field); the BFM-02 Qwen runs used the same text with ChatML",
+  "source_url": "https://github.com/Daisuke134/life-manager/actions/runs/42773122099",
+  "artifact_id": 13743087372
+}
