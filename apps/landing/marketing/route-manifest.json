@@ -26,7 +26,7 @@
       "source": "pages/products-en.html",
       "public_route": "/dais",
       "export_path": "dais.html",
-      "sha256": "a570b43ba75cbe0df535386831d91aa6cf0470da14f22ba8f1bc43b764712bfb"
+      "sha256": "fdae182a5d4d4bfd5c3b17e3f65361739c3aac62237ed8ba3228e81435706b04"
     },
     {
       "source": "pages/products.html",
