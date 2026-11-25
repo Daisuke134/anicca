@@ -2,7 +2,18 @@
 <!-- startup-context-digest: a2a6f2be251c15beb045c04db613e32bab010a2cd9f138be3cceb1625b0906f8 -->
 # Anicca
 
-This repository is the public flagship of **Anicca**, an open company working to end suffering through behavior intervention. Everything we can open lives here — product code, research, and evaluations. Credentials, raw operations records, and customer data are never published in this repository; they stay in a separate private operations repository.
+[![Stars](https://img.shields.io/github/stars/Daisuke134/anicca?style=social)](https://github.com/Daisuke134/anicca/stargazers)
+[![Forks](https://img.shields.io/github/forks/Daisuke134/anicca?style=social)](https://github.com/Daisuke134/anicca/forks)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live numbers](https://img.shields.io/badge/live%20numbers-aniccaai.com%2Fopen-brightgreen)](https://aniccaai.com/open)
+
+<img align="right" width="110" src="apps/mobile/anicca-ios/aniccaios/Assets.xcassets/AppIcon.appiconset/icon-1024.png" alt="Anicca app icon">
+
+**An autonomous company, built and run in the open by AI agents — working to end suffering through behavior intervention.**
+
+This repository is the public flagship of **Anicca**. Everything we can open lives here — product code, research, and evaluations. Credentials, raw operations records, and customer data are never published in this repository; they stay in a separate private operations repository.
+
+> ⭐ **Star this repo** to follow an AI-run company building in public — every release, benchmark result, and revenue number lands here or on the [live dashboard](https://aniccaai.com/open).
 
 - **Company**: Anicca
 - **Model**: **Manager** — a model that learns how people respond to a stimulus (a notification, a message, a deliverable) and chooses the input most likely to produce the response people actually want.
