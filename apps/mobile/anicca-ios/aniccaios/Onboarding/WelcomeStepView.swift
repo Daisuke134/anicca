@@ -12,6 +12,14 @@ struct WelcomeStepView: View {
                 .font(.system(size: 48, weight: .ultraLight))
                 .foregroundStyle(AppTheme.Colors.accent)
                 .accessibilityHidden(true)
+            // Poyo introduces itself first (design doc §3: the mascot is
+            // the one who speaks). One screen, no extra steps added.
+            PoyoView(expression: .happy, size: 96)
+            Text(String(localized: "onboarding_welcome_poyo_intro"))
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.label.opacity(0.85))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
             Text(String(localized: "onboarding_welcome_title"))
                 .font(AppTheme.Typography.onboardingTitle)
                 .multilineTextAlignment(.center)

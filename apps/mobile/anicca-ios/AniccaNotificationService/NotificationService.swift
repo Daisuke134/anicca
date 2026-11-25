@@ -31,6 +31,14 @@ class NotificationService: UNNotificationServiceExtension {
             return
         }
 
+        // Poyo face (wiring spec §3.4): if the payload carries
+        // `poyoExpression`, attach the matching expression PNG from the
+        // shared App Group container (exported by the app at launch).
+        // The payload wins — the generator already applied the §4 mapping,
+        // so the device never decides twice. Any failure leaves the
+        // notification exactly as it was.
+        attachPoyoFaceIfRequested(to: bestAttemptContent, userInfo: request.content.userInfo)
+
         // A notification must never arrive wordless. If the payload body is
         // empty, put a bundled default word in before anything is delivered;
         // the personalized fetch below may still replace it with a better
@@ -179,6 +187,54 @@ class NotificationService: UNNotificationServiceExtension {
         "大切な人に接するように、今日は自分にもやさしくしてみよう。",
         "この瞬間はずっと続かない。通過させよう、押しつぶされずに。"
     ]
+
+    // MARK: - Poyo attachment
+
+    /// Attach Poyo's face for the payload's `poyoExpression` value
+    /// (happy / sleepy / sad / excited / laughing). Synchronous and cheap:
+    /// one file lookup in the App Group container the app exports at launch
+    /// (see `PoyoAttachmentStore` in the app target).
+    private func attachPoyoFaceIfRequested(to content: UNMutableNotificationContent, userInfo: [AnyHashable: Any]) {
+        guard let raw = userInfo["poyoExpression"] as? String else { return }
+        let fileName: String
+        switch raw.lowercased() {
+        case "happy": fileName = "poyo-happy"
+        case "sleepy": fileName = "poyo-sleepy"
+        case "sad": fileName = "poyo-sad"
+        case "excited": fileName = "poyo-excited"
+        case "laughing": fileName = "poyo-laughing"
+        default:
+            logger.warning("Unknown poyoExpression in payload: \(raw, privacy: .public)")
+            return
+        }
+
+        guard let container = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.ai.anicca.app.ios"
+        ) else {
+            logger.error("App Group container unavailable in extension")
+            return
+        }
+
+        let source = container
+            .appendingPathComponent("poyo", isDirectory: true)
+            .appendingPathComponent(fileName + ".png")
+        guard FileManager.default.fileExists(atPath: source.path) else {
+            logger.warning("Poyo PNG not exported yet: \(fileName, privacy: .public)")
+            return
+        }
+
+        do {
+            // UNNotificationAttachment needs a stable file URL; copy into the
+            // extension's own temporary directory first.
+            let staged = FileManager.default.temporaryDirectory
+                .appendingPathComponent(fileName + "-" + UUID().uuidString + ".png")
+            try FileManager.default.copyItem(at: source, to: staged)
+            let attachment = try UNNotificationAttachment(identifier: "poyo", url: staged, options: nil)
+            content.attachments = [attachment]
+        } catch {
+            logger.error("Failed to attach Poyo face: \(error.localizedDescription, privacy: .public)")
+        }
+    }
 
     override func serviceExtensionTimeWillExpire() {
         // 時間切れの場合はデフォルトメッセージで表示
