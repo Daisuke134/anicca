@@ -1,0 +1,26 @@
+{
+  "scope": "fixed-prediction paired stratified bootstrap 2000 draws; seed-specific, unadjusted; not training uncertainty",
+  "verified_models": 9,
+  "intervals": {
+    "dpo_consistency_42_minus_dpo_42": {
+      "auc": {
+        "lo": -0.16314699792960663,
+        "hi": 0.06045548654244304
+      },
+      "brier": {
+        "lo": -0.0001118987283031947,
+        "hi": 0.0005192085067107499
+      }
+    },
+    "dpo_consistency_43_minus_dpo_43": {
+      "auc": {
+        "lo": -0.15652173913043477,
+        "hi": 0.05465838509316767
+      },
+      "brier": {
+        "lo": -9.849074539208802e-05,
+        "hi": 0.0005080268133190458
+      }
+    }
+  }
+}
