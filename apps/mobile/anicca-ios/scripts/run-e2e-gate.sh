@@ -168,17 +168,29 @@ run_flow() {
   local attempt rc
   for attempt in 1 2; do
     echo "== maestro: $name (attempt $attempt) =="
-    run_capped 900 maestro test --device "$UDID" "maestro/gate/$name.yaml" \
+    run_capped 1500 maestro test --device "$UDID" "maestro/gate/$name.yaml" \
       --format junit --output "$EVIDENCE/junit/$name.xml" \
       --test-output-dir "$EVIDENCE/maestro-tests" \
       > "$EVIDENCE/logs/$name.log" 2>&1
     rc=$?
     if [[ $rc == 0 ]]; then FLOW_STATUS+=("$name=passed"); echo "   -> rc=0"; return; fi
+    # Maestro's own verdict line is authoritative for the flow's steps:
+    # in run 45841118170 flow 03 printed "[Passed] ... (14m 48s)" and
+    # then the process wedged in driver teardown until the cap killed
+    # it (rc=124). A cap-kill AFTER the pass verdict is a teardown
+    # hang, not a flow failure.
+    if [[ $rc == 124 ]] && grep -q "^\[Passed\]" "$EVIDENCE/logs/$name.log"; then
+      FLOW_STATUS+=("$name=passed"); echo "   -> passed (cap-kill hit teardown after Maestro's [Passed] verdict)"; return
+    fi
     # Self-heal the observed cascade: a driver-startup timeout means
-    # the flow never executed a step, so a reboot + one retry is a
-    # clean re-run, not a masked failure. Any other failure is final.
-    if [[ $attempt == 1 ]] && grep -q "IOSDriverTimeoutException" "$EVIDENCE/logs/$name.log"; then
-      echo "   -> driver startup timeout; rebooting and retrying once"
+    # the flow never executed a step, and a cap-kill means this slow
+    # software-GL runner did not finish it in time — both are clean
+    # re-runs after a reboot, not masked failures. Any other failure
+    # is final. (The per-attempt cap is 1500s: a legitimate flow took
+    # 888s in run 45841118170, so the old 900s cap raced real passes
+    # and killed flows 01 and 02 before they could finish.)
+    if [[ $attempt == 1 ]] && { grep -q "IOSDriverTimeoutException" "$EVIDENCE/logs/$name.log" || [[ $rc == 124 ]]; }; then
+      echo "   -> driver startup timeout or cap-kill; rebooting and retrying once"
       mv "$EVIDENCE/logs/$name.log" "$EVIDENCE/logs/$name.attempt1.log"
       reboot_sim
       continue
