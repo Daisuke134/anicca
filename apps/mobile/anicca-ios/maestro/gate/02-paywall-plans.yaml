@@ -38,7 +38,11 @@ tags: [e2e-gate]
 # .eligible (PaywallVariantBView.trialEndDate), so the selection state
 # at assertion time — not eligibility, not a dialog — was the failure.
 # Make the selection deterministic: tap the Annual card explicitly,
-# then assert the timeline.
+# then assert the timeline. The timeline wait is 60s because trial
+# eligibility is a StoreKit round-trip that resolves asynchronously:
+# run 45841118170 caught the paywall (in flow 05's evidence) still in
+# the .conditional presentation ("If eligible, 3 days free" disclosure,
+# no timeline) with Annual selected, minutes after it appeared.
 - tapOn:
     id: "paywall-plan-annual"
     retryTapIfNoChange: false
@@ -47,7 +51,7 @@ tags: [e2e-gate]
 - extendedWaitUntil:
     visible:
       id: "paywall-trial-timeline"
-    timeout: 30000
+    timeout: 60000
 - assertVisible:
     id: "paywall-trial-timeline"
 - extendedWaitUntil:

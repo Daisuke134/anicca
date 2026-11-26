@@ -1,8 +1,15 @@
 # E2E GATE 05 — settings round-trip smoke: open Settings from the
 # home, switch the theme (sandWave was chosen in onboarding; pick
-# oceanSunset here), see the selection land, close, and land back on
+# sageMist here), see the selection land, close, and land back on
 # a living home that still shows words. Catches dead navigation and
 # broken sheets — the class of bug that ships silently without E2E.
+# Theme choice matters: only sandWave and sageMist are free
+# (ThemeID.isFree in ThemeStore.swift); every other theme is premium,
+# and tapping a premium theme as a non-subscriber opens the paywall
+# instead of selecting it (ThemePickerView) — the app working as
+# designed. Run 45841118170 failed exactly there with oceanSunset:
+# its failure screenshot is the paywall, not Settings. sageMist is
+# the other free theme, so this round-trip switches sandWave -> sageMist.
 appId: ai.anicca.app.ios
 name: Gate 05 settings round-trip
 tags: [e2e-gate]
@@ -47,18 +54,18 @@ tags: [e2e-gate]
     retryTapIfNoChange: false
 - scrollUntilVisible:
     element:
-      id: "theme-oceanSunset"
+      id: "theme-sageMist"
     direction: DOWN
     timeout: 15000
 - tapOn:
-    id: "theme-oceanSunset"
+    id: "theme-sageMist"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
-      id: "theme-selected-oceanSunset"
+      id: "theme-selected-sageMist"
     timeout: 15000
 - assertVisible:
-    id: "theme-selected-oceanSunset"
+    id: "theme-selected-sageMist"
 - tapOn:
     id: "settings-done"
     retryTapIfNoChange: false
