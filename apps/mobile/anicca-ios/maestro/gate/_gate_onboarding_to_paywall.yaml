@@ -77,10 +77,15 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-name-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
+# No scrollUntilVisible for this target: aries is the FIRST row of the
+# 12-sign zodiac list and is visible the moment the screen opens.
+# scrollUntilVisible only swipes DOWN, so in run 45868572518 it swiped
+# the list to the bottom (failure screenshot: Gemini..Pisces, Aries
+# scrolled off the top) and never found the element again. Wait for
+# it directly instead — the same idiom as the continue buttons below.
+- extendedWaitUntil:
+    visible:
       id: "onboarding-birth_context-aries"
-    direction: DOWN
     timeout: 30000
 - tapOn:
     id: "onboarding-birth_context-aries"
