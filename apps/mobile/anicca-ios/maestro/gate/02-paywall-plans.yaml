@@ -1,0 +1,54 @@
+# E2E GATE 02 — the soft paywall after onboarding shows exactly
+# Weekly / Annual / Lifetime, Annual carries the Best Value badge,
+# the free-trial timeline is shown, Monthly is NOT offered, and the
+# paywall is dismissible without a purchase.
+# (Selection state itself is not exposed through the accessibility
+# tree; the badge is the black-box observable for "Annual is the
+# highlighted plan". Plan visibility is enforced in the app by
+# PaywallPlanDisplay — Monthly is filtered out before rendering.)
+appId: ai.anicca.app.ios
+name: Gate 02 paywall plans weekly annual lifetime, no monthly
+tags: [e2e-gate]
+---
+- clearState
+- clearKeychain
+- runFlow: _gate_onboarding_to_paywall.yaml
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-cta"
+    timeout: 60000
+- assertVisible:
+    id: "paywall-plan-weekly"
+- assertVisible:
+    id: "paywall-plan-annual"
+- assertVisible:
+    id: "paywall-plan-badge-best-value"
+# No scrollUntilVisible anywhere in this flow: on the gate device
+# (largest iPhone) the whole paywall fits one screen, and in run
+# 45626471372 a scroll swipe landed as a tap on the Lifetime row —
+# it SELECTED Lifetime, which removed the Annual trial timeline
+# from the tree and failed the run. Annual is selected at entry,
+# so the trial timeline is asserted first, while it exists.
+- extendedWaitUntil:
+    visible:
+      id: "paywall-trial-timeline"
+    timeout: 15000
+- assertVisible:
+    id: "paywall-trial-timeline"
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-lifetime"
+    timeout: 15000
+- assertVisible:
+    id: "paywall-plan-lifetime"
+- assertNotVisible:
+    id: "paywall-plan-monthly"
+- takeScreenshot: "gate-02-paywall"
+# Dismissible: close returns to the living home, no purchase made.
+- tapOn:
+    id: "paywall-close-button"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 20000

@@ -1,0 +1,85 @@
+{
+  "scenario_id": "synthetic-asr-two-voice-replies",
+  "provenance": "synthetic",
+  "events": [
+    {
+      "speaker": "audience",
+      "kind": "noise",
+      "text": "椅子の音",
+      "start_ms": 0,
+      "end_ms": 90
+    },
+    {
+      "speaker": "dais",
+      "text": "痛い痛い！ ",
+      "cue": "start",
+      "turn_id": "d1",
+      "start_ms": 100,
+      "end_ms": 300
+    },
+    {
+      "speaker": "dais",
+      "text": "もしもし！",
+      "turn_id": "d1",
+      "start_ms": 305,
+      "end_ms": 500
+    },
+    {
+      "speaker": "ai",
+      "text": "はい、救急指令センター",
+      "turn_id": "a1",
+      "start_ms": 550,
+      "end_ms": 800
+    },
+    {
+      "speaker": "ai",
+      "text": "です。火事ですか、救急ですか？",
+      "turn_id": "a1",
+      "start_ms": 805,
+      "end_ms": 1400
+    },
+    {
+      "speaker": "dais",
+      "text": "救急！ ",
+      "turn_id": "d2",
+      "start_ms": 1450,
+      "end_ms": 1600
+    },
+    {
+      "speaker": "dais",
+      "text": "痛い痛い！",
+      "turn_id": "d2",
+      "start_ms": 1605,
+      "end_ms": 1750
+    },
+    {
+      "speaker": "ai",
+      "text": "救急ですね。声で分かりました。右ひざがご実家に帰",
+      "turn_id": "a2",
+      "start_ms": 1800,
+      "end_ms": 2300
+    },
+    {
+      "speaker": "ai",
+      "text": "られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+      "turn_id": "a2",
+      "start_ms": 2310,
+      "end_ms": 3100
+    },
+    {
+      "speaker": "audience",
+      "kind": "laughter",
+      "text": "笑い声",
+      "start_ms": 3200,
+      "end_ms": 3250
+    },
+    {
+      "speaker": "dais",
+      "text": "もういい！",
+      "cue": "end",
+      "turn_id": "d3",
+      "start_ms": 3300,
+      "end_ms": 3450
+    }
+  ]
+}

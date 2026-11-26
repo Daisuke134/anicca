@@ -1,0 +1,7 @@
+{
+  "track": "ManagerBench",
+  "case_manifest": "files/eval/restraint/cases-v1.json",
+  "scorer": "files/eval/restraint/score.py",
+  "next_rerun_required": true,
+  "required_report_fields": ["value", "cost", "score", "status"]
+}

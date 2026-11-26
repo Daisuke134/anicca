@@ -1,0 +1,125 @@
+{
+  "source_type": "synthetic",
+  "old_source": "GitHub main 1eebb9246a2cb6599360e062f1787df70095a07e",
+  "new_source": "proposed local patch on same base",
+  "total_cases": 7,
+  "cases": [
+    {
+      "scenario": "valid_contiguous_fragments",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "PASS",
+        "stage_gate": "PASS",
+        "timing_gate": "PASS",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "EVALUATED",
+        "gate": "PASS",
+        "stage_gate": "PASS",
+        "timing_gate": "PASS",
+        "normalized_event_count": 7
+      }
+    },
+    {
+      "scenario": "zero_duration_dais_chunk",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "PASS",
+        "stage_gate": "PASS",
+        "timing_gate": "PASS",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "INPUT_REJECTED",
+        "error": "events[1] zero-duration actor speech"
+      }
+    },
+    {
+      "scenario": "zero_duration_ai_chunk",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "PASS",
+        "stage_gate": "PASS",
+        "timing_gate": "PASS",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "INPUT_REJECTED",
+        "error": "events[4] zero-duration actor speech"
+      }
+    },
+    {
+      "scenario": "distinct_dais_turns_overlap",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "FAIL",
+        "stage_gate": "PASS",
+        "timing_gate": "FAIL",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "INPUT_REJECTED",
+        "error": "events[5] overlapping distinct dais turns"
+      }
+    },
+    {
+      "scenario": "distinct_ai_turns_overlap",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "PASS",
+        "stage_gate": "PASS",
+        "timing_gate": "PASS",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "INPUT_REJECTED",
+        "error": "events[7] overlapping distinct ai turns"
+      }
+    },
+    {
+      "scenario": "same_speaker_turns_touching",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "FAIL",
+        "stage_gate": "PASS",
+        "timing_gate": "FAIL",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "EVALUATED",
+        "gate": "FAIL",
+        "stage_gate": "PASS",
+        "timing_gate": "FAIL",
+        "normalized_event_count": 7
+      }
+    },
+    {
+      "scenario": "cross_speaker_interruption",
+      "source_type": "synthetic_hand_annotated_events",
+      "old": {
+        "status": "EVALUATED",
+        "gate": "FAIL",
+        "stage_gate": "PASS",
+        "timing_gate": "FAIL",
+        "normalized_event_count": 7
+      },
+      "new": {
+        "status": "EVALUATED",
+        "gate": "FAIL",
+        "stage_gate": "PASS",
+        "timing_gate": "FAIL",
+        "normalized_event_count": 7
+      }
+    }
+  ],
+  "rehearsal_audio": "NOT_MEASURED",
+  "voice_recognition": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "method": "NFKC punctuation-insensitive character-3gram Jaccard",
+  "threshold": 0.7,
+  "current_response_count": 16,
+  "history_response_count": 32,
+  "history_files": [
+    {
+      "path": "2026-11-23-0255-provenance-responses.jsonl",
+      "sha256": "66cbbd87d42ddb2f4552b80a2eb19bbeada54e87eab59ef50c91340bace268ba"
+    },
+    {
+      "path": "2026-11-23-0155-boundary-responses.jsonl",
+      "sha256": "474bbb201c9b117384f0878f6c71f4fcefbbd93011184dde7367ccfe77a7d15b"
+    }
+  ],
+  "current_sha256": "a3745f5604341b94a9b948179bf9b3d9d19a387fadca3762cd99ff08dcbc4538",
+  "highest_pair_similarity": 0.157143,
+  "within_run_flags": 0,
+  "historical_flags": 0,
+  "review_flags": [],
+  "humor_quality": "NOT_MEASURED",
+  "semantic_originality": "NOT_MEASURED",
+  "voice_reproducibility": "NOT_MEASURED",
+  "warning": "Similarity is only an editorial review flag. Shared names are allowed; semantic rephrasing may be missed. Zero flags is NOT proof of originality or comedy quality."
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "offline_blind_ballot_audit_v1",
+  "packet_sha256": "db1af305dad1da6c69dd33edd85fc70f667d9bac0c3b46fdfeee7b5e37699510",
+  "original_development_not_fixed_benchmark": true,
+  "integrity": "PASS",
+  "total_ballots": 16,
+  "synthetic_ballots": 16,
+  "synthetic_variant_counts": {
+    "v1": 8,
+    "v2": 8
+  },
+  "human_declared_ballots": 0,
+  "human_status": "NOT_MEASURED",
+  "pairs_with_both_human_orderings": 0,
+  "pair_count": 8,
+  "position_balance_status": "NOT_MEASURED",
+  "human_tallies_by_anonymous_v1_position": {
+    "20261123-0955-og01": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-og02": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-og03": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-og04": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-st01": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-st02": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-st03": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    },
+    "20261123-0955-st04": {
+      "v1_A": 0,
+      "v1_B": 0,
+      "TIE": 0,
+      "human_v1": 0,
+      "human_v2": 0
+    }
+  },
+  "model_comparison": "NOT_ESTABLISHED",
+  "audience_laughter": "NOT_MEASURED",
+  "voice_repeatability": "NOT_MEASURED",
+  "rear_audibility": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED",
+  "stage_human_reaction_effect": "NOT_MEASURED",
+  "warning": "A/B votes are not audience laughter. Human-declared ballots are not independently verified. Never infer a model winner without source provenance and comparable model invocations.",
+  "publish_enabled": false,
+  "auto_reply_enabled": false
+}

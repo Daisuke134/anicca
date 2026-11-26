@@ -1,0 +1,337 @@
+# E2E GATE subflow (not a gate flow itself — never run directly).
+# Drives the full adaptive onboarding (every question) from a cold launch
+# and stops at the system notification-permission dialog, dismissed.
+# The calling gate flow then asserts the paywall.
+#
+# Step sequence is copied 1:1 from the proven
+# maestro/onboarding/04-onboarding-v3-full-flow.yaml (1.10.0 adaptive
+# onboarding, run against this app in CI), minus its recording steps and
+# its paywall tail. Selectors are accessibility ids throughout; every
+# wait is an extendedWaitUntil — no fixed sleeps.
+appId: ai.anicca.app.ios
+---
+- launchApp:
+    arguments:
+      uiTesting: "true"
+# A fresh simulator can present the system "Sign in to Apple Account"
+# sheet over the app (observed on the CI runner, 2026-11-25: the
+# step hierarchy contained only that sheet, no app elements, and the
+# welcome CTA never appeared). Dismiss it if present; optional, so a
+# no-op when it is not shown.
+- tapOn:
+    text: "Cancel"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-welcome-cta"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-goal-calm"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-goal-calm"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-goal-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-goal-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-focus_categories-anxiety"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-focus_categories-anxiety"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-focus_categories-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-focus_categories-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-name-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-name-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-birth_context-aries"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-birth_context-aries"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-birth_context-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-birth_context-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-mood_baseline-neutral"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-mood_baseline-neutral"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-mood_baseline-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-mood_baseline-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-struggle-stress"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-struggle-stress"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-struggles-next"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-struggles-next"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-stress_trigger-work"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-stress_trigger-work"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-stress_trigger-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-stress_trigger-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-depth-daily"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-depth-daily"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-depth-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-depth-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-belief_themes-self_trust"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-belief_themes-self_trust"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-belief_themes-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-belief_themes-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-micro-save"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-micro-save"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-tone-gentle"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-tone-gentle"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-tone-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-tone-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-life_context-work"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-life_context-work"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-life_context-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-life_context-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-routine_anchors-waking"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-routine_anchors-waking"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-routine_anchors-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-routine_anchors-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-prior_attempts-meditation"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_attempts-meditation"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-prior_attempts-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_attempts-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-prior_helpfulness-meditation"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_helpfulness-meditation"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-prior_helpfulness-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-prior_helpfulness-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-start_reason-overwhelmed"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-start_reason-overwhelmed"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-start_reason-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-start_reason-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-quiet_hours-none"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-quiet_hours-none"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-quiet_hours-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-quiet_hours-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "theme-sandWave"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "theme-sandWave"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-theme-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-theme-continue"
+    retryTapIfNoChange: false
+- scrollUntilVisible:
+    element:
+      id: "onboarding-icon-AppIcon"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "onboarding-icon-AppIcon"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-icon-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-icon-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-widget-interested"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-widget-interested"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-first-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-first-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-reminder-continue"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-reminder-continue"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-allow"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-notifications-allow"
+    retryTapIfNoChange: false
+# System permission dialog: decline if it appears (the gate never
+# grants and never purchases). Optional: on the Maestro CI route the
+# dialog did NOT appear before the paywall in run 45626471372 — the
+# flow reached the paywall directly and this step failed the run.
+# When the dialog does appear (04 flow's environment), the tap
+# declines it exactly as before.
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false

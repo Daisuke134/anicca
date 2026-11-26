@@ -1,0 +1,214 @@
+{
+  "source_type": "synthetic",
+  "fixture_kind": "handwritten_controlled_text_not_real_voice",
+  "cases": [
+    {
+      "scenario_id": "question_only",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡しましたか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    },
+    {
+      "scenario_id": "offer_only",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡しましょうか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    },
+    {
+      "scenario_id": "request_only",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡してください。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    },
+    {
+      "scenario_id": "plan_only",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡する予定です。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    },
+    {
+      "scenario_id": "denied_then_question",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡しません。連絡しますか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    },
+    {
+      "scenario_id": "affirmative",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "PASS"
+    },
+    {
+      "scenario_id": "question_then_dispatch",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "会田へ連絡しますか？ 代わりに車を手配しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "PASS"
+    },
+    {
+      "scenario_id": "no_grounding",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "会いたい！",
+          "anchor_any": [
+            "会田"
+          ],
+          "action_any": [
+            "連絡",
+            "手配"
+          ]
+        },
+        {
+          "speaker": "ai",
+          "text": "承知しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終わり",
+          "cue": "end"
+        }
+      ],
+      "expected_gate": "FAIL"
+    }
+  ]
+}

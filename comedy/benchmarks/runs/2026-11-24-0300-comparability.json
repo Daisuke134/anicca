@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "comparison_eligibility": "NOT_COMPARABLE",
+  "reasons": [
+    "FEWER_THAN_TWO_EXECUTED_MODELS",
+    "MODEL_PROVENANCE_OR_COVERAGE_GAPS"
+  ],
+  "task_count": 8,
+  "prompt_fingerprint_policy": "sha256_exact_utf8_of_manifest_prompt",
+  "task_prompt_digest_coverage": 8,
+  "task_prompt_digest_missing_manifest_ids": [],
+  "response_count": 16,
+  "models": [
+    {
+      "model": "ChatGPT GPT-6 (single chat text)",
+      "declared_model_version": "GPT-6_PRODUCT_LABEL_EXACT_BUILD_UNKNOWN",
+      "responses": 16,
+      "task_count": 8,
+      "candidates_per_task": {
+        "original-20261124-0300-g01": 2,
+        "original-20261124-0300-g02": 2,
+        "original-20261124-0300-g03": 2,
+        "original-20261124-0300-g04": 2,
+        "original-20261124-0300-s01": 2,
+        "original-20261124-0300-s02": 2,
+        "original-20261124-0300-s03": 2,
+        "original-20261124-0300-s04": 2
+      },
+      "issues": [
+        "NO_INDEPENDENT_MODEL_INVOCATION",
+        "NO_PROVIDER_EXECUTION_RECEIPT",
+        "UNKNOWN_INFERENCE_SETTINGS",
+        "UNKNOWN_MODEL_BUILD"
+      ],
+      "independent_execution": "NOT_ESTABLISHED"
+    }
+  ],
+  "actual_provider_receipts_verified": false,
+  "funniness": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "voice_stage_reproducibility": "NOT_MEASURED",
+  "publication_enabled": false,
+  "auto_reply_enabled": false,
+  "warning": "Offline audit of self-declared metadata only. Conditional eligibility is NOT verified execution, fairness proof, a model ranking, or a humor measurement. A matching prompt SHA only verifies agreement with local self-declared metadata; the actual sent provider request and receipts remain unverified. Provider receipts and sampling settings require independent verification."
+}

@@ -1,0 +1,2264 @@
+{
+  "title": "BehaviorBench population-mean prior (prior_marginal) — 2026-11-12",
+  "run_started_utc": "2026-11-12T06:21:35Z",
+  "dataset": "befm/BehaviorBench",
+  "dataset_revision": "ec382c701589da2f24bf697dd1b3bb9f7bd62a35",
+  "evaluator": "umich-foreseer/behaviorbench_eval",
+  "evaluator_revision": "ddd646ed2bbecdb79094eb56763ee7664d2f8e1a",
+  "license": "Dataset CC BY-NC-ND 4.0 (eval only, not redistributed). Evaluator MIT.",
+  "citation": "Huang et al., BehaviorBench, arXiv:2606.24162",
+  "mg_cursor_note": "Does not advance MG-02. External calibration only; MG-04 gate remains MaMe-Re.",
+  "definition": {
+    "prior_marginal_full": "Grouped empirical mode (classification) or mean (numeric) on the official test split, including the scored item. Reproduces Muse full-split surv_resp_pred Acc 0.3944.",
+    "prior_loo": "Same grouped statistic with the scored item held out.",
+    "prior_constant_mean": "For first-round game_behavior: official protocol of N identical draws of the population mean (point mass).",
+    "prior_constant_mode": "Same protocol with the population mode.",
+    "human_human_split_half": "Not a model. Split human actions (50/150 when n=200) and measure W; seed 20261111, 200 repeats, to sit next to Muse's published human baseline."
+  },
+  "num_samples_per_game": 1000,
+  "tasks_attempted": [
+    "pers_score_pred",
+    "surv_resp_pred",
+    "missing_surv_resp",
+    "seq_surv_resp",
+    "demo_pred_age",
+    "acrossdim_pers_score",
+    "ieo_economics",
+    "game_behavior_dictator",
+    "game_behavior_ultimatum_proposer",
+    "game_behavior_ultimatum_responder",
+    "game_behavior_trust_investor",
+    "game_behavior_trust_banker",
+    "game_behavior_public_goods",
+    "game_behavior_bomb",
+    "game_behavior_guessing",
+    "game_behavior_push_pull",
+    "multiround_behavior_dictator",
+    "multiround_behavior_trust_investor",
+    "multiround_behavior_trust_banker_inv50",
+    "multiround_behavior_trust_banker_inv100",
+    "multiround_behavior_public_goods",
+    "multiround_behavior_bomb",
+    "multiround_behavior_guessing",
+    "multiround_behavior_push_pull",
+    "acrossgame_behavior_dictator",
+    "acrossgame_behavior_ultimatum_proposer",
+    "acrossgame_behavior_ultimatum_responder",
+    "acrossgame_behavior_trust_investor",
+    "acrossgame_behavior_trust_banker",
+    "acrossgame_behavior_public_goods",
+    "acrossgame_behavior_bomb",
+    "acrossgame_behavior_guessing",
+    "acrossgame_behavior_push_pull"
+  ],
+  "results": [
+    {
+      "task": "pers_score_pred",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/pers_score_pred/test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "group_by": "bigfive_dimension",
+      "n_groups": 5,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_averaged": 6.375373621008924,
+            "Spearman_with_pvalue_correlation_averaged": 0.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 6.375373621008924,
+            "Wasserstein_with_ks_distance_raw_averaged": 6.375373621008924,
+            "Wasserstein_with_ks_all_ks_pass_test": 0,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 4.680872232809043e-10,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.42764704069922227
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "bigfive_dimension",
+            "num_groups": 5
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_averaged": 6.407597092054173,
+            "Spearman_with_pvalue_correlation_averaged": -1.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 1,
+            "Wasserstein_with_ks_distance_averaged": 6.344191940787448,
+            "Wasserstein_with_ks_distance_raw_averaged": 6.344191940787448,
+            "Wasserstein_with_ks_all_ks_pass_test": 0,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 4.680872232809043e-10,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.42764704069922227
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "bigfive_dimension",
+            "num_groups": 5
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "surv_resp_pred",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/surv_resp_pred/test.jsonl",
+      "output_type": "integer",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "Accuracy",
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "group_by": "target_item",
+      "n_groups": 50,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.39441397497324276,
+            "MAE_averaged": 1.002824885467105,
+            "Spearman_with_pvalue_correlation_averaged": 0.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 1.002824885467105,
+            "Wasserstein_with_ks_distance_raw_averaged": 1.002824885467105,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 50
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.28075541372772495,
+            "MAE_averaged": 1.16936631384549,
+            "Spearman_with_pvalue_correlation_averaged": -0.1597813752902601,
+            "Spearman_with_pvalue_pvalue_averaged": 0.056132555713846226,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 0.8441167904220537,
+            "Wasserstein_with_ks_distance_raw_averaged": 0.8441167904220537,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 50
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "missing_surv_resp",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/missing_surv_resp/test.jsonl",
+      "output_type": "integer",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "Accuracy",
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "group_by": "target_item",
+      "n_groups": 50,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.38637903980634325,
+            "MAE_averaged": 0.9972690547642601,
+            "Spearman_with_pvalue_correlation_averaged": 0.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 0.9972690547642601,
+            "Wasserstein_with_ks_distance_raw_averaged": 0.9972690547642601,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 50
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.24353567943808055,
+            "MAE_averaged": 1.1848847263453375,
+            "Spearman_with_pvalue_correlation_averaged": -0.17068763113251564,
+            "Spearman_with_pvalue_pvalue_averaged": 0.10295638454040165,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 0.8188925136179652,
+            "Wasserstein_with_ks_distance_raw_averaged": 0.8188925136179652,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 50
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "seq_surv_resp",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/seq_surv_resp/test.jsonl",
+      "output_type": "integer",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "Accuracy",
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "group_by": "target_item",
+      "n_groups": 49,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.3964902433684592,
+            "MAE_averaged": 0.9800527773841746,
+            "Spearman_with_pvalue_correlation_averaged": 0.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 0.9800527773841745,
+            "Wasserstein_with_ks_distance_raw_averaged": 0.9800527773841745,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 49
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy_averaged": 0.2755193991678013,
+            "MAE_averaged": 1.1721971069774837,
+            "Spearman_with_pvalue_correlation_averaged": -0.16862260746826557,
+            "Spearman_with_pvalue_pvalue_averaged": 0.09271833864348332,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 0.8009325921371038,
+            "Wasserstein_with_ks_distance_raw_averaged": 0.8009325921371038,
+            "Wasserstein_with_ks_all_ks_pass_test": 1,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.0,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "target_item",
+            "num_groups": 49
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "demo_pred_age",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/demo_pred_age/test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE": 9.132208,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 9.132208000000002,
+            "Wasserstein_with_ks_distance_raw": 9.132208000000002,
+            "Wasserstein_with_ks_ks_statistic": 0.482,
+            "Wasserstein_with_ks_ks_pvalue": 1.3758331243978358e-105,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE": 9.1413302,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 9.125214199999998,
+            "Wasserstein_with_ks_distance_raw": 9.125214199999998,
+            "Wasserstein_with_ks_ks_statistic": 0.482,
+            "Wasserstein_with_ks_ks_pvalue": 1.3758331243978358e-105,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossdim_pers_score",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/big_five/acrossdim_pers_score/test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 1000,
+      "group_by": "bigfive_dimension",
+      "n_groups": 5,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_averaged": 6.2260903295182,
+            "Spearman_with_pvalue_correlation_averaged": 0.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 0,
+            "Wasserstein_with_ks_distance_averaged": 6.2260903295182,
+            "Wasserstein_with_ks_distance_raw_averaged": 6.2260903295182,
+            "Wasserstein_with_ks_all_ks_pass_test": 0,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.654393265432359e-05,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.39891399760203433
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "bigfive_dimension",
+            "num_groups": 5
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_averaged": 6.257441620232322,
+            "Spearman_with_pvalue_correlation_averaged": -1.0,
+            "Spearman_with_pvalue_pvalue_averaged": 0.0,
+            "Spearman_with_pvalue_all_significant": 1,
+            "Wasserstein_with_ks_distance_averaged": 6.1949396141563895,
+            "Wasserstein_with_ks_distance_raw_averaged": 6.1949396141563895,
+            "Wasserstein_with_ks_all_ks_pass_test": 0,
+            "Wasserstein_with_ks_ks_pvalue_averaged": 1.654393265432359e-05,
+            "Wasserstein_with_ks_ks_statistic_averaged": 0.39891399760203433
+          },
+          "metadata": {
+            "num_samples": 1000,
+            "num_valid_predictions": 1000,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "group_by": "bigfive_dimension",
+            "num_groups": 5
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "ieo_economics",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/economics_contests/ieo_economics.jsonl",
+      "output_type": "multi_choice",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "accuracy_multi_choice"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 124,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "accuracy_multi_choice": 0.3064516129032258
+          },
+          "metadata": {
+            "num_samples": 124,
+            "num_valid_predictions": 124,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "accuracy_multi_choice": 0.3064516129032258
+          },
+          "metadata": {
+            "num_samples": 124,
+            "num_valid_predictions": 124,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "game_behavior_dictator",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/dictator_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 24.715,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 16.6007,
+            "Wasserstein_with_ks_distance_raw": 16.6007,
+            "Wasserstein_with_ks_ks_statistic": 0.42999999999999994,
+            "Wasserstein_with_ks_ks_pvalue": 2.830400855617679e-28,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 24.714999999999993,
+            "model_action_std": 7.105427357601002e-15,
+            "human_action_mean": 24.715,
+            "human_action_std": 19.194628805996746
+          }
+        },
+        "prior_constant_mode": {
+          "value": 0.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 24.715000000000003,
+            "Wasserstein_with_ks_distance_raw": 24.715000000000003,
+            "Wasserstein_with_ks_ks_statistic": 0.725,
+            "Wasserstein_with_ks_ks_pvalue": 5.670288183983127e-87,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 0.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 24.715,
+            "human_action_std": 19.194628805996746
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 3.4293333333333336,
+          "W_std": 1.4986540769752017
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_ultimatum_proposer",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/ultimatum_proposer_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 44.92,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 12.319999999999999,
+            "Wasserstein_with_ks_distance_raw": 12.319999999999999,
+            "Wasserstein_with_ks_ks_statistic": 0.5,
+            "Wasserstein_with_ks_ks_pvalue": 1.2602560331879185e-38,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 44.92,
+            "model_action_std": 0.0,
+            "human_action_mean": 44.92,
+            "human_action_std": 18.328764279132404
+          }
+        },
+        "prior_constant_mode": {
+          "value": 50.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 12.0,
+            "Wasserstein_with_ks_distance_raw": 12.0,
+            "Wasserstein_with_ks_ks_statistic": 0.5,
+            "Wasserstein_with_ks_ks_pvalue": 1.2602560331879185e-38,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 50.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 44.92,
+            "human_action_std": 18.328764279132404
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 3.565466666666666,
+          "W_std": 1.2309307505147535
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_ultimatum_responder",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/ultimatum_responder_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 33.29,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 14.3739,
+            "Wasserstein_with_ks_distance_raw": 14.3739,
+            "Wasserstein_with_ks_ks_statistic": 0.505,
+            "Wasserstein_with_ks_ks_pvalue": 1.938819406772648e-39,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 33.290000000000006,
+            "model_action_std": 7.105427357601002e-15,
+            "human_action_mean": 33.29,
+            "human_action_std": 17.80297447057654
+          }
+        },
+        "prior_constant_mode": {
+          "value": 50.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 18.169999999999998,
+            "Wasserstein_with_ks_distance_raw": 18.169999999999998,
+            "Wasserstein_with_ks_ks_statistic": 0.755,
+            "Wasserstein_with_ks_ks_pvalue": 1.0941113194712653e-95,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 50.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 33.29,
+            "human_action_std": 17.80297447057654
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 3.3528666666666664,
+          "W_std": 1.1323691849242197
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_trust_investor",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/trust_investor_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 42.185,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 36.0283,
+            "Wasserstein_with_ks_distance_raw": 36.0283,
+            "Wasserstein_with_ks_ks_statistic": 0.5700000000000001,
+            "Wasserstein_with_ks_ks_pvalue": 5.723161819387791e-51,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 42.18499999999999,
+            "model_action_std": 1.4210854715202004e-14,
+            "human_action_mean": 42.185,
+            "human_action_std": 39.88985804687703
+          }
+        },
+        "prior_constant_mode": {
+          "value": 100.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 57.815,
+            "Wasserstein_with_ks_distance_raw": 57.815,
+            "Wasserstein_with_ks_ks_statistic": 0.74,
+            "Wasserstein_with_ks_ks_pvalue": 3.0345525511748226e-91,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 100.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 42.185,
+            "human_action_std": 39.88985804687703
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 6.460999999999999,
+          "W_std": 3.549920029611759
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_trust_banker",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/trust_banker_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 55.9,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 20.231333333333335,
+            "Wasserstein_with_ks_distance_raw": 30.347,
+            "Wasserstein_with_ks_ks_statistic": 0.42499999999999993,
+            "Wasserstein_with_ks_ks_pvalue": 1.3195296519878427e-27,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 55.899999999999984,
+            "model_action_std": 1.4210854715202004e-14,
+            "human_action_mean": 55.9,
+            "human_action_std": 37.39933154482844
+          }
+        },
+        "prior_constant_mode": {
+          "value": 50.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 19.8,
+            "Wasserstein_with_ks_distance_raw": 29.7,
+            "Wasserstein_with_ks_ks_statistic": 0.42499999999999993,
+            "Wasserstein_with_ks_ks_pvalue": 1.3195296519878427e-27,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 50.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 55.9,
+            "human_action_std": 37.39933154482844
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 4.513866666666667,
+          "W_std": 1.898951647067564
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_public_goods",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/public_goods_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 8.91,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 24.3455,
+            "Wasserstein_with_ks_distance_raw": 4.8691,
+            "Wasserstein_with_ks_ks_statistic": 0.48,
+            "Wasserstein_with_ks_ks_pvalue": 1.7851307606241974e-35,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 8.909999999999998,
+            "model_action_std": 1.7763568394002505e-15,
+            "human_action_mean": 8.91,
+            "human_action_std": 6.068929065329401
+          }
+        },
+        "prior_constant_mode": {
+          "value": 10.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 24.55,
+            "Wasserstein_with_ks_distance_raw": 4.91,
+            "Wasserstein_with_ks_ks_statistic": 0.52,
+            "Wasserstein_with_ks_ks_pvalue": 6.126122163438164e-42,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 10.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 8.91,
+            "human_action_std": 6.068929065329401
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 5.35,
+          "W_std": 2.434479205201463
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_bomb",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/bomb_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 45.565,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 17.746750000000002,
+            "Wasserstein_with_ks_distance_raw": 17.746750000000002,
+            "Wasserstein_with_ks_ks_statistic": 0.475,
+            "Wasserstein_with_ks_ks_pvalue": 1.034519112922747e-34,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 45.56500000000001,
+            "model_action_std": 1.4210854715202004e-14,
+            "human_action_mean": 45.565,
+            "human_action_std": 23.09341410445844
+          }
+        },
+        "prior_constant_mode": {
+          "value": 50.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 17.715000000000003,
+            "Wasserstein_with_ks_distance_raw": 17.715000000000003,
+            "Wasserstein_with_ks_ks_statistic": 0.525,
+            "Wasserstein_with_ks_ks_pvalue": 8.568766370290169e-43,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 50.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 45.565,
+            "human_action_std": 23.09341410445844
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 4.463333333333334,
+          "W_std": 1.7525407893438005
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_guessing",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/guessing_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 35.465,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 17.431500000000003,
+            "Wasserstein_with_ks_distance_raw": 17.431500000000003,
+            "Wasserstein_with_ks_ks_statistic": 0.395,
+            "Wasserstein_with_ks_ks_pvalue": 8.756260389934986e-24,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 35.46500000000002,
+            "model_action_std": 1.4210854715202004e-14,
+            "human_action_mean": 35.465,
+            "human_action_std": 21.512526002308515
+          }
+        },
+        "prior_constant_mode": {
+          "value": 50.0,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 21.744999999999994,
+            "Wasserstein_with_ks_distance_raw": 21.744999999999997,
+            "Wasserstein_with_ks_ks_statistic": 0.705,
+            "Wasserstein_with_ks_ks_pvalue": 1.5837640604759428e-81,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 50.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 35.465,
+            "human_action_std": 21.512526002308515
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 4.276733333333333,
+          "W_std": 1.5679760008532702
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "game_behavior_push_pull",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/game_behavior/push_pull_test.jsonl",
+      "output_type": "push_pull",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n_human": 200,
+      "arms": {
+        "prior_constant_mean": {
+          "value": 0.57,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 43.0,
+            "Wasserstein_with_ks_distance_raw": 0.43,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 1.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 0.57,
+            "human_action_std": 0.4950757517794625
+          }
+        },
+        "prior_constant_mode": {
+          "value": 1,
+          "num_samples_emitted": 1000,
+          "metrics": {
+            "Wasserstein_with_ks_distance": 43.0,
+            "Wasserstein_with_ks_distance_raw": 0.43,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_prompts": 1,
+            "num_total_attempts": 1000,
+            "num_model_samples": 1000,
+            "num_human_samples": 200,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0,
+            "model_action_mean": 1.0,
+            "model_action_std": 0.0,
+            "human_action_mean": 0.57,
+            "human_action_std": 0.4950757517794625
+          }
+        },
+        "human_human_split_half": {
+          "n_human": 200,
+          "n_pred_side": 50,
+          "n_ref_side": 150,
+          "repeats": 200,
+          "seed": 20261111,
+          "W_mean": 6.293333333333334,
+          "W_std": 4.929719351713188
+        }
+      },
+      "primary_arm": "prior_constant_mean"
+    },
+    {
+      "task": "multiround_behavior_dictator",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/dictator_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.731504,
+            "MAE_with_normalization_mae_raw": 18.731504,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 18.731504,
+            "Wasserstein_with_ks_distance_raw": 18.731504,
+            "Wasserstein_with_ks_ks_statistic": 0.452,
+            "Wasserstein_with_ks_ks_pvalue": 2.1726147978794497e-46,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.769037600000004,
+            "MAE_with_normalization_mae_raw": 18.769037600000004,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 18.6940248,
+            "Wasserstein_with_ks_distance_raw": 18.6940248,
+            "Wasserstein_with_ks_ks_statistic": 0.452,
+            "Wasserstein_with_ks_ks_pvalue": 2.1726147978794497e-46,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_trust_investor",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/trust_investor_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 31.953359999999996,
+            "MAE_with_normalization_mae_raw": 31.95336,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 31.953359999999996,
+            "Wasserstein_with_ks_distance_raw": 31.953359999999996,
+            "Wasserstein_with_ks_ks_statistic": 0.486,
+            "Wasserstein_with_ks_ks_pvalue": 6.791993798879064e-54,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 32.0174024,
+            "MAE_with_normalization_mae_raw": 32.0174024,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 31.8895552,
+            "Wasserstein_with_ks_distance_raw": 31.8895552,
+            "Wasserstein_with_ks_ks_statistic": 0.486,
+            "Wasserstein_with_ks_ks_pvalue": 6.791993798879064e-54,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_trust_banker_inv50",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/trust_banker_inv50_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 125,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 22.57877333333333,
+            "MAE_with_normalization_mae_raw": 33.868159999999996,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 22.57877333333334,
+            "Wasserstein_with_ks_distance_raw": 33.86816000000001,
+            "Wasserstein_with_ks_ks_statistic": 0.48,
+            "Wasserstein_with_ks_ks_pvalue": 2.0849201590081357e-13,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 125,
+            "num_valid_predictions": 125,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 22.76086613333333,
+            "MAE_with_normalization_mae_raw": 34.14129919999999,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 22.397843199999997,
+            "Wasserstein_with_ks_distance_raw": 33.596764799999995,
+            "Wasserstein_with_ks_ks_statistic": 0.48,
+            "Wasserstein_with_ks_ks_pvalue": 2.0849201590081357e-13,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 125,
+            "num_valid_predictions": 125,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_trust_banker_inv100",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/trust_banker_inv100_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 498,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.358479250334675,
+            "MAE_with_normalization_mae_raw": 55.07543775100402,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 18.358479250334675,
+            "Wasserstein_with_ks_distance_raw": 55.07543775100402,
+            "Wasserstein_with_ks_ks_statistic": 0.5903614457831325,
+            "Wasserstein_with_ks_ks_pvalue": 7.577593805135745e-81,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 498,
+            "num_valid_predictions": 498,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.395416465863455,
+            "MAE_with_normalization_mae_raw": 55.186249397590366,
+            "Spearman_with_pvalue_correlation": -0.9999999999999998,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 18.33015635876841,
+            "Wasserstein_with_ks_distance_raw": 54.990469076305224,
+            "Wasserstein_with_ks_ks_statistic": 0.5903614457831325,
+            "Wasserstein_with_ks_ks_pvalue": 7.577593805135745e-81,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 498,
+            "num_valid_predictions": 498,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_public_goods",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/public_goods_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 27.28336,
+            "MAE_with_normalization_mae_raw": 5.456671999999999,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 27.28336,
+            "Wasserstein_with_ks_distance_raw": 5.456672,
+            "Wasserstein_with_ks_ks_statistic": 0.46599999999999997,
+            "Wasserstein_with_ks_ks_pvalue": 2.1107478954317768e-49,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 27.338153000000005,
+            "MAE_with_normalization_mae_raw": 5.467630600000001,
+            "Spearman_with_pvalue_correlation": -0.9999999999999998,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 27.228591,
+            "Wasserstein_with_ks_distance_raw": 5.4457182,
+            "Wasserstein_with_ks_ks_statistic": 0.46599999999999997,
+            "Wasserstein_with_ks_ks_pvalue": 2.1107478954317768e-49,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_bomb",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/bomb_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 17.473839999999996,
+            "MAE_with_normalization_mae_raw": 17.473839999999996,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 17.47384,
+            "Wasserstein_with_ks_distance_raw": 17.47384,
+            "Wasserstein_with_ks_ks_statistic": 0.502,
+            "Wasserstein_with_ks_ks_pvalue": 1.1879709068254211e-57,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 17.508857199999998,
+            "MAE_with_normalization_mae_raw": 17.508857199999998,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 17.4397508,
+            "Wasserstein_with_ks_distance_raw": 17.4397508,
+            "Wasserstein_with_ks_ks_statistic": 0.502,
+            "Wasserstein_with_ks_ks_pvalue": 1.1879709068254211e-57,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_guessing",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/guessing_multiround_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 14.530080000000003,
+            "MAE_with_normalization_mae_raw": 14.530080000000002,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 14.53008,
+            "Wasserstein_with_ks_distance_raw": 14.53008,
+            "Wasserstein_with_ks_ks_statistic": 0.598,
+            "Wasserstein_with_ks_ks_pvalue": 1.9488038001756452e-83,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 14.5591908,
+            "MAE_with_normalization_mae_raw": 14.5591908,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 14.507209200000002,
+            "Wasserstein_with_ks_distance_raw": 14.507209200000002,
+            "Wasserstein_with_ks_ks_statistic": 0.598,
+            "Wasserstein_with_ks_ks_pvalue": 1.9488038001756452e-83,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "multiround_behavior_push_pull",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/multiround_behavior/push_pull_multiround_test.jsonl",
+      "output_type": "push_pull",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Accuracy",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 500,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy": 0.636,
+            "MAE_with_normalization_mae": 36.4,
+            "MAE_with_normalization_mae_raw": 0.364,
+            "Wasserstein_with_ks_distance": 36.4,
+            "Wasserstein_with_ks_distance_raw": 0.364,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy": 0.636,
+            "MAE_with_normalization_mae": 36.4,
+            "MAE_with_normalization_mae_raw": 0.364,
+            "Wasserstein_with_ks_distance": 36.4,
+            "Wasserstein_with_ks_distance_raw": 0.364,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_samples": 500,
+            "num_valid_predictions": 500,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_dictator",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_dictator_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.67822,
+            "MAE_with_normalization_mae_raw": 18.67822,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 18.67822,
+            "Wasserstein_with_ks_distance_raw": 18.67822,
+            "Wasserstein_with_ks_ks_statistic": 0.5226666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 6.566913622701374e-94,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.703152,
+            "MAE_with_normalization_mae_raw": 18.703152,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 18.653862399999998,
+            "Wasserstein_with_ks_distance_raw": 18.653862399999998,
+            "Wasserstein_with_ks_ks_statistic": 0.5226666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 6.566913622701374e-94,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_ultimatum_proposer",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_ultimatum_proposer_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 13.347446133333333,
+            "MAE_with_normalization_mae_raw": 13.347446133333333,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 13.347446133333335,
+            "Wasserstein_with_ks_distance_raw": 13.347446133333335,
+            "Wasserstein_with_ks_ks_statistic": 0.5053333333333334,
+            "Wasserstein_with_ks_ks_pvalue": 1.6894230833984681e-87,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 13.365251466666663,
+            "MAE_with_normalization_mae_raw": 13.365251466666663,
+            "Spearman_with_pvalue_correlation": -0.9999999999999999,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 13.3310584,
+            "Wasserstein_with_ks_distance_raw": 13.3310584,
+            "Wasserstein_with_ks_ks_statistic": 0.5053333333333334,
+            "Wasserstein_with_ks_ks_pvalue": 1.6894230833984681e-87,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_ultimatum_responder",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_ultimatum_responder_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 16.463631466666666,
+            "MAE_with_normalization_mae_raw": 16.463631466666666,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 16.463631466666666,
+            "Wasserstein_with_ks_distance_raw": 16.463631466666666,
+            "Wasserstein_with_ks_ks_statistic": 0.5466666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 3.1324017775644635e-103,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 16.485614933333334,
+            "MAE_with_normalization_mae_raw": 16.485614933333334,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 16.4438216,
+            "Wasserstein_with_ks_distance_raw": 16.4438216,
+            "Wasserstein_with_ks_ks_statistic": 0.5466666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 3.1324017775644635e-103,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_trust_investor",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_trust_investor_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 33.44066133333333,
+            "MAE_with_normalization_mae_raw": 33.44066133333333,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 33.44066133333333,
+            "Wasserstein_with_ks_distance_raw": 33.44066133333333,
+            "Wasserstein_with_ks_ks_statistic": 0.5226666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 6.566913622701374e-94,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 33.48530426666667,
+            "MAE_with_normalization_mae_raw": 33.48530426666667,
+            "Spearman_with_pvalue_correlation": -0.9999999999999999,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 33.3995976,
+            "Wasserstein_with_ks_distance_raw": 33.3995976,
+            "Wasserstein_with_ks_ks_statistic": 0.5226666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 6.566913622701374e-94,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_trust_banker",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_trust_banker_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 262,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 20.21735572519084,
+            "MAE_with_normalization_mae_raw": 30.32603358778626,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 20.21735572519084,
+            "Wasserstein_with_ks_distance_raw": 30.326033587786256,
+            "Wasserstein_with_ks_ks_statistic": 0.45038167938931295,
+            "Wasserstein_with_ks_ks_pvalue": 2.6187800227961306e-24,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 262,
+            "num_valid_predictions": 262,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 20.29481679389313,
+            "MAE_with_normalization_mae_raw": 30.442225190839697,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 20.1435475826972,
+            "Wasserstein_with_ks_distance_raw": 30.2153213740458,
+            "Wasserstein_with_ks_ks_statistic": 0.45038167938931295,
+            "Wasserstein_with_ks_ks_pvalue": 2.6187800227961306e-24,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 262,
+            "num_valid_predictions": 262,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_public_goods",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_public_goods_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 24.226613333333336,
+            "MAE_with_normalization_mae_raw": 4.845322666666667,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 24.22661333333333,
+            "Wasserstein_with_ks_distance_raw": 4.845322666666666,
+            "Wasserstein_with_ks_ks_statistic": 0.516,
+            "Wasserstein_with_ks_ks_pvalue": 2.0623603134945607e-91,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 24.258888000000002,
+            "MAE_with_normalization_mae_raw": 4.8517776,
+            "Spearman_with_pvalue_correlation": -0.9999999999999999,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 24.19462666666667,
+            "Wasserstein_with_ks_distance_raw": 4.838925333333334,
+            "Wasserstein_with_ks_ks_statistic": 0.516,
+            "Wasserstein_with_ks_ks_pvalue": 2.0623603134945607e-91,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_bomb",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_bomb_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.173966933333336,
+            "MAE_with_normalization_mae_raw": 18.173966933333336,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 18.173966933333332,
+            "Wasserstein_with_ks_distance_raw": 18.173966933333332,
+            "Wasserstein_with_ks_ks_statistic": 0.5106666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 1.9211923880394354e-89,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.1982244,
+            "MAE_with_normalization_mae_raw": 18.1982244,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 18.151064399999996,
+            "Wasserstein_with_ks_distance_raw": 18.151064399999996,
+            "Wasserstein_with_ks_ks_statistic": 0.5106666666666666,
+            "Wasserstein_with_ks_ks_pvalue": 1.9211923880394354e-89,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_guessing",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_guessing_test.jsonl",
+      "output_type": "numeric",
+      "prior_policy": "mean",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Spearman_with_pvalue",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.845546666666667,
+            "MAE_with_normalization_mae_raw": 18.845546666666667,
+            "Spearman_with_pvalue_correlation": null,
+            "Spearman_with_pvalue_pvalue": null,
+            "Spearman_with_pvalue_significant": 0,
+            "Wasserstein_with_ks_distance": 18.845546666666664,
+            "Wasserstein_with_ks_distance_raw": 18.845546666666664,
+            "Wasserstein_with_ks_ks_statistic": 0.488,
+            "Wasserstein_with_ks_ks_pvalue": 2.3742537751394843e-81,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mean",
+          "metrics": {
+            "MAE_with_normalization_mae": 18.870708266666668,
+            "MAE_with_normalization_mae_raw": 18.870708266666668,
+            "Spearman_with_pvalue_correlation": -1.0,
+            "Spearman_with_pvalue_pvalue": 0.0,
+            "Spearman_with_pvalue_significant": 1,
+            "Wasserstein_with_ks_distance": 18.8216904,
+            "Wasserstein_with_ks_distance_raw": 18.8216904,
+            "Wasserstein_with_ks_ks_statistic": 0.488,
+            "Wasserstein_with_ks_ks_pvalue": 2.3742537751394843e-81,
+            "Wasserstein_with_ks_ks_pass_test": 0
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    },
+    {
+      "task": "acrossgame_behavior_push_pull",
+      "data_path_relative": "/tmp/sanbo-eval/BehaviorBench/moblab/acrossgame_behavior/acrossgame_push_pull_test.jsonl",
+      "output_type": "push_pull",
+      "prior_policy": "mode",
+      "official_metrics_requested": [
+        "MAE_with_normalization",
+        "Accuracy",
+        "Wasserstein_with_ks"
+      ],
+      "skipped_metrics": [
+        "F1_macro",
+        "f1_macro"
+      ],
+      "n": 750,
+      "arms": {
+        "prior_marginal_full": {
+          "loo": 0,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy": 0.5613333333333334,
+            "MAE_with_normalization_mae": 43.86666666666667,
+            "MAE_with_normalization_mae_raw": 0.43866666666666665,
+            "Wasserstein_with_ks_distance": 43.86666666666667,
+            "Wasserstein_with_ks_distance_raw": 0.43866666666666665,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        },
+        "prior_loo": {
+          "loo": 1,
+          "policy": "mode",
+          "metrics": {
+            "Accuracy": 0.5613333333333334,
+            "MAE_with_normalization_mae": 43.86666666666667,
+            "MAE_with_normalization_mae_raw": 0.43866666666666665,
+            "Wasserstein_with_ks_distance": 43.86666666666667,
+            "Wasserstein_with_ks_distance_raw": 0.43866666666666665,
+            "Wasserstein_with_ks_ks_statistic": 0.0,
+            "Wasserstein_with_ks_ks_pvalue": 1.0,
+            "Wasserstein_with_ks_ks_pass_test": 1
+          },
+          "metadata": {
+            "num_samples": 750,
+            "num_valid_predictions": 750,
+            "num_failed_parses": 0,
+            "failed_parse_rate": 0.0
+          },
+          "num_failed_parses": 0
+        }
+      },
+      "primary_arm": "prior_marginal_full"
+    }
+  ],
+  "errors": []
+}

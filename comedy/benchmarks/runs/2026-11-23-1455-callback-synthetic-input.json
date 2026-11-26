@@ -1,0 +1,559 @@
+{
+  "source_type": "synthetic",
+  "purpose": "synthetic multi-turn lexical callback and stage-cue validation only",
+  "cases": [
+    {
+      "scenario_id": "valid_callback",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行の荷物として空港を回っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "callback_forgets_vehicle",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "誰かが新婚旅行に出発しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "callback_forgets_new_beat",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号はお待たせしました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "impossible_vehicle_arrival",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行から戻り、おもち34号が到着しました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "human_reaction_missing",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "staff",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "audience",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行の荷物として空港を回っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "ai_monologue",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "ai",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行の荷物として空港を回っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "audience_laughter_nonblocking",
+      "expected_gate": "PASS",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "audience",
+          "text": "笑い",
+          "kind": "laughter"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行の荷物として空港を回っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 10,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "post_end_extra_line",
+      "expected_gate": "FAIL",
+      "events": [
+        {
+          "speaker": "dais",
+          "text": "痛い！もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号は？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は式場で新郎の送迎係になりました。"
+        },
+        {
+          "speaker": "dais",
+          "text": "僕の迎えはどうなるの！"
+        },
+        {
+          "speaker": "ai",
+          "text": "右折田まっすぐは駐車場を四周しています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "おもち34号はまだ？"
+        },
+        {
+          "speaker": "ai",
+          "text": "おもち34号は新婚旅行の荷物として空港を回っています。"
+        },
+        {
+          "speaker": "dais",
+          "text": "終演",
+          "cue": "end"
+        },
+        {
+          "speaker": "ai",
+          "text": "またお会いしましょう"
+        }
+      ],
+      "chains": [
+        {
+          "setup_ai_event": 5,
+          "callback_ai_event": 9,
+          "entity": "おもち34号",
+          "setup_any": [
+            "式場"
+          ],
+          "payoff_any": [
+            "新婚旅行"
+          ],
+          "forbidden_after_setup": [
+            "おもち34号が到着しました"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -22,9 +22,30 @@ def _optional_limit(name: str, value: object) -> int | None:
     return value
 
 
+def _merged_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Coalesce touching/overlapping labels into continuous annotated intervals."""
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted((a, b) for a, b in intervals if b > a):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _merged_interval_ms(intervals: list[tuple[int, int]]) -> int:
+    """Union duration; multiple simultaneous laughter labels must not double-count."""
+    return sum(end - start for start, end in _merged_intervals(intervals))
+
+
 def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
             min_duration_ms: int | None = None,
-            max_duration_ms: int | None = None) -> dict:
+            max_duration_ms: int | None = None,
+            max_ai_entry_laughter_ms: int | None = None,
+            max_second_ai_onset_ms: int | None = None,
+            max_ai_turn_duration_ms: int | None = None,
+            max_ai_talk_share_percent: int | None = None,
+            min_dais_reentry_gap_ms: int | None = None) -> dict:
     """Measure annotated turn gaps/overlap; no default timing threshold is imposed.
 
     The caller supplies recording-relative start_ms/end_ms for every event.
@@ -34,6 +55,13 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     max_reply_gap_ms = _optional_limit("max_reply_gap_ms", max_reply_gap_ms)
     min_duration_ms = _optional_limit("min_duration_ms", min_duration_ms)
     max_duration_ms = _optional_limit("max_duration_ms", max_duration_ms)
+    max_ai_entry_laughter_ms = _optional_limit("max_ai_entry_laughter_ms", max_ai_entry_laughter_ms)
+    max_second_ai_onset_ms = _optional_limit("max_second_ai_onset_ms", max_second_ai_onset_ms)
+    max_ai_turn_duration_ms = _optional_limit("max_ai_turn_duration_ms", max_ai_turn_duration_ms)
+    max_ai_talk_share_percent = _optional_limit("max_ai_talk_share_percent", max_ai_talk_share_percent)
+    min_dais_reentry_gap_ms = _optional_limit("min_dais_reentry_gap_ms", min_dais_reentry_gap_ms)
+    if max_ai_talk_share_percent is not None and max_ai_talk_share_percent > 100:
+        raise ValueError("max_ai_talk_share_percent must be between 0 and 100")
     if min_duration_ms is not None and max_duration_ms is not None and min_duration_ms > max_duration_ms:
         raise ValueError("min_duration_ms must not exceed max_duration_ms")
     if not isinstance(events, list) or not events:
@@ -47,6 +75,12 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
     active = False
     pending_dais = None
     last_ai_end = None
+    last_ai_event_idx = None
+    ai_waiting_for_dais = False
+    dais_reentry_gaps = []
+    second_ai_onset_ms = None  # First expected absurd diagnosis, NOT a measured laugh.
+    ai_turn_count = 0
+    ai_turn_durations = []
     reply_gaps = []
     dais_overlaps_ai = []
     violations = []
@@ -76,10 +110,35 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         elif speaker == "dais" and kind == "speech" and event["text"].strip() and active:
             pending_dais = (idx, end)
 
+        # A Dais reply after an AI line is a measurable interval, NOT proof
+        # of physical acting or audience laughter. Exclude start/end cues.
+        # Debrief/dialogue after the end cue is outside the performance.
+        # It must not inflate the on-stage reentry count or trigger opt-in gates.
+        if (active and speaker == "dais" and kind == "speech" and cue is None
+                and event["text"].strip() and ai_waiting_for_dais):
+            reentry = start - last_ai_end
+            dais_reentry_gaps.append({"dais_event": idx, "ai_event": last_ai_event_idx,
+                                      "gap_ms": reentry})
+            if min_dais_reentry_gap_ms is not None and reentry < min_dais_reentry_gap_ms:
+                violations.append({"event": idx, "reason": "dais_reentry_below_opt_in_target",
+                                   "gap_ms": reentry})
+            ai_waiting_for_dais = False
+
         if speaker == "dais" and kind == "speech" and last_ai_end is not None and start < last_ai_end:
             dais_overlaps_ai.append({"event": idx, "overlap_ms": min(end, last_ai_end) - start})
 
         if speaker == "ai" and kind == "speech" and event["text"].strip():
+            ai_turn_duration = end - start
+            ai_turn_durations.append({"ai_event": idx, "duration_ms": ai_turn_duration})
+            if max_ai_turn_duration_ms is not None and ai_turn_duration > max_ai_turn_duration_ms:
+                violations.append({"event": idx, "reason": "ai_turn_exceeds_duration_target",
+                                   "duration_ms": ai_turn_duration})
+            ai_turn_count += 1
+            if ai_turn_count == 2 and stage_start is not None:
+                second_ai_onset_ms = start - stage_start
+                if max_second_ai_onset_ms is not None and second_ai_onset_ms > max_second_ai_onset_ms:
+                    violations.append({"event": idx, "reason": "second_ai_onset_exceeds_target",
+                                       "onset_ms": second_ai_onset_ms})
             if active and pending_dais is not None:
                 dais_idx, dais_end = pending_dais
                 gap = start - dais_end
@@ -90,6 +149,65 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
                     violations.append({"event": idx, "reason": "reply_gap_exceeds_target", "gap_ms": gap})
             pending_dais = None
             last_ai_end = end
+            last_ai_event_idx = idx
+            ai_waiting_for_dais = True
+
+    # Event order alone cannot detect audio that continues after Dais's end cue:
+    # an AI utterance can start legitimately before the cue and finish afterward.
+    # Stage-end silence is a hard contract, unlike opt-in laugh timing thresholds.
+    post_end_ai_audio = []
+    if stage_end is not None:
+        for idx, event in enumerate(events):
+            if event["speaker"] != "ai" or event.get("kind", "speech") != "speech":
+                continue
+            if not event["text"].strip():
+                continue
+            spill = event["end_ms"] - max(stage_end, event["start_ms"])
+            if spill > 0:
+                post_end_ai_audio.append((max(stage_end, event["start_ms"]), event["end_ms"]))
+                violations.append({
+                    "event": idx, "reason": "ai_audio_after_end_cue", "spillover_ms": spill,
+                })
+
+    # Descriptive only unless a predeclared entry threshold is supplied.
+    # This examines time annotations, never audio waveforms or laughter intensity.
+    laughter = [
+        (idx, event["start_ms"], event["end_ms"])
+        for idx, event in enumerate(events)
+        if event["speaker"] == "audience" and event.get("kind", "speech") == "laughter"
+    ]
+    # Continuous audience laughter may span multiple overlapping annotations.
+    # If a label begins AFTER AI entry but extends laughter already active at
+    # entry, it still belongs to the same uninterrupted laughter episode.
+    continuous_laughter = _merged_intervals([(start, end) for _, start, end in laughter])
+    ai_laughter_overlaps = []
+    for ai_idx, ai in enumerate(events):
+        if ai["speaker"] != "ai" or ai.get("kind", "speech") != "speech" or not ai["text"].strip():
+            continue
+        start, end = ai["start_ms"], ai["end_ms"]
+        all_intersections = [(max(start, l_start), min(end, l_end))
+                             for _, l_start, l_end in laughter]
+        # Only laughter already underway when AI began can trigger the optional
+        # entry gate. Laughter starting mid-sentence is not an AI entry error.
+        entry_intersections = [(start, min(end, l_end))
+                               for l_start, l_end in continuous_laughter
+                               if l_start <= start < l_end]
+        overlap_ms = _merged_interval_ms(all_intersections)
+        entry_ms = _merged_interval_ms(entry_intersections)
+        if overlap_ms:
+            ai_laughter_overlaps.append({
+                "ai_event": ai_idx,
+                "overlap_ms": overlap_ms,
+                "entry_during_laughter_ms": entry_ms,
+                "laughter_events": [i for i, l_start, l_end in laughter
+                                   if max(start, l_start) < min(end, l_end)],
+            })
+        if max_ai_entry_laughter_ms is not None and entry_ms > max_ai_entry_laughter_ms:
+            violations.append({
+                "event": ai_idx,
+                "reason": "ai_enters_active_audience_laughter",
+                "entry_overlap_ms": entry_ms,
+            })
 
     duration = None if stage_start is None or stage_end is None else stage_end - stage_start
     if duration is not None and duration < 0:
@@ -98,6 +216,35 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         violations.append({"event": None, "reason": "stage_shorter_than_target", "duration_ms": duration})
     if duration is not None and max_duration_ms is not None and duration > max_duration_ms:
         violations.append({"event": None, "reason": "stage_longer_than_target", "duration_ms": duration})
+    # Clip speaking intervals to the annotated stage boundary. Union overlapping
+    # labels within each speaker so duplicate labels do not inflate speaking time.
+    # The denominator is AI + Dais speaking ms, NOT stage wall-clock duration.
+    ai_stage_speaking_ms = None
+    dais_stage_speaking_ms = None
+    ai_talk_share_percent = None
+    if stage_start is not None and stage_end is not None and stage_end >= stage_start:
+        def onstage_speech(speaker: str) -> list[tuple[int, int]]:
+            return [
+                (max(stage_start, e["start_ms"]), min(stage_end, e["end_ms"]))
+                for e in events
+                if e["speaker"] == speaker and e.get("kind", "speech") == "speech"
+                and e["text"].strip()
+            ]
+
+        ai_stage_speaking_ms = _merged_interval_ms(onstage_speech("ai"))
+        dais_stage_speaking_ms = _merged_interval_ms(onstage_speech("dais"))
+        total_speaking_ms = ai_stage_speaking_ms + dais_stage_speaking_ms
+        if total_speaking_ms:
+            ai_talk_share_percent = round(100 * ai_stage_speaking_ms / total_speaking_ms, 3)
+            # Compare the unrounded ratio so the strict gate is boundary-stable.
+            if (max_ai_talk_share_percent is not None
+                    and 100 * ai_stage_speaking_ms >
+                    max_ai_talk_share_percent * total_speaking_ms):
+                violations.append({
+                    "event": None, "reason": "ai_dominates_speaking_time",
+                    "ai_stage_speaking_ms": ai_stage_speaking_ms,
+                    "dais_stage_speaking_ms": dais_stage_speaking_ms,
+                })
     gaps = [row["gap_ms"] for row in reply_gaps]
     ordered = sorted(gaps)
     median = statistics.median(gaps) if gaps else None
@@ -110,14 +257,37 @@ def measure(events: list[dict], *, max_reply_gap_ms: int | None = None,
         "timing_gate": timing_gate,
         "timing_violations": violations,
         "reply_gap_ms": reply_gaps,
+        "dais_reentry_gap_ms": dais_reentry_gaps,
+        "dais_reentry_gap_median_ms": (statistics.median([x["gap_ms"] for x in dais_reentry_gaps])
+                                        if dais_reentry_gaps else None),
+        "dais_reentry_is_physical_acting": "NOT_MEASURED",
         "reply_gap_median_ms": median,
         "reply_gap_p95_nearest_rank_ms": p95,
         "ai_overlap_dais_count": sum(r["reason"] == "ai_overlaps_dais_speech" for r in violations),
         "dais_overlap_ai_events": dais_overlaps_ai,
         "stage_duration_ms": duration,
+        "second_ai_onset_ms": second_ai_onset_ms,
+        "ai_turn_duration_ms": ai_turn_durations,
+        "ai_turn_duration_max_ms": max((x["duration_ms"] for x in ai_turn_durations), default=None),
+        "ai_stage_speaking_ms": ai_stage_speaking_ms,
+        "dais_stage_speaking_ms": dais_stage_speaking_ms,
+        "ai_talk_share_percent": ai_talk_share_percent,
+        "ai_talk_share_is_laughter": "NOT_MEASURED",
+        "second_ai_onset_is_laughter": "NOT_MEASURED",
+        "ai_audio_after_end_total_ms": _merged_interval_ms(post_end_ai_audio),
+        "ai_audio_after_end_event_count": len(post_end_ai_audio),
+        "annotated_audience_laughter_events": len(laughter),
+        "ai_laughter_overlaps": ai_laughter_overlaps,
+        "ai_laughter_overlap_total_ms": sum(r["overlap_ms"] for r in ai_laughter_overlaps),
+        "ai_entries_during_laughter": sum(r["entry_during_laughter_ms"] > 0 for r in ai_laughter_overlaps),
         "thresholds_ms": {
             "max_reply_gap_ms": max_reply_gap_ms, "min_duration_ms": min_duration_ms,
             "max_duration_ms": max_duration_ms,
+            "max_ai_entry_laughter_ms": max_ai_entry_laughter_ms,
+            "max_second_ai_onset_ms": max_second_ai_onset_ms,
+            "max_ai_turn_duration_ms": max_ai_turn_duration_ms,
+            "max_ai_talk_share_percent": max_ai_talk_share_percent,
+            "min_dais_reentry_gap_ms": min_dais_reentry_gap_ms,
         },
         "scope": "annotated_timestamps_and_text_only",
         "raw_audio_verified": False,
@@ -134,6 +304,16 @@ def main() -> int:
     parser.add_argument("--max-reply-gap-ms", type=int)
     parser.add_argument("--min-duration-ms", type=int)
     parser.add_argument("--max-duration-ms", type=int)
+    parser.add_argument("--max-ai-entry-laughter-ms", type=int,
+                        help="Opt-in max ms of existing audience laughter at AI entry; unset=report-only")
+    parser.add_argument("--max-second-ai-onset-ms", type=int,
+                        help="Opt-in deadline for the second AI turn onset (proxy, not laughter)")
+    parser.add_argument("--max-ai-turn-duration-ms", type=int,
+                        help="Opt-in AI single-turn speech duration limit; unset=measure-only")
+    parser.add_argument("--max-ai-talk-share-percent", type=int,
+                        help="Opt-in upper bound on AI share of AI+Dais speaking time (0-100)")
+    parser.add_argument("--min-dais-reentry-gap-ms", type=int,
+                        help="Opt-in minimum ms between AI end and Dais next spoken reply; not physical acting")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
     try:
@@ -143,6 +323,11 @@ def main() -> int:
         report = measure(
             payload["events"], max_reply_gap_ms=args.max_reply_gap_ms,
             min_duration_ms=args.min_duration_ms, max_duration_ms=args.max_duration_ms,
+            max_ai_entry_laughter_ms=args.max_ai_entry_laughter_ms,
+            max_second_ai_onset_ms=args.max_second_ai_onset_ms,
+            max_ai_turn_duration_ms=args.max_ai_turn_duration_ms,
+            max_ai_talk_share_percent=args.max_ai_talk_share_percent,
+            min_dais_reentry_gap_ms=args.min_dais_reentry_gap_ms,
         )
         report["scenario_id"] = payload.get("scenario_id")
         report["input_provenance"] = payload.get("provenance", "UNDECLARED")

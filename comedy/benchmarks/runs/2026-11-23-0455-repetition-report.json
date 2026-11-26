@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "method": "NFKC punctuation-insensitive character-3gram Jaccard",
+  "threshold": 0.7,
+  "current_response_count": 16,
+  "history_response_count": 16,
+  "history_files": [
+    {
+      "path": "history-0402.jsonl",
+      "sha256": "a3745f5604341b94a9b948179bf9b3d9d19a387fadca3762cd99ff08dcbc4538"
+    }
+  ],
+  "current_sha256": "c14f093e5b9c3165fb2868de09cb95aed336537cfe61742063fdf36bba787c6d",
+  "highest_pair_similarity": 0.135135,
+  "within_run_flags": 0,
+  "historical_flags": 0,
+  "review_flags": [],
+  "humor_quality": "NOT_MEASURED",
+  "semantic_originality": "NOT_MEASURED",
+  "voice_reproducibility": "NOT_MEASURED",
+  "warning": "Similarity is only an editorial review flag. Shared names are allowed; semantic rephrasing may be missed. Zero flags is NOT proof of originality or comedy quality."
+}

@@ -80,7 +80,8 @@ final class OnboardingTapE2ETests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "onboarding-widget-preview").firstMatch.waitForExistence(timeout: 10))
         tap(app.buttons["onboarding-widget-interested"], x: tapX)
         tap(app.buttons["onboarding-first-continue"], x: tapX)
-        select(app.buttons["onboarding-frequency-1"], in: app, x: tapX)
+        // Timing is the model's decision (founder rule 2026-11-22): the
+        // reminder step no longer asks for slots or frequency.
         tap(app.buttons["onboarding-reminder-continue"], x: tapX)
         tap(app.buttons["onboarding-notifications-allow"], x: tapX)
 
@@ -96,6 +97,16 @@ final class OnboardingTapE2ETests: XCTestCase {
         // The home deck is a UIPageViewController; do not assume its AX element type.
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "feed-today").firstMatch.waitForExistence(timeout: 20),
                       "Paywall close must finish onboarding without a purchase")
+        // 1.11.0 shipped a home with no words at all (the Manager engine
+        // rejected every request and nothing fell back). The ship gate now
+        // asserts words are actually rendered, not just that the screen
+        // exists: with the engine normal, empty, or unreachable, the home
+        // must show a non-empty quote.
+        let quoteText = app.staticTexts["quote-text"]
+        XCTAssertTrue(quoteText.waitForExistence(timeout: 30),
+                      "Home must show words after onboarding — never a blank living home")
+        XCTAssertFalse(quoteText.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       "Home words must not be empty")
         XCTAssertFalse(app.buttons["paywall-close-button"].exists)
         XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
@@ -108,6 +119,13 @@ final class OnboardingTapE2ETests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "feed-today").firstMatch.waitForExistence(timeout: 20),
                       "Completion must persist across a normal relaunch")
+        // Same blank-home regression guard on the relaunch path (this is
+        // the state returning users — and the 1.11.0 reporter — live in).
+        let relaunchedQuote = app.staticTexts["quote-text"]
+        XCTAssertTrue(relaunchedQuote.waitForExistence(timeout: 30),
+                      "Home must show words after relaunch — never a blank living home")
+        XCTAssertFalse(relaunchedQuote.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       "Home words must not be empty after relaunch")
         XCTAssertFalse(app.buttons["paywall-close-button"].exists)
         XCTAssertFalse(app.buttons["onboarding-welcome-cta"].exists)
     }

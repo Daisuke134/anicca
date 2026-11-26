@@ -1,0 +1,196 @@
+{
+  "experiment_id": "2026-11-23-0700-synthetic-repeatability",
+  "protocol_note": "FOUR SYNTHETIC ANNOTATED TEXT FIXTURES; zero actual voice runs",
+  "runs": [
+    {
+      "run_id": "synthetic-good-01",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "synthetic-annotated-two-turn-stage-v1",
+      "audio_profile": "no_audio_synthetic",
+      "source_type": "synthetic",
+      "events": [
+        {
+          "speaker": "audience",
+          "kind": "speech",
+          "text": "すごい！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ やばい、救急車だ！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "kind": "laughter",
+          "text": "笑い"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "run_id": "synthetic-noise-control-02",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "synthetic-annotated-two-turn-stage-v1",
+      "audio_profile": "no_audio_synthetic",
+      "source_type": "synthetic",
+      "events": [
+        {
+          "speaker": "audience",
+          "kind": "speech",
+          "text": "すごい！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ やばい、救急車だ！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "staff",
+          "kind": "noise",
+          "text": "椅子を動かす音"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "kind": "laughter",
+          "text": "笑い"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "run_id": "synthetic-extra-triage-03",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "synthetic-annotated-two-turn-stage-v1",
+      "audio_profile": "no_audio_synthetic",
+      "source_type": "synthetic",
+      "events": [
+        {
+          "speaker": "audience",
+          "kind": "speech",
+          "text": "すごい！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ やばい、救急車だ！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？住所を教えてください。"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "kind": "laughter",
+          "text": "笑い"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ]
+    },
+    {
+      "run_id": "synthetic-audience-interruption-04",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "synthetic-annotated-two-turn-stage-v1",
+      "audio_profile": "no_audio_synthetic",
+      "source_type": "synthetic",
+      "events": [
+        {
+          "speaker": "audience",
+          "kind": "speech",
+          "text": "すごい！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ やばい、救急車だ！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "audience",
+          "kind": "speech",
+          "text": "救急車！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "kind": "laughter",
+          "text": "笑い"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ]
+    }
+  ]
+}

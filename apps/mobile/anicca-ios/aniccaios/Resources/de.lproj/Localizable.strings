@@ -1377,6 +1377,7 @@
 // Actual remote reminder schedule
 "growth_reminder_title" = "Ein Moment für dich";
 "growth_reminder_explanation" = "Wähle Zeiten in deiner Zeitzone. Die Zustellung hängt von deinen Mitteilungseinstellungen und deiner Verbindung ab.";
+"growth_reminder_model_timing" = "Anicca achtet auf deinen Tag und liefert jeden Moment zu der Zeit, die am besten passt. Du musst keine Zeiten auswählen.";
 "growth_reminder_free_schedule" = "Kostenlos: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Mitteilungen erlaubt";
@@ -1530,6 +1531,7 @@
 "adaptive_no_available_times" = "Deine Ruhezeiten decken den ganzen Tag ab. Es werden keine Erinnerungen geplant.";
 "adaptive_prior_attempts_hint" = "Dass du etwas ausprobiert hast, bedeutet nicht, dass es dir nicht geholfen hat. Im nächsten Schritt kannst du angeben, was nicht zu dir gepasst hat.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Worte von Anicca, für heute";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value
@@ -1556,3 +1558,8 @@
 "winner_widget_instructions" = "Home-Bildschirm: Berühre eine freie Stelle und halte sie gedrückt, wähle Bearbeiten und dann Widget hinzufügen. Suche nach Anicca.\n\nSperrbildschirm: Berühre den Bildschirm und halte ihn gedrückt, wähle Anpassen, dann Widgets hinzufügen und Anicca.";
 "winner_widget_add" = "Ich füge es nach der Einrichtung hinzu";
 "winner_widget_later" = "Vielleicht später";
+
+// Branded word sharing
+"quote_share_action" = "Diese Worte teilen";
+"quote_share_promise" = "Eine App für schwere Tage und Tage, an denen du lachen möchtest.";
+"quote_share_failed" = "Das Bild konnte nicht erstellt werden. Bitte versuche es erneut.";

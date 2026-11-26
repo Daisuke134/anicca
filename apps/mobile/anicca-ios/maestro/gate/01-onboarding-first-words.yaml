@@ -1,0 +1,45 @@
+# E2E GATE 01 — fresh install: onboarding completes and the first
+# intervention words appear on the living home.
+# Part of the release gate suite (tag: e2e-gate). Submission of a build
+# without a fresh passing run of this suite is blocked by the e2e-gate
+# checker (tools/e2e-gate) — see anicca-ops
+# files/maestro-e2e-gate-2026-11-25.md.
+appId: ai.anicca.app.ios
+name: Gate 01 onboarding completes, first words appear
+tags: [e2e-gate]
+---
+- clearState
+- clearKeychain
+- runFlow: _gate_onboarding_to_paywall.yaml
+# Onboarding ends at the soft paywall.
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-cta"
+    timeout: 60000
+# Dismiss without purchasing; the free path must reach the home.
+- tapOn:
+    id: "paywall-close-button"
+    retryTapIfNoChange: false
+# If the system notification dialog was deferred until after the
+# paywall, decline it here too (optional; no-op when absent).
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false
+# (No "feed-scroll" id exists in this build's home — run
+# 45682131989's final hierarchy shows feed-today/feed-daily/
+# feed-saved/feed-themes/feed-reminders/feed-settings only, with
+# the home fully rendered behind the failed wait.)
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 20000
+# The first intervention words are on screen (never a blank home —
+# the 1.11.0 regression this gate exists to catch).
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+    timeout: 30000
+- assertVisible:
+    id: "quote-text"
+- takeScreenshot: "gate-01-first-words"

@@ -1,0 +1,667 @@
+{
+  "source_type": "synthetic",
+  "total_cases": 8,
+  "expectations_met": 8,
+  "all_expectations_met": true,
+  "cases": [
+    {
+      "scenario_id": "all-three-pass",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "component_gates": {
+        "script_and_cues": "PASS",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "PASS",
+        "violations": [],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "bad-first-line",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "FAIL",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "FAIL",
+        "violations": [
+          {
+            "event": 1,
+            "reason": "opening_not_exact"
+          }
+        ],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "bad-second-line",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "FAIL",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "FAIL",
+        "violations": [
+          {
+            "event": 3,
+            "reason": "second_not_exact"
+          },
+          {
+            "event": 3,
+            "reason": "interview_question_after_opening"
+          }
+        ],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "missing-callback",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "PASS",
+        "multi_turn_callback": "FAIL",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "PASS",
+        "violations": [],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "FAIL",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": false,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [
+          {
+            "reason": "callback_missing_payoff",
+            "chain_index": 0,
+            "event_index": null
+          }
+        ],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "uncommitted-adlib",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "PASS",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "FAIL"
+      },
+      "stage": {
+        "gate": "PASS",
+        "violations": [],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "FAIL",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [
+              "手配"
+            ],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [
+          {
+            "event": 8,
+            "reason": "immediate_reply_only_uncommitted_action"
+          }
+        ],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "third-party-speaks",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "FAIL",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "FAIL"
+      },
+      "stage": {
+        "gate": "FAIL",
+        "violations": [
+          {
+            "event": 10,
+            "reason": "ambiguous_third_party_speech_between_dais_and_ai"
+          }
+        ],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 10,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "FAIL",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 10,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": true
+          }
+        ],
+        "violations": [
+          {
+            "event": 8,
+            "reason": "intervening_third_party_speech_review"
+          }
+        ],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "missing-end",
+      "expected_gate": "FAIL",
+      "expectation_met": true,
+      "gate": "FAIL",
+      "component_gates": {
+        "script_and_cues": "FAIL",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "FAIL",
+        "violations": [
+          {
+            "event": null,
+            "reason": "missing_end"
+          }
+        ],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 9,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 9,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    },
+    {
+      "scenario_id": "audience-laughter-only",
+      "expected_gate": "PASS",
+      "expectation_met": true,
+      "gate": "PASS",
+      "component_gates": {
+        "script_and_cues": "PASS",
+        "multi_turn_callback": "PASS",
+        "adlib_uptake": "PASS"
+      },
+      "stage": {
+        "gate": "PASS",
+        "violations": [],
+        "ai_turns": 5,
+        "dais_turns": 5,
+        "turn_coverage": "CHECKED_COMPLETE_ANNOTATED_TURNS",
+        "scope": "annotated_text_transcript_only",
+        "laughter": "NOT_MEASURED",
+        "voice": "NOT_MEASURED",
+        "phone_ai_comprehension": "NOT_MEASURED"
+      },
+      "callback": {
+        "gate": "PASS",
+        "checks": [
+          {
+            "chain_index": 0,
+            "entity": "おもち34号",
+            "setup_ai_event": 5,
+            "callback_ai_event": 10,
+            "setup_entity_found": true,
+            "setup_state_found": true,
+            "callback_entity_found": true,
+            "payoff_found": true,
+            "dais_reaction_present": true,
+            "forbidden_hits": []
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_multi_turn_lexical_continuity_proxy",
+        "voice": "NOT_MEASURED",
+        "human_laughter": "NOT_MEASURED",
+        "response_latency": "NOT_MEASURED",
+        "semantic_consistency": "NOT_MEASURED",
+        "warning": "String matches on human annotations and turn order only. Cannot verify voice, genuine actor reactions, actual dispatch, meaning or humor."
+      },
+      "adlib": {
+        "gate": "PASS",
+        "annotated_adlibs": 1,
+        "checks": [
+          {
+            "dais_event": 8,
+            "immediate_ai_event": 10,
+            "matched_anchors": [
+              "おもち34号"
+            ],
+            "matched_actions": [
+              "手配"
+            ],
+            "negated_action_mentions": [],
+            "uncommitted_action_mentions": [],
+            "third_party_speech_intervened": false
+          }
+        ],
+        "violations": [],
+        "metric": "human_annotated_immediate_lexical_anchor_and_action_proxy",
+        "voice": "NOT_MEASURED",
+        "laughter": "NOT_MEASURED",
+        "semantic_understanding": "NOT_MEASURED",
+        "warning": "Lexical action, denial, and question/proposal heuristics are incomplete; PASS is not proof of action, understanding, voice, or humor. Apply only to fully annotated turns."
+      },
+      "source_scope": "human_annotated_complete_turn_text_only",
+      "real_voice": "NOT_MEASURED",
+      "speech_recognition": "NOT_MEASURED",
+      "phone_ai_recognition": "NOT_MEASURED",
+      "audience_laughter": "NOT_MEASURED",
+      "warning": "PASS only joins lexical/turn-order proxies. It does not certify speaker identity, delivery, meaning or humor."
+    }
+  ],
+  "real_voice": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "model_comparison": "NOT_COMPARABLE"
+}

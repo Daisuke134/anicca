@@ -1,0 +1,707 @@
+{
+  "run_id": "2026-11-24-0955-turn-budget",
+  "environment": {
+    "platform": "macOS-15.6-arm64-arm-64bit-Mach-O",
+    "macos": "15.6",
+    "python": "3.14.7",
+    "voice": "Kyoko",
+    "voice_build": null,
+    "engine": "macOS /usr/bin/say",
+    "rate_settings": [
+      180,
+      220
+    ],
+    "repetitions": 2,
+    "duration_method": "afinfo estimated duration; includes any synthesized silence",
+    "pcm_method": "SHA256 of AIFF SSND sound bytes"
+  },
+  "format": [
+    {
+      "task_id": "beat-right",
+      "candidate": "short",
+      "issues": []
+    },
+    {
+      "task_id": "beat-right",
+      "candidate": "long",
+      "issues": []
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "short",
+      "issues": []
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "long",
+      "issues": []
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "short",
+      "issues": []
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "long",
+      "issues": []
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "short",
+      "issues": []
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "long",
+      "issues": []
+    }
+  ],
+  "literal_gate": {
+    "schema_version": "1.0",
+    "gate": "PASS",
+    "task_count": 4,
+    "response_count": 8,
+    "passed": 8,
+    "failed": 0,
+    "candidate_count_mismatches": {},
+    "items": [
+      {
+        "task_id": "beat-right",
+        "candidate": "short",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-right",
+        "candidate": "long",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-tofu",
+        "candidate": "short",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-tofu",
+        "candidate": "long",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-aida",
+        "candidate": "short",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-aida",
+        "candidate": "long",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-maru",
+        "candidate": "short",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      },
+      {
+        "task_id": "beat-maru",
+        "candidate": "long",
+        "category": "phone_ai_stage",
+        "gate": "PASS",
+        "reasons": [],
+        "literal_checks": {
+          "nonempty": true,
+          "within_char_budget": true,
+          "known_world_anchor": true,
+          "cue_acknowledgement_proxy": true,
+          "action_verb_proxy": true,
+          "no_forbidden_literal": true,
+          "no_new_questions": true
+        }
+      }
+    ],
+    "method": "literal_substring_and_format_proxies_only",
+    "causal_callback_quality": "NOT_MEASURED",
+    "funniness": "NOT_MEASURED",
+    "actual_voice": "NOT_MEASURED",
+    "audience_laughter": "NOT_MEASURED",
+    "warning": "Passing lexical anchors/cue/action proxies does not establish coherence, consequence, humor, turn timing, or a real voice take."
+  },
+  "fixed_stage_synthetic": [
+    {
+      "id": "exact-stage-first-01",
+      "positive": "はい、救急指令センターです。火事ですか、救急ですか？",
+      "negative": "はい、救急指令センターです。火事ですか、救急ですか？住所は？",
+      "positive_accepted": true,
+      "negative_rejected": true
+    },
+    {
+      "id": "exact-stage-second-02",
+      "positive": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。",
+      "negative": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。住所は？",
+      "positive_accepted": true,
+      "negative_rejected": true
+    },
+    {
+      "id": "exact-stage-silence-03",
+      "positive": "",
+      "negative": "もしもし。",
+      "positive_accepted": true,
+      "negative_rejected": true
+    }
+  ],
+  "script_static": {
+    "issues": [],
+    "turns": 22,
+    "characters": 714
+  },
+  "synthetic_tts": [
+    {
+      "task_id": "beat-right",
+      "candidate": "short",
+      "response": "右折田まっすぐの駐車券を確認しました。十枚とも同じ駐車場の入場券です。",
+      "rate_setting": 180,
+      "characters": 35,
+      "takes": [
+        {
+          "duration_s": 6.45551,
+          "pcm_sha256": "21d1c6e8932af478648d0ee3efc994c9c4a7f7f81e07e8db8b6f35c7950cceb6",
+          "pcm_bytes": 284688
+        },
+        {
+          "duration_s": 6.45551,
+          "pcm_sha256": "21d1c6e8932af478648d0ee3efc994c9c4a7f7f81e07e8db8b6f35c7950cceb6",
+          "pcm_bytes": 284688
+        }
+      ],
+      "mean_duration_s": 6.45551,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-right",
+      "candidate": "short",
+      "response": "右折田まっすぐの駐車券を確認しました。十枚とも同じ駐車場の入場券です。",
+      "rate_setting": 220,
+      "characters": 35,
+      "takes": [
+        {
+          "duration_s": 4.370159,
+          "pcm_sha256": "fbdfcc3c4dbc848add0f94e36d54e039fe04b9c7bfff2428ba21c95e62f6e8a1",
+          "pcm_bytes": 192724
+        },
+        {
+          "duration_s": 4.370159,
+          "pcm_sha256": "fbdfcc3c4dbc848add0f94e36d54e039fe04b9c7bfff2428ba21c95e62f6e8a1",
+          "pcm_bytes": 192724
+        }
+      ],
+      "mean_duration_s": 4.370159,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-right",
+      "candidate": "long",
+      "response": "右折田まっすぐの駐車券を確認しました。車庫を出るたびに右折を繰り返しており、毎回別の場所に着いたものとして処理しました。十枚とも同じ駐車場の入場券です。",
+      "rate_setting": 180,
+      "characters": 76,
+      "takes": [
+        {
+          "duration_s": 12.782948,
+          "pcm_sha256": "46cbdc03b45803b2ff897de442f972ea7574fa4597525cc2405d4652478481aa",
+          "pcm_bytes": 563728
+        },
+        {
+          "duration_s": 12.782948,
+          "pcm_sha256": "46cbdc03b45803b2ff897de442f972ea7574fa4597525cc2405d4652478481aa",
+          "pcm_bytes": 563728
+        }
+      ],
+      "mean_duration_s": 12.782948,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-right",
+      "candidate": "long",
+      "response": "右折田まっすぐの駐車券を確認しました。車庫を出るたびに右折を繰り返しており、毎回別の場所に着いたものとして処理しました。十枚とも同じ駐車場の入場券です。",
+      "rate_setting": 220,
+      "characters": 76,
+      "takes": [
+        {
+          "duration_s": 8.66585,
+          "pcm_sha256": "c8f37078cb5f1a039b2e43a51026cdbdab568518b19aa49f8dcd722bc1646caf",
+          "pcm_bytes": 382164
+        },
+        {
+          "duration_s": 8.66585,
+          "pcm_sha256": "c8f37078cb5f1a039b2e43a51026cdbdab568518b19aa49f8dcd722bc1646caf",
+          "pcm_bytes": 382164
+        }
+      ],
+      "mean_duration_s": 8.66585,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "short",
+      "response": "豆腐田プル男の値札を確認しました。患者席は木綿二丁と交換になります。",
+      "rate_setting": 180,
+      "characters": 34,
+      "takes": [
+        {
+          "duration_s": 6.562857,
+          "pcm_sha256": "c6f42c49c654a3236ac7e3993f3226e3ad99ada022ad91d5d34825c3d9f3696b",
+          "pcm_bytes": 289422
+        },
+        {
+          "duration_s": 6.562857,
+          "pcm_sha256": "c6f42c49c654a3236ac7e3993f3226e3ad99ada022ad91d5d34825c3d9f3696b",
+          "pcm_bytes": 289422
+        }
+      ],
+      "mean_duration_s": 6.562857,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "short",
+      "response": "豆腐田プル男の値札を確認しました。患者席は木綿二丁と交換になります。",
+      "rate_setting": 220,
+      "characters": 34,
+      "takes": [
+        {
+          "duration_s": 4.444626,
+          "pcm_sha256": "2f967a7c998f990f166158b1a5e96df4203ac84876140c17e6029002c5b3f36e",
+          "pcm_bytes": 196008
+        },
+        {
+          "duration_s": 4.444626,
+          "pcm_sha256": "2f967a7c998f990f166158b1a5e96df4203ac84876140c17e6029002c5b3f36e",
+          "pcm_bytes": 196008
+        }
+      ],
+      "mean_duration_s": 4.444626,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "long",
+      "response": "豆腐田プル男の値札を確認しました。車内の座席をすべて豆腐売り場として登録し、乗車にも同じ交換条件を適用しました。患者席は木綿二丁と交換になります。",
+      "rate_setting": 180,
+      "characters": 73,
+      "takes": [
+        {
+          "duration_s": 13.819093,
+          "pcm_sha256": "6d3cc3dedf97373bb81083168edfe158aaa2e8c029db554e94ed03c2ff0ac75e",
+          "pcm_bytes": 609422
+        },
+        {
+          "duration_s": 13.819093,
+          "pcm_sha256": "6d3cc3dedf97373bb81083168edfe158aaa2e8c029db554e94ed03c2ff0ac75e",
+          "pcm_bytes": 609422
+        }
+      ],
+      "mean_duration_s": 13.819093,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-tofu",
+      "candidate": "long",
+      "response": "豆腐田プル男の値札を確認しました。車内の座席をすべて豆腐売り場として登録し、乗車にも同じ交換条件を適用しました。患者席は木綿二丁と交換になります。",
+      "rate_setting": 220,
+      "characters": 73,
+      "takes": [
+        {
+          "duration_s": 9.367256,
+          "pcm_sha256": "183c3fd5e326313557f1b480040691ac4541b2441464404a6bc0bfaa1f952d99",
+          "pcm_bytes": 413096
+        },
+        {
+          "duration_s": 9.367256,
+          "pcm_sha256": "183c3fd5e326313557f1b480040691ac4541b2441464404a6bc0bfaa1f952d99",
+          "pcm_bytes": 413096
+        }
+      ],
+      "mean_duration_s": 9.367256,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "short",
+      "response": "会田アイタロウの集合写真を確認しました。お客様だけ欠席として面会を完了しました。",
+      "rate_setting": 180,
+      "characters": 40,
+      "takes": [
+        {
+          "duration_s": 6.874603,
+          "pcm_sha256": "67327dec2c59610426a82771ff33b2ce6194d913f298e131b99c69904b6a14b7",
+          "pcm_bytes": 303170
+        },
+        {
+          "duration_s": 6.874603,
+          "pcm_sha256": "67327dec2c59610426a82771ff33b2ce6194d913f298e131b99c69904b6a14b7",
+          "pcm_bytes": 303170
+        }
+      ],
+      "mean_duration_s": 6.874603,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "short",
+      "response": "会田アイタロウの集合写真を確認しました。お客様だけ欠席として面会を完了しました。",
+      "rate_setting": 220,
+      "characters": 40,
+      "takes": [
+        {
+          "duration_s": 4.660408,
+          "pcm_sha256": "d229e7cb42e97ec495df1467c221ca6e6c3a7db9c141e8c07eb3173cd5c691dc",
+          "pcm_bytes": 205524
+        },
+        {
+          "duration_s": 4.660408,
+          "pcm_sha256": "d229e7cb42e97ec495df1467c221ca6e6c3a7db9c141e8c07eb3173cd5c691dc",
+          "pcm_bytes": 205524
+        }
+      ],
+      "mean_duration_s": 4.660408,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "long",
+      "response": "会田アイタロウの集合写真を確認しました。予約名簿と写真を照合し、写真に写っている方々については面会済みとして登録しました。お客様だけ欠席として面会を完了しました。",
+      "rate_setting": 180,
+      "characters": 81,
+      "takes": [
+        {
+          "duration_s": 14.409478,
+          "pcm_sha256": "1d5e2c8d27408421a24ed24e5cd2cdd9ac856a4674d0c85d86eca19d830b3bf3",
+          "pcm_bytes": 635458
+        },
+        {
+          "duration_s": 14.409478,
+          "pcm_sha256": "1d5e2c8d27408421a24ed24e5cd2cdd9ac856a4674d0c85d86eca19d830b3bf3",
+          "pcm_bytes": 635458
+        }
+      ],
+      "mean_duration_s": 14.409478,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-aida",
+      "candidate": "long",
+      "response": "会田アイタロウの集合写真を確認しました。予約名簿と写真を照合し、写真に写っている方々については面会済みとして登録しました。お客様だけ欠席として面会を完了しました。",
+      "rate_setting": 220,
+      "characters": 81,
+      "takes": [
+        {
+          "duration_s": 9.768798,
+          "pcm_sha256": "d054fc7b33f81cb29b21912b27a14d002db7b47ed8ac45f8924f140e9fc22eb9",
+          "pcm_bytes": 430804
+        },
+        {
+          "duration_s": 9.768798,
+          "pcm_sha256": "d054fc7b33f81cb29b21912b27a14d002db7b47ed8ac45f8924f140e9fc22eb9",
+          "pcm_bytes": 430804
+        }
+      ],
+      "mean_duration_s": 9.768798,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "short",
+      "response": "丸山たんす蔵のカーテンを確認しました。閉めていただくと病院がないことは見えません。",
+      "rate_setting": 180,
+      "characters": 41,
+      "takes": [
+        {
+          "duration_s": 6.497823,
+          "pcm_sha256": "a0494adcbae5966996c00166c0e9cf35acc81f7a1fa273bd48f111fe801a1656",
+          "pcm_bytes": 286554
+        },
+        {
+          "duration_s": 6.497823,
+          "pcm_sha256": "a0494adcbae5966996c00166c0e9cf35acc81f7a1fa273bd48f111fe801a1656",
+          "pcm_bytes": 286554
+        }
+      ],
+      "mean_duration_s": 6.497823,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "short",
+      "response": "丸山たんす蔵のカーテンを確認しました。閉めていただくと病院がないことは見えません。",
+      "rate_setting": 220,
+      "characters": 41,
+      "takes": [
+        {
+          "duration_s": 4.402177,
+          "pcm_sha256": "51af96c56676cfdac12d0e9584b1a1ff66c9d2ee6f02d2461f9442e5ff4b7a3e",
+          "pcm_bytes": 194136
+        },
+        {
+          "duration_s": 4.402177,
+          "pcm_sha256": "51af96c56676cfdac12d0e9584b1a1ff66c9d2ee6f02d2461f9442e5ff4b7a3e",
+          "pcm_bytes": 194136
+        }
+      ],
+      "mean_duration_s": 4.402177,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "long",
+      "response": "丸山たんす蔵のカーテンを確認しました。診察室の到着はまだですが、先に患者様のプライバシーを確保するよう手配しました。閉めていただくと病院がないことは見えません。",
+      "rate_setting": 180,
+      "characters": 80,
+      "takes": [
+        {
+          "duration_s": 13.46381,
+          "pcm_sha256": "9579d00fecc6570e1870b2778f6ae62a48a23263ff0133e322c28d5b4796809f",
+          "pcm_bytes": 593754
+        },
+        {
+          "duration_s": 13.46381,
+          "pcm_sha256": "9579d00fecc6570e1870b2778f6ae62a48a23263ff0133e322c28d5b4796809f",
+          "pcm_bytes": 593754
+        }
+      ],
+      "mean_duration_s": 13.46381,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    },
+    {
+      "task_id": "beat-maru",
+      "candidate": "long",
+      "response": "丸山たんす蔵のカーテンを確認しました。診察室の到着はまだですが、先に患者様のプライバシーを確保するよう手配しました。閉めていただくと病院がないことは見えません。",
+      "rate_setting": 220,
+      "characters": 80,
+      "takes": [
+        {
+          "duration_s": 9.127438,
+          "pcm_sha256": "0a7d5df7e89e7c05463b3f2ebb4d6c552cb397042e5ec2bc0c05ce0d1140853a",
+          "pcm_bytes": 402520
+        },
+        {
+          "duration_s": 9.127438,
+          "pcm_sha256": "0a7d5df7e89e7c05463b3f2ebb4d6c552cb397042e5ec2bc0c05ce0d1140853a",
+          "pcm_bytes": 402520
+        }
+      ],
+      "mean_duration_s": 9.127438,
+      "repeat_duration_delta_s": 0.0,
+      "repeat_pcm_identical": true
+    }
+  ],
+  "synthetic_fixed_line_tts": [
+    {
+      "id": "exact-stage-first-01",
+      "rate_setting": 200,
+      "takes": [
+        {
+          "duration_s": 3.486077,
+          "pcm_sha256": "521dab4be676690ad0ce83ac165e4185273c152792cd7ec7fc4187e2f22ce0a6",
+          "pcm_bytes": 153736
+        },
+        {
+          "duration_s": 3.486077,
+          "pcm_sha256": "521dab4be676690ad0ce83ac165e4185273c152792cd7ec7fc4187e2f22ce0a6",
+          "pcm_bytes": 153736
+        }
+      ],
+      "repeat_pcm_identical": true
+    },
+    {
+      "id": "exact-stage-second-02",
+      "rate_setting": 200,
+      "takes": [
+        {
+          "duration_s": 9.194966,
+          "pcm_sha256": "2c4e243d20610923e97ba5a0ca5b94d6b7d61cb0ac7bd7ea2c4e117bdd4d8945",
+          "pcm_bytes": 405498
+        },
+        {
+          "duration_s": 9.194966,
+          "pcm_sha256": "2c4e243d20610923e97ba5a0ca5b94d6b7d61cb0ac7bd7ea2c4e117bdd4d8945",
+          "pcm_bytes": 405498
+        }
+      ],
+      "repeat_pcm_identical": true
+    }
+  ],
+  "paired_duration": [
+    {
+      "id": "beat-right",
+      "rate_setting": 180,
+      "short_s": 6.45551,
+      "long_s": 12.782948,
+      "saved_s": 6.327437999999999
+    },
+    {
+      "id": "beat-right",
+      "rate_setting": 220,
+      "short_s": 4.370159,
+      "long_s": 8.66585,
+      "saved_s": 4.295691000000001
+    },
+    {
+      "id": "beat-tofu",
+      "rate_setting": 180,
+      "short_s": 6.562857,
+      "long_s": 13.819093,
+      "saved_s": 7.256236
+    },
+    {
+      "id": "beat-tofu",
+      "rate_setting": 220,
+      "short_s": 4.444626,
+      "long_s": 9.367256,
+      "saved_s": 4.922629999999999
+    },
+    {
+      "id": "beat-aida",
+      "rate_setting": 180,
+      "short_s": 6.874603,
+      "long_s": 14.409478,
+      "saved_s": 7.534875
+    },
+    {
+      "id": "beat-aida",
+      "rate_setting": 220,
+      "short_s": 4.660408,
+      "long_s": 9.768798,
+      "saved_s": 5.10839
+    },
+    {
+      "id": "beat-maru",
+      "rate_setting": 180,
+      "short_s": 6.497823,
+      "long_s": 13.46381,
+      "saved_s": 6.965987
+    },
+    {
+      "id": "beat-maru",
+      "rate_setting": 220,
+      "short_s": 4.402177,
+      "long_s": 9.127438,
+      "saved_s": 4.725261
+    }
+  ],
+  "summary": {
+    "format_passed": 8,
+    "lexical_passed": 8,
+    "fixed_checks_passed": 6,
+    "tts_files": 36,
+    "shorter_pairs": 8,
+    "pair_count": 8,
+    "mean_saved_s_by_rate": {
+      "180": 7.021134,
+      "220": 4.762993
+    },
+    "identical_pcm_pairs": 18,
+    "repeat_pair_count": 18
+  },
+  "limitations": {
+    "actual_voice": "NOT_MEASURED",
+    "audience_laughter": "NOT_MEASURED",
+    "rear_intelligibility": "NOT_MEASURED",
+    "role_understanding": "NOT_MEASURED",
+    "turn_latency": "NOT_MEASURED",
+    "speaker_attribution": "NOT_MEASURED",
+    "human_funniness": "NOT_MEASURED",
+    "synthetic_tts_not_live": true,
+    "content_match": "author-designed pairs, not blind-rated; same terminal punchline within each pair",
+    "audio_retention": "temporary synthetic files deleted; hashes and durations retained"
+  }
+}

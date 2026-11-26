@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "taskset_sha256": "f8a355c5071bc2f344ab6b157aca73378160c3da1ccb0568e60e7869d5668907",
+  "response_count": 16,
+  "models": {
+    "GPT-6": {
+      "independent_api_receipts": 0,
+      "responses": 16,
+      "task_count": 8,
+      "unique_task_samples": 16
+    }
+  },
+  "comparison_setup": "NOT_COMPARABLE",
+  "reasons": [
+    "fewer_than_two_models",
+    "invalid_generation_setting",
+    "missing_generation_setting",
+    "missing_provider_receipt",
+    "no_verified_independent_invocation"
+  ],
+  "humor_quality": "NOT_MEASURED",
+  "voice_reproducibility": "NOT_MEASURED",
+  "receipt_authenticity": "NOT_VERIFIED",
+  "warning": "Executed in memory with audit_comparison_provenance.py from GitHub; metadata only, provider receipts absent and no ranking."
+}

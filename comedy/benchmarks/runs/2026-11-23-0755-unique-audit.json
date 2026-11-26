@@ -1,0 +1,58 @@
+{
+  "experiment_id": "synthetic-provenance-negative-control-unique",
+  "trial_count": 2,
+  "condition_group_count": 1,
+  "repeatability_comparison": "SAME_DECLARED_CONDITIONS_ONLY",
+  "voice_reproducibility": "AUDIO_ANNOTATION_ONLY_NOT_VERIFIED",
+  "cross_model_comparison": "NOT_RUN",
+  "recording_uniqueness": "UNIQUE_SELF_REPORTED_REFERENCES_ONLY",
+  "provenance_issues": [],
+  "runs": [
+    {
+      "run_id": "s1",
+      "source_type": "audio_annotated",
+      "gate": "PASS",
+      "violations": [],
+      "provenance_issues": [],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    },
+    {
+      "run_id": "s2",
+      "source_type": "audio_annotated",
+      "gate": "PASS",
+      "violations": [],
+      "provenance_issues": [],
+      "audio_verified_by_tool": false,
+      "laughter": "NOT_MEASURED",
+      "phone_ai_comprehension": "NOT_MEASURED",
+      "rear_intelligibility": "NOT_MEASURED"
+    }
+  ],
+  "groups": [
+    {
+      "conditions": {
+        "stage_id": "injury-2min",
+        "model_id": "synthetic-fixture-not-a-model",
+        "model_version": "not_applicable",
+        "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+        "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+        "input_profile": "same-annotated-script",
+        "audio_profile": "fictional-phone-profile",
+        "source_type": "audio_annotated"
+      },
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "gate_pass_fraction": 1.0,
+      "evidence_level": "SELF_REPORTED_AUDIO_ANNOTATIONS_NOT_AUDIO_VERIFIED",
+      "run_ids": [
+        "s1",
+        "s2"
+      ]
+    }
+  ],
+  "limitations": "Metadata and annotated text are self-reported. This script never listens to recordings, verifies speaker identity, measures loudness, or scores laughter. Unique references and SHA-256 values are self-reported and cannot establish file authenticity, trial independence, or identical real-world conditions."
+}

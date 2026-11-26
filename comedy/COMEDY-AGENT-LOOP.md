@@ -67,3 +67,6 @@ Canonical: 2026-11-22。**これは実装仕様／稼働計画。書いただけ
 - スキル改稿の前後に同一テストと新規ホールドアウトを走らせ、差分を報告する。
 - 外部投稿は本番接続と許可確認の後に、適切な公式インタフェースでのみ実施。プロバイダの投稿結果確認。
 - まだ稼働していないトリガー／接続／投稿は `NOT_DEPLOYED` と表示。
+
+## 2026-11-24: Open Comedy Research program
+The expanded research charter is [COMEDY-RESEARCH-ROADMAP.md](./COMEDY-RESEARCH-ROADMAP.md). Each cycle must prioritize a falsifiable skill/generation, external baseline, benchmark, dataset, or post-training experiment; record actual execution and blockers. This is an extension of the existing loop, not a replacement of stage safety, protected scripts, evidence requirements or publish OFF. The roadmap is not proof of trained models or published results.

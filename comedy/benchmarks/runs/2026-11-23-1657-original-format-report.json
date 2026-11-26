@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-23T08:04:21.184249+00:00",
+  "taskset": "/private/tmp/comedy-cycle-20261123-1657/original-tasks.jsonl",
+  "responses": "/private/tmp/comedy-cycle-20261123-1657/original-responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og01",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og01",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og02",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og02",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og03",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og03",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og04",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "og04",
+      "category": "general_oogiri",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st01",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st01",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st02",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st02",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st03",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st03",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-1",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st04",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-1657-jst-human-reply-budget-candidate-2",
+      "model": "ChatGPT GPT-6 (product label)",
+      "task_id": "st04",
+      "category": "telephone_ai_improv",
+      "kind": "original_development",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}

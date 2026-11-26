@@ -29,6 +29,7 @@
 "onboarding_welcome_subtitle_line1" = "Daily cards with words\nchosen just for you.";
 "onboarding_welcome_subtitle_line2" = "";
 "onboarding_welcome_cta" = "Get Started";
+"onboarding_welcome_poyo_intro" = "I'm Poyo. I'm sleepy too, and I slack off too. We'll loaf around together. But we'll do just one thing.";
 "onboarding_welcome_social_proof" = "⭐ 4.9 · 10,000+ people finding inner peace";
 "onboarding_welcome_restore_description" = "Already have an account?";
 
@@ -2743,6 +2744,7 @@
 // Actual remote reminder schedule
 "growth_reminder_title" = "A moment for you";
 "growth_reminder_explanation" = "Choose times in your local time zone. Delivery depends on your notification settings and connection.";
+"growth_reminder_model_timing" = "Anicca watches your day and delivers each moment at the time it will land best. You don't choose the times — the right moment is chosen for you.";
 "growth_reminder_free_schedule" = "Free: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Notifications allowed";
@@ -2896,6 +2898,7 @@
 "adaptive_no_available_times" = "Your quiet hours cover the whole day, so no reminders will be scheduled.";
 "adaptive_prior_attempts_hint" = "Trying something does not mean it failed. Next, you can tell us what did not suit you.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Words from Anicca, for today";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value
@@ -2922,3 +2925,8 @@
 "winner_widget_instructions" = "Home Screen: touch and hold an empty space, choose Edit, then Add Widget. Search for Anicca.\n\nLock Screen: touch and hold the screen, choose Customize, then Add Widgets and Anicca.";
 "winner_widget_add" = "I’ll add it after setup";
 "winner_widget_later" = "Maybe later";
+
+// Branded word sharing
+"quote_share_action" = "Share these words";
+"quote_share_promise" = "An app for hard days and days you need a laugh.";
+"quote_share_failed" = "Could not create the image. Please try again.";

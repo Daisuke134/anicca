@@ -20,6 +20,11 @@ struct HomeDeckCard: Identifiable {
         case selectedIntervention
         /// The words a tapped notification delivered.
         case notification
+        /// Bundled words shown when the Manager engine cannot deliver a
+        /// word (unreachable, error, or a `none` decision). The living home
+        /// must never be blank: 1.11.0 shipped an empty home to every user
+        /// because an unavailable engine suppressed all words.
+        case bundledFallback
     }
 
     let quote: Quote
@@ -32,7 +37,24 @@ struct HomeDeckCard: Identifiable {
     var selectionCaptionKey: String {
         switch origin {
         case .selectedIntervention, .notification: return "feed_chosen_from_answers"
+        case .bundledFallback: return "feed_default_words"
         }
+    }
+}
+
+/// The bundled fallback deck. Pure and deterministic so it can be unit
+/// tested: given the bundled catalog, the deck starts at today's word
+/// (same day-rotation as `QuoteProvider.todayQuote`) and continues through
+/// the catalog, so the living home rotates on the normal cadence fully
+/// offline. It never returns an empty deck while the catalog is non-empty.
+enum HomeFallbackDeck {
+    static func quotes(language: LanguagePreference, date: Date, count: Int = 8, calendar: Calendar = .current) -> [Quote] {
+        let pool = QuoteProvider.shared.all(preferredLanguage: language).filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !pool.isEmpty else { return [] }
+        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+        let start = (dayOfYear - 1) % pool.count
+        let take = min(count, pool.count)
+        return (0..<take).map { pool[(start + $0) % pool.count] }
     }
 }
 
@@ -126,11 +148,16 @@ struct FeedRootView: View {
     @State private var lastInteractionAt: Date = Date()
     @State private var pendingEndCause: HomeDisplayEndCause = .userSwipe
     @State private var backgroundDrift = false
+    @State private var showQuoteShare = false
+    @State private var refreshAfterShare = false
     @State private var showSettings = false
     @State private var showSaved = false
     @State private var showReminders = false
     @State private var showThemes = false
     @State private var lastTrackedQuoteID: String?
+    /// Poyo: true when this launch is a return after a long absence
+    /// (the face is then always happy — a reunion that does not blame).
+    @State private var isReturningAfterAbsence = false
 
     private let autoAdvanceTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -140,12 +167,25 @@ struct FeedRootView: View {
     }
 
     private var anySheetPresented: Bool {
-        showSettings || showSaved || showReminders || showThemes
+        showSettings || showSaved || showReminders || showThemes || showQuoteShare
     }
 
     private var displayedWordID: String? {
         guard deckModel.cards.indices.contains(currentIndex) else { return nil }
         return deckModel.cards[currentIndex].id
+    }
+
+    /// Poyo's face for the currently visible card (wiring spec §4):
+    /// time of day + the no-blame reunion rule. The home deck carries no
+    /// intervention type, so the selector's context rules fall through to
+    /// the time-of-day rules.
+    private var currentPoyoExpression: PoyoExpression {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return PoyoExpression.select(
+            interventionType: nil,
+            hour: hour,
+            isReturningAfterAbsence: isReturningAfterAbsence
+        )
     }
 
     var body: some View {
@@ -171,12 +211,11 @@ struct FeedRootView: View {
                 GeometryReader { contentGeometry in
                     if !deckModel.cards.isEmpty {
                         VerticalPager(count: deckModel.cards.count, currentIndex: $currentIndex, navigationRevision: navigationRevision, reduceMotion: reduceMotion) { index in
-                            HomeDeckPage(model: deckModel, index: index, pageWidth: geo.size.width)
+                            HomeDeckPage(model: deckModel, index: index, pageWidth: geo.size.width, onSharePresentationChange: sharePresentationChanged)
                                 .frame(width: contentGeometry.size.width, height: contentGeometry.size.height)
                                 .environmentObject(themeStore)
                                 .environmentObject(likedStore)
                         }
-                        .accessibilityIdentifier("feed-today")
                     }
                 }
 
@@ -207,7 +246,34 @@ struct FeedRootView: View {
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
             }
+            .overlay(alignment: .bottomTrailing) {
+                // Poyo — resident beside the words, bottom-right, clear of
+                // the bottom action bar. Decorative layer: if the asset
+                // ever fails to load, the words are unaffected (the home
+                // must never be empty because of Poyo).
+                if deckModel.cards.indices.contains(currentIndex) {
+                    PoyoView(expression: currentPoyoExpression,
+                             size: 72,
+                             seed: deckModel.cards[currentIndex].id)
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 96)
+                        .allowsHitTesting(false)
+                }
+            }
         }
+        // The identifier names the home screen itself, not the deck pager.
+        // Since the Manager switch (PR #9399) the deck could be empty
+        // whenever there was no intervention to show — a `none` decision, an
+        // unavailable engine, or a signed-out session (sign-in is skippable
+        // by design) — and the home must still be the identifiable screen
+        // onboarding lands on. Attached to the pager only, `feed-today`
+        // never existed in those states and the onboarding ship gate failed
+        // at the paywall-close assertion on the #9399 merge run.
+        // 1.11.1: the deck is no longer allowed to stay empty — bundled
+        // fallback words fill it whenever the engine delivers nothing —
+        // but the identifier stays on the screen for the same reason.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("feed-today")
         .environmentObject(themeStore)
         .environmentObject(likedStore)
         .analyticsScreen(.feed, flowID: "feed")
@@ -215,6 +281,9 @@ struct FeedRootView: View {
             // Ambient drift is motion, so under Reduce Motion the theme
             // stays still (apple-design §14; swiftui-animation checklist).
             if !reduceMotion { backgroundDrift = true }
+            isReturningAfterAbsence = PoyoPresence.isReturningAfterAbsence(now: Date())
+            PoyoPresence.markSeen(now: Date())
+            PoyoAttachmentStore.exportExpressionsIfNeeded()
             refreshToday()
         }
         .onReceive(autoAdvanceTimer) { now in
@@ -306,7 +375,24 @@ struct FeedRootView: View {
         currentIndex = 0 // VerticalPager owns the transition (see auto-advance).
     }
 
+    private func sharePresentationChanged(_ presented: Bool) {
+        showQuoteShare = presented
+        lastInteractionAt = Date()
+        guard !presented else { return }
+        if refreshAfterShare {
+            refreshAfterShare = false
+            refreshToday()
+        } else {
+            applyPendingQuoteNavigation()
+        }
+        if displayedIndex == nil, !deckModel.cards.isEmpty { beginDisplay(at: currentIndex) }
+    }
+
     private func refreshToday() {
+        guard !showQuoteShare else {
+            refreshAfterShare = true
+            return
+        }
         let now = Date()
         appState.refreshSyntheticUserIfNeeded(now: now)
         let language = appState.effectiveLanguage
@@ -317,25 +403,62 @@ struct FeedRootView: View {
         deckModel.cards = []
         applyPendingQuoteNavigation()
         guard wordRequest == request else { return }
+        // The home must never be blank. Bundled words go up immediately —
+        // before any network answer — and stay up unless the Manager
+        // delivers a chosen word to replace them. This works offline, on
+        // first launch, and while signed out. (1.11.0 regression: an
+        // unavailable engine left the deck empty for every user.)
+        if deckModel.cards.isEmpty { buildFallbackDeck(language: language, now: now) }
         Task { @MainActor in
             do {
                 let decision = try await ModelWordsService.shared.today(user: user, language: language.rawValue, now: now)
                 guard wordRequest == request, appState.syntheticUser.personId == user.personId,
                       appState.effectiveLanguage == language else { return }
+                guard !showQuoteShare else {
+                    refreshAfterShare = true
+                    return
+                }
                 if let quote = decision.quote {
                     buildDeck(selected: .init(quote: quote, deliveryId: decision.deliveryID), language: language, now: now)
                 }
+                // A `none` decision (quote == nil) keeps the bundled words:
+                // the person still gets words today; only the personalized
+                // intervention is withheld.
             } catch {
-                // An unavailable engine suppresses the intervention. Never rotate
-                // a catalog word or reuse a previous person's cached selection.
+                // Engine unreachable or error: the bundled fallback deck
+                // built above stays on screen.
             }
-            if wordRequest == request { applyPendingQuoteNavigation() }
+            if wordRequest == request {
+                applyPendingQuoteNavigation()
+                if deckModel.cards.isEmpty { buildFallbackDeck(language: language, now: now) }
+            }
         }
+    }
+
+    private func buildFallbackDeck(language: LanguagePreference, now: Date) {
+        let quotes = HomeFallbackDeck.quotes(language: language, date: now)
+        guard !quotes.isEmpty else { return }
+        endDisplay(cause: .replaced)
+        deckModel.cards = quotes.map { HomeDeckCard(quote: $0, origin: .bundledFallback) }
+        currentIndex = 0
+        navigationRevision += 1
+        lastInteractionAt = Date()
+        beginDisplay(at: 0)
     }
 
     private func buildDeck(selected presentation: DailyAffirmationStore.Presentation, language: LanguagePreference, now: Date, firstOrigin: HomeDeckCard.Origin = .selectedIntervention) {
         endDisplay(cause: .replaced)
-        deckModel.cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        var cards = [HomeDeckCard(quote: presentation.quote, origin: firstOrigin, deliveryId: presentation.deliveryId)]
+        // Behind the chosen word, the rest of today's deck: bundled words,
+        // so the living home keeps changing on its own at the established
+        // cadence. A single-card deck freezes on one phrase all day, which
+        // the founder rejected (2026-11-23): the home is a garden — never
+        // empty, never frozen. The Manager's word stays first and is the
+        // recorded intervention; the tail is labelled bundledFallback.
+        for quote in HomeFallbackDeck.quotes(language: language, date: now) where quote.id != presentation.quote.id {
+            cards.append(HomeDeckCard(quote: quote, origin: .bundledFallback))
+        }
+        deckModel.cards = cards
         currentIndex = 0
         navigationRevision += 1
         lastInteractionAt = Date()
@@ -343,6 +466,7 @@ struct FeedRootView: View {
     }
 
     private func applyPendingQuoteNavigation() {
+        guard !showQuoteShare else { return }
         var catalog = QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)
         if let first = deckModel.cards.first, !catalog.contains(where: { $0.id == first.quote.id }) {
             catalog.append(first.quote)
@@ -376,7 +500,10 @@ struct FeedRootView: View {
         displayedIndex = index
         displayedAt = Date()
         // Older cached presentations have no assignment ID or propensity.
-        if deckModel.cards[index].deliveryId == nil {
+        // Bundled fallback cards are not Manager deliveries: never mint a
+        // delivery id for them, or the bench would count words the engine
+        // never assigned.
+        if deckModel.cards[index].deliveryId == nil, deckModel.cards[index].origin != .bundledFallback {
             deckModel.cards[index].deliveryId = UUID().uuidString
         }
         let deliveredCard = deckModel.cards[index]
@@ -511,6 +638,7 @@ private struct HomeDeckPage: View {
     @ObservedObject var model: HomeDeckModel
     let index: Int
     let pageWidth: CGFloat
+    let onSharePresentationChange: (Bool) -> Void
 
     var body: some View {
         if model.cards.indices.contains(index) {
@@ -518,7 +646,8 @@ private struct HomeDeckPage: View {
                 quote: model.cards[index].quote,
                 pageWidth: pageWidth,
                 deliveryId: model.cards[index].deliveryId,
-                selectionCaption: NSLocalizedString(model.cards[index].selectionCaptionKey, comment: "Why this word was chosen for this person")
+                selectionCaption: NSLocalizedString(model.cards[index].selectionCaptionKey, comment: "Why this word was chosen for this person"),
+                onSharePresentationChange: onSharePresentationChange
             )
         }
     }

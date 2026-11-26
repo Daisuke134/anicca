@@ -1,0 +1,97 @@
+{
+  "experiment_id": "synthetic-provenance-negative-control-unique",
+  "runs": [
+    {
+      "run_id": "s1",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "same-annotated-script",
+      "audio_profile": "fictional-phone-profile",
+      "source_type": "audio_annotated",
+      "events": [
+        {
+          "speaker": "audience",
+          "text": "もしもし！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "text": "笑い声",
+          "kind": "laughter"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ],
+      "annotator_id": "synthetic-annotator-not-actual",
+      "recording_ref": "synthetic:fictional-0"
+    },
+    {
+      "run_id": "s2",
+      "stage_id": "injury-2min",
+      "model_id": "synthetic-fixture-not-a-model",
+      "model_version": "not_applicable",
+      "skill_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+      "script_blob_sha": "892ce8db0cc84eece3a64ecf661a7fdc90cc5784",
+      "input_profile": "same-annotated-script",
+      "audio_profile": "fictional-phone-profile",
+      "source_type": "audio_annotated",
+      "events": [
+        {
+          "speaker": "audience",
+          "text": "もしもし！"
+        },
+        {
+          "speaker": "dais",
+          "text": "痛い痛い！ もしもし！",
+          "cue": "start"
+        },
+        {
+          "speaker": "ai",
+          "text": "はい、救急指令センターです。火事ですか、救急ですか？"
+        },
+        {
+          "speaker": "dais",
+          "text": "救急！ 痛い痛い！"
+        },
+        {
+          "speaker": "ai",
+          "text": "救急ですね。声で分かりました。右ひざがご実家に帰られています。病名は「急性ひざの里帰りスペシャル」です。帰りの切符はこちらで手配します。"
+        },
+        {
+          "speaker": "audience",
+          "text": "笑い声",
+          "kind": "laughter"
+        },
+        {
+          "speaker": "dais",
+          "text": "もういい！",
+          "cue": "end"
+        }
+      ],
+      "annotator_id": "synthetic-annotator-not-actual",
+      "recording_ref": "synthetic:fictional-1"
+    }
+  ]
+}

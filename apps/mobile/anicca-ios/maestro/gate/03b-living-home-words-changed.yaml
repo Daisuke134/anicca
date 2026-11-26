@@ -1,0 +1,36 @@
+# E2E GATE 03 (part B) — snapshot T1 after the runner's 35s
+# foreground wait. The runner compares the quote-text element between
+# the T0 and T1 hierarchy dumps; if the words did not change on their
+# own, the gate run fails even though both flows pass individually.
+# (Maestro has no text-extraction assertion, so the change proof lives
+# in the runner — deterministic, and recorded in gate-result.json as
+# the "living-home-words-changed" check.)
+appId: ai.anicca.app.ios
+name: Gate 03b living home words after wait (T1)
+tags: [e2e-gate]
+---
+- launchApp:
+    arguments:
+      uiTesting: "true"
+# A fresh simulator can present the system "Sign in to Apple Account"
+# sheet over the app (observed on the CI runner, 2026-11-25); dismiss
+# it if present. Optional: a no-op when it is not shown.
+- tapOn:
+    text: "Cancel"
+    optional: true
+# Same for a deferred system notification-permission dialog.
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+    timeout: 60000
+- assertVisible:
+    id: "quote-text"
+- takeScreenshot: "gate-03-home-t1"

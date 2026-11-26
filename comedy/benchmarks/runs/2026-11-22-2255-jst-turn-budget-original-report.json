@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T14:00:38.456729+00:00",
+  "taskset": "comedy/benchmarks/runs/2026-11-22-2255-jst-turn-budget-original-tasks.jsonl",
+  "responses": "comedy/benchmarks/runs/2026-11-22-2255-jst-turn-budget-original-responses.jsonl",
+  "task_count": 8,
+  "run_summary": [
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "submitted": 8,
+      "passed": 8,
+      "failed": 0,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "ogiri-library",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "ogiri-library",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "ogiri-mayor",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "ogiri-mayor",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "ogiri-hotel",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "ogiri-hotel",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "ogiri-principal",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "ogiri-principal",
+      "category": "大喜利",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "improv-door",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "improv-door",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "improv-circle",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "improv-circle",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "improv-exit",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "improv-exit",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-1",
+      "model": "ChatGPT",
+      "task_id": "improv-marriage",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-22-2255-jst-candidate-2",
+      "model": "ChatGPT",
+      "task_id": "improv-marriage",
+      "category": "電話先AIの舞台即興",
+      "kind": "generate",
+      "gate": "PASS",
+      "reasons": [],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}

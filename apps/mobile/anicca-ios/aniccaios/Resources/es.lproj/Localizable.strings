@@ -2661,6 +2661,7 @@
 // Actual remote reminder schedule
 "growth_reminder_title" = "Un momento para ti";
 "growth_reminder_explanation" = "Elige horas de tu zona horaria. La entrega depende de tus ajustes de notificaciones y conexión.";
+"growth_reminder_model_timing" = "Anicca observa tu día y entrega cada momento en el horario en que mejor llegará. No necesitas elegir los horarios.";
 "growth_reminder_free_schedule" = "Gratis: %@";
 "growth_reminder_pro_schedule" = "Pro: %@";
 "growth_notifications_on" = "Notificaciones permitidas";
@@ -2814,6 +2815,7 @@
 "adaptive_no_available_times" = "Tus horas de silencio abarcan todo el día, así que no se programarán recordatorios.";
 "adaptive_prior_attempts_hint" = "Haber probado algo no significa que no funcionara. A continuación, puedes indicar qué no te encajó.";
 "feed_chosen_from_answers" = "Chosen for you, from your answers";
+"feed_default_words" = "Palabras de Anicca, para hoy";
 "feed_picked_from_answers" = "Picked for you, from your answers";
 
 // Onboarding winner: ownership and first value
@@ -2840,3 +2842,8 @@
 "winner_widget_instructions" = "Pantalla de inicio: mantén presionado un espacio vacío, elige Editar y luego Añadir widget. Busca Anicca.\n\nPantalla bloqueada: mantén presionada la pantalla, elige Personalizar, luego Añadir widgets y Anicca.";
 "winner_widget_add" = "Lo añadiré después de la configuración";
 "winner_widget_later" = "Quizás más tarde";
+
+// Branded word sharing
+"quote_share_action" = "Compartir estas palabras";
+"quote_share_promise" = "Una app para los días difíciles y cuando necesitas reír.";
+"quote_share_failed" = "No se pudo crear la imagen. Inténtalo de nuevo.";

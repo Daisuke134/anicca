@@ -1,0 +1,38 @@
+# E2E GATE 03 (part A) — the living home shows words, snapshot T0.
+# Requires onboarding completed on this simulator (gate flow 01 or 02
+# ran before it in the same suite run — the runner executes the gate
+# flows in filename order on one fresh simulator).
+# The "words change on their own" proof is completed by the runner:
+# it dumps the accessibility hierarchy right after this flow (T0),
+# waits 35s with the app in the foreground (the deck dwell is ~20s),
+# runs 03b (snapshot T1), dumps the hierarchy again, and requires the
+# quote-text element's text to differ. See scripts/run-e2e-gate.sh.
+appId: ai.anicca.app.ios
+name: Gate 03 living home shows words (T0)
+tags: [e2e-gate]
+---
+- launchApp:
+    arguments:
+      uiTesting: "true"
+# A fresh simulator can present the system "Sign in to Apple Account"
+# sheet over the app (observed on the CI runner, 2026-11-25); dismiss
+# it if present. Optional: a no-op when it is not shown.
+- tapOn:
+    text: "Cancel"
+    optional: true
+# Same for a deferred system notification-permission dialog.
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+    timeout: 30000
+- assertVisible:
+    id: "quote-text"
+- takeScreenshot: "gate-03-home-t0"

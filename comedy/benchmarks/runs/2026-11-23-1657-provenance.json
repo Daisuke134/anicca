@@ -1,0 +1,36 @@
+{
+  "run_id": "2026-11-23-1657-jst-human-reply-budget",
+  "source_repo": "Daisuke134/anicca",
+  "source_branch": "main",
+  "taskset_type": "new_original_internal_development_not_fixed",
+  "task_count": 8,
+  "response_count": 16,
+  "models_attempted": [
+    {
+      "model": "ChatGPT GPT-6 (product label)",
+      "version": "build_NOT_AVAILABLE",
+      "interface": "this_chat_text_ideation",
+      "responses": 16,
+      "independent_api_receipts": 0,
+      "temperature": "NOT_CONTROLLED",
+      "effort": "NOT_CONTROLLED"
+    },
+    {
+      "model": "Grok",
+      "status": "NOT_RUN",
+      "reason": "Reason Network 409 agent_network_offline"
+    },
+    {
+      "model": "Muse",
+      "status": "NOT_RUN",
+      "reason": "Reason Network 409 agent_network_offline"
+    }
+  ],
+  "skill_git_blob_sha": "fe21da855d08d5d01feff89be7244176087d4044",
+  "model_comparison": "NOT_COMPARABLE",
+  "real_voice": "NOT_MEASURED",
+  "audience_laughter": "NOT_MEASURED",
+  "human_judgments": 0,
+  "publish_enabled": false,
+  "auto_reply_enabled": false
+}

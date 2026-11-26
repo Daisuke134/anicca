@@ -6,6 +6,7 @@ executionOrder:
   continueOnFailure: false
 
 flows:
+  - "gate/*"
   - "onboarding/*"
   - "nudge/*"
   - "nudge/phase6/*"

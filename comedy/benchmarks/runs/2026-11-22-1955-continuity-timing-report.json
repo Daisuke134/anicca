@@ -1,0 +1,62 @@
+{
+  "gate": "FAIL",
+  "text_gate": "PASS",
+  "text_violations": [],
+  "timing_gate": "FAIL",
+  "timing_violations": [
+    {
+      "event": 4,
+      "reason": "ai_enters_active_audience_laughter",
+      "entry_overlap_ms": 200
+    }
+  ],
+  "reply_gap_ms": [
+    {
+      "ai_event": 1,
+      "dais_event": 0,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 4,
+      "dais_event": 2,
+      "gap_ms": 200
+    },
+    {
+      "ai_event": 7,
+      "dais_event": 6,
+      "gap_ms": 300
+    }
+  ],
+  "reply_gap_median_ms": 200,
+  "reply_gap_p95_nearest_rank_ms": 300,
+  "ai_overlap_dais_count": 0,
+  "dais_overlap_ai_events": [],
+  "stage_duration_ms": 11200,
+  "annotated_audience_laughter_events": 2,
+  "ai_laughter_overlaps": [
+    {
+      "ai_event": 4,
+      "overlap_ms": 200,
+      "entry_during_laughter_ms": 200,
+      "laughter_events": [
+        3,
+        5
+      ]
+    }
+  ],
+  "ai_laughter_overlap_total_ms": 200,
+  "ai_entries_during_laughter": 1,
+  "thresholds_ms": {
+    "max_reply_gap_ms": null,
+    "min_duration_ms": null,
+    "max_duration_ms": null,
+    "max_ai_entry_laughter_ms": 100
+  },
+  "scope": "annotated_timestamps_and_text_only",
+  "raw_audio_verified": false,
+  "audience_laughter": "NOT_MEASURED",
+  "phone_ai_comprehension": "NOT_MEASURED",
+  "voice_delivery_quality": "NOT_MEASURED",
+  "scenario_id": "synthetic-continuous-laughter-crosses-ai-entry",
+  "input_provenance": "synthetic"
+}

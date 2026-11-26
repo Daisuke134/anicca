@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "timestamp_utc": "2026-11-22T20:56:52.480702+00:00",
+  "taskset": "/tmp/comedy0555exact/comedy/benchmarks/injury-stage-exact-2026-11-23.jsonl",
+  "responses": "/tmp/comedy0555exact/comedy/benchmarks/runs/2026-11-23-0555-exact-negative-synthetic.jsonl",
+  "task_count": 3,
+  "run_summary": [
+    {
+      "run_id": "2026-11-23-0555-synthetic-negative",
+      "model": "SYNTHETIC_FIXTURE_NOT_LIVE_MODEL",
+      "submitted": 3,
+      "passed": 0,
+      "failed": 3,
+      "missing_tasks": [],
+      "humor_score": "NOT_MEASURED"
+    }
+  ],
+  "items": [
+    {
+      "run_id": "2026-11-23-0555-synthetic-negative",
+      "model": "SYNTHETIC_FIXTURE_NOT_LIVE_MODEL",
+      "task_id": "exact-stage-first-01",
+      "category": "stage_exact",
+      "kind": "opening",
+      "gate": "FAIL",
+      "reasons": [
+        "script_exact_response_mismatch"
+      ],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0555-synthetic-negative",
+      "model": "SYNTHETIC_FIXTURE_NOT_LIVE_MODEL",
+      "task_id": "exact-stage-second-02",
+      "category": "stage_exact",
+      "kind": "continuation",
+      "gate": "FAIL",
+      "reasons": [
+        "script_exact_response_mismatch"
+      ],
+      "funniness": "NOT_MEASURED"
+    },
+    {
+      "run_id": "2026-11-23-0555-synthetic-negative",
+      "model": "SYNTHETIC_FIXTURE_NOT_LIVE_MODEL",
+      "task_id": "exact-stage-silence-03",
+      "category": "stage_exact",
+      "kind": "silence",
+      "gate": "FAIL",
+      "reasons": [
+        "expected_silence"
+      ],
+      "funniness": "NOT_MEASURED"
+    }
+  ],
+  "warning": "This checks literal cues, response format, forbidden phrases, and anchors; it DOES NOT measure how funny an output is."
+}
