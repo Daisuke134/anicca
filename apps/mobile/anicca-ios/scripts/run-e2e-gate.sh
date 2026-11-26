@@ -209,13 +209,17 @@ run_flow "03-living-home-words"
 # Words-change proof: dump hierarchy now (T0), wait with the app in the
 # foreground, then 03b + T1 dump. The deck dwell is ~20s; 35s of wait
 # guarantees at least one autonomous advance if the home is alive.
-run_capped 120 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null \
-  || run_capped 120 maestro hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null || true
+# The dump cap must exceed MAESTRO_DRIVER_STARTUP_TIMEOUT (300s):
+# `maestro hierarchy` cold-starts the XCTest driver, and in run
+# 45841118170 both dumps came back 0 bytes at the old 120s cap, which
+# made the words-changed check unpassable regardless of the flows.
+run_capped 600 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null \
+  || run_capped 600 maestro hierarchy > "$EVIDENCE/hierarchy-t0.txt" 2>/dev/null || true
 echo "== waiting 35s in foreground for autonomous word change =="
 sleep 35
 run_flow "03b-living-home-words-changed"
-run_capped 120 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null \
-  || run_capped 120 maestro hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || true
+run_capped 600 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null \
+  || run_capped 600 maestro hierarchy > "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || true
 WORDS_JSON=$(python3 scripts/e2e_gate_quote_check.py "$EVIDENCE/hierarchy-t0.txt" "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || echo '{"status":"failed","t0":null,"t1":null,"detail":"quote check crashed"}')
 echo "words-change: $WORDS_JSON"
 echo "$WORDS_JSON" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['status']=='passed' else 1)" || OVERALL=1
