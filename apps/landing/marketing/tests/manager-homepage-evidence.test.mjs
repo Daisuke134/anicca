@@ -27,7 +27,7 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(html, /manager-measure-welfare-and-harm-en/);
   assert.match(text, /beneficiaries should not need a dedicated app or chat/i);
   assert.match(text, /measure whether real people achieve goals they chose/i);
-  assert.match(text, /84 published articles: 48 in English and 36 in Japanese/i);
+  assert.match(text, /102 published articles: 57 in English and 45 in Japanese/i);
   assert.match(text, /90 existing AI evaluations/i);
   assert.match(text, /Understand and simulate behavior\./i);
   assert.match(text, /P07-1 analyzed 269,603 published human-choice trials/);
@@ -45,8 +45,11 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(text, /Persimmon/);
   assert.match(text, /Boba/);
   assert.match(text, /persuasive|persuasion/i);
-  assert.match(html, /href="https:\/\/github\.com\/Daisuke134\/life-manager\/blob\/main\/products\/manager\/docs\/verification\/E16_CLOUD_EXECUTION_20261023\.md"/);
+  assert.match(html, /href="https:\/\/github\.com\/Daisuke134\/anicca\/blob\/main\/products\/manager\/docs\/verification\/E16_CLOUD_EXECUTION_20261023\.md"/);
   assert.doesNotMatch(html, /blob\/docs\/manager-learning-20261017/);
+  assert.match(html, /huggingface\.co\/anicca-agent\/manager-v0/);
+  assert.match(text, /honest negative result/);
+  assert.doesNotMatch(text, /Open-weight model in development/);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/')?.sha256, sha256('pages/en.html'));
@@ -71,7 +74,7 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(html, /manager-measure-welfare-and-harm-ja/);
   assert.match(text, /汎用Managerモデルの重みの公開/);
   assert.match(text, /実際の結果を測定する/);
-  assert.match(text, /英語48本・日本語36本、計84本の記事/);
+  assert.match(text, /英語57本・日本語45本、計102本の記事/);
   assert.match(text, /AI評価90件/);
   assert.match(text, /行動を理解・シミュレーションする。/);
   assert.match(text, /P07-1では5研究の公開実人間選択269,603試行/);
@@ -89,8 +92,11 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(text, /Persimmon/);
   assert.match(text, /Boba/);
   assert.match(text, /説得/);
-  assert.match(html, /href="https:\/\/github\.com\/Daisuke134\/life-manager\/blob\/main\/products\/manager\/docs\/verification\/E16_CLOUD_EXECUTION_20261023\.md"/);
+  assert.match(html, /href="https:\/\/github\.com\/Daisuke134\/anicca\/blob\/main\/products\/manager\/docs\/verification\/E16_CLOUD_EXECUTION_20261023\.md"/);
   assert.doesNotMatch(html, /blob\/docs\/manager-learning-20261017/);
+  assert.match(html, /huggingface\.co\/anicca-agent\/manager-v0/);
+  assert.match(text, /negative result/);
+  assert.doesNotMatch(text, /オープンウェイトモデルは構築中/);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/ja')?.sha256, sha256('pages/ja.html'));
