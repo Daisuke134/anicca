@@ -16,11 +16,23 @@ appId: ai.anicca.app.ios
 # A fresh simulator can present the system "Sign in to Apple Account"
 # sheet over the app (observed on the CI runner, 2026-11-25: the
 # step hierarchy contained only that sheet, no app elements, and the
-# welcome CTA never appeared). Dismiss it if present; optional, so a
-# no-op when it is not shown.
-- tapOn:
-    text: "Cancel"
-    optional: true
+# welcome CTA never appeared). One optional tap is not enough: in
+# gate run 45722754240 (2026-11-26) flow 01 passed this dismissal and
+# flow 02 — same subflow, same clearState/clearKeychain — failed it:
+# the sheet was up (step screenshots show it, keyboard open) but the
+# single tap did not dismiss it, the welcome-CTA wait expired, and
+# flows 03-05 cascaded on the unfinished onboarding. Repeat the
+# optional tap with a settle wait so a late-appearing sheet and a
+# missed first tap both recover; each tap is optional, so the loop
+# is a no-op when no sheet is shown.
+- repeat:
+    times: 5
+  commands:
+    - tapOn:
+        text: "Cancel"
+        optional: true
+    - waitForAnimationToEnd:
+        timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
