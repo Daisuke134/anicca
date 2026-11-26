@@ -112,6 +112,8 @@ def validate_candidates(candidates):
             raise ValueError('invalid content')
         if (c['kind'] == 'none') != (c['text'] == ''):
             raise ValueError('no-send must have empty text; send must have text')
+        if c['kind'] != 'none' and (not c['text'].strip() or c['text'].strip() in {'...', '…'}):
+            raise ValueError('send candidate must not be a blank or placeholder')
     if sum(c['kind'] == 'none' for c in candidates) != 1 or abs(math.fsum(c['probability'] for c in candidates) - 1) > 1e-12:
         raise ValueError('invalid distribution')
 
