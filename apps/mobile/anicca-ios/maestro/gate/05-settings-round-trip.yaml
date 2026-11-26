@@ -11,11 +11,21 @@ tags: [e2e-gate]
     arguments:
       uiTesting: "true"
 # A fresh simulator can present the system "Sign in to Apple Account"
-# sheet over the app (observed on the CI runner, 2026-11-25); dismiss
-# it if present. Optional: a no-op when it is not shown.
-- tapOn:
-    text: "Cancel"
-    optional: true
+# sheet over the app (observed on the CI runner, 2026-11-25), and the
+# app re-triggers the StoreKit check -- and with it the sheet -- more
+# than once, so a single dismissal is not enough: in gate run
+# 45744355774 flow 05 cancelled the sheet once and it was back over
+# the home when feed-today was asserted. Repeat the optional tap with
+# a settle wait (the same idiom as _gate_onboarding_to_paywall.yaml);
+# every tap is optional, so this is a no-op when no sheet is shown.
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 # Same for a deferred system notification-permission dialog.
 - tapOn:
     text: "許可しない|Don't Allow|Don’t Allow"
@@ -52,6 +62,18 @@ tags: [e2e-gate]
 - tapOn:
     id: "settings-done"
     retryTapIfNoChange: false
+# The StoreKit sandbox sheet can re-appear over the home at any
+# entitlement re-check (in run 45744355774 it returned after an
+# earlier successful dismissal and failed the feed-today assertion).
+# Dismiss it again immediately before asserting the home is visible.
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "feed-today"
