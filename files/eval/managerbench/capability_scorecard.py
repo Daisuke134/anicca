@@ -59,13 +59,46 @@ def anomaly_track(d):
     return {'status':'SYNTHETIC_DIAGNOSTIC','source':ANOMALY_SOURCE,'sha256':ANOMALY_SHA,
             'metrics':metrics,'limitation':'Known context supplied by generator; not vendor benchmark, Manager inference or live security.'}
 
-def build_scorecard(replay, gemma=None, anomaly=None):
+
+BEHAVIOR_SOURCE = 'files/eval/behaviorbench-full-coverage-final-68of68-2026-11-14.json'
+BEHAVIOR_SHA = 'eca914913befae3d446ab201b5e13fdc415be451392f2374588b521ebeaf8094'
+
+def valid_count_audit(d):
+    rows=d['results']
+    if len(rows)!=68:
+        raise ValueError('unexpected final-68 frame')
+    known=unknown=valid_sum=receipted=0
+    missing_by_arm={}
+    for key,r in sorted(rows.items()):
+        n=r['n_receipted']
+        if r['status']!='OK' or type(n) is not int or n<=0 or n!=r['n_expected']:
+            raise ValueError('incomplete final-68 receipt')
+        receipted+=n
+        m=r.get('metadata') or {}
+        v=m.get('num_valid_predictions')
+        if v is None:
+            unknown+=1
+            arm=r['arm']
+            missing_by_arm[arm]=missing_by_arm.get(arm,0)+1
+        else:
+            invalid=m.get('num_failed_parses')
+            if type(v) is not int or type(invalid) is not int or not 0<=v<=n or not 0<=invalid<=n or v+invalid!=n:
+                raise ValueError('inconsistent valid count')
+            known+=1;valid_sum+=v
+    return {'source':BEHAVIOR_SOURCE,'sha256':BEHAVIOR_SHA,'receipted_arms':len(rows),
+            'receipted_predictions':receipted,'known_valid_count_arms':known,
+            'unknown_valid_count_arms':unknown,'known_valid_predictions_sum':valid_sum,
+            'all_valid_predictions':valid_sum if unknown==0 else None,
+            'missing_by_arm':missing_by_arm,
+            'limitation':'Receipt coverage is not valid-prediction coverage; unknown is not zero.'}
+
+def build_scorecard(replay, gemma=None, anomaly=None, behavior_root=None):
     counts=Counter(r['family'] for r in replay['rows'])
     return {'schema':'managerbench.capability-view.v1','global_score':None,
             'global_rank':None,'replayed_rows':len(replay['rows']),
             'historical_incomplete_arms':len(replay['incomplete']),
             'replay_family_row_counts':dict(sorted(counts.items())),
-            'tracks':{'human_behavior':{'status':'HISTORICAL_RECEIPT_REPLAY','families':dict(sorted(counts.items()))},
+            'tracks':{'human_behavior':{'status':'HISTORICAL_RECEIPT_REPLAY','families':dict(sorted(counts.items())), 'final_68_denominator_audit':valid_count_audit(pinned(Path(behavior_root)/BEHAVIOR_SOURCE, BEHAVIOR_SHA)) if behavior_root is not None else None},
                       'gemma_pilot':gemma_track(pinned(gemma,GEMMA_SHA)) if gemma else {'status':'UNMEASURED_IN_THIS_VIEW'},
                       'defensive_anomaly':anomaly_track(pinned(anomaly,ANOMALY_SHA)) if anomaly else {'status':'UNMEASURED_IN_THIS_VIEW'},
                       **{k:{'status':'NOT_INTEGRATED_IN_THIS_VIEW'} for k in ('general_intelligence','social_simulation','culture','memory','agent_execution','multimodal')},
