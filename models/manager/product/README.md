@@ -61,3 +61,14 @@ python -m models.manager.product.export_cases /private/cases.db > /private/cases
 Only measured in-window observations become positive response fields. Missing
 observations stay unknown; old rows without the new projection are skipped.
 The export is read-only, and account deletion removes the source rows.
+
+Selection logging (#9395): new `managerbench_case.stimulus.candidates` rows
+retain every generated candidate's globally qualified ID, kind, exact text and
+conditional selection probability. The chosen text, assigned probability and
+`model_generated_weighted_draw` reason remain alongside them. SQLite commits
+this private assignment for both notification and daily-home requests before
+returning; export preserves the distribution, including no-send. iOS preserves
+these candidates in DecisionPointStore and validates the home response against
+the journal before display. Older journals may omit this optional field; no
+candidate probabilities are invented for them. This is assignment evidence,
+not proof of delivery or display. Do not put these private texts in analytics.

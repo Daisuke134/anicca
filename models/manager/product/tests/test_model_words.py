@@ -136,3 +136,22 @@ def test_generated_assignment_candidate_ids_include_chosen_message(tmp_path):
     result = store.decide('person', str(uuid.uuid4()), context())
     stimulus = result['managerbench_case']['stimulus']
     assert stimulus['message_id'] in stimulus['candidate_ids']
+
+@pytest.mark.parametrize('source', ['daily_home', 'notification'])
+@pytest.mark.parametrize('draw', [.1, .9])
+def test_selection_distribution_survives_export_and_retry(tmp_path, source, draw):
+    from models.manager.product.export_cases import export_cases
+    path = str(tmp_path / 'cases.db')
+    store = InterventionStore(path, Generator(), draw=lambda: draw)
+    ctx = dict(context(), source=source)
+    key = str(uuid.uuid4())
+    result = store.decide('person', key, ctx)
+    stimulus = list(export_cases(path))[0]['stimulus']
+    assert stimulus['candidates'] == [dict(c, id='generated:' + key + ':' + c['id']) for c in result['candidates']]
+    chosen = next(c for c in stimulus['candidates'] if c['id'] == stimulus['message_id'])
+    assert chosen['text'] == stimulus['text']
+    assert chosen['probability'] == stimulus['assigned_probability']
+    assert stimulus['selection_reason'] == 'model_generated_weighted_draw'
+    store.generate = lambda _: pytest.fail('retry must not generate')
+    assert store.decide('person', key, ctx) == result
+    assert len(list(export_cases(path))) == 1

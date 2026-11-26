@@ -89,11 +89,19 @@ final class ModelWordsService {
         record["person_id"] = DecisionPointRecorder.shared.personId
         let row = try ManagerBenchCase.decoder.decode(ManagerBenchCase.self,
             from: JSONSerialization.data(withJSONObject: record))
+        // Hoisted out of the guard: a trailing closure inside a guard
+        // condition list does not parse in Swift.
+        let expectedCandidates = decision.candidates.map {
+            ManagerBenchCase.Candidate(id: "generated:\(id):\($0.id)",
+                kind: $0.kind, text: $0.text, probability: $0.probability)
+        }
         guard row.deliveryId == id, row.hasValidAssignment,
               row.stimulus.assignedProbability == decision.assignedProbability,
               row.stimulus.text == decision.chosen.text,
               row.stimulus.generatorModel == decision.generatorModel,
               row.stimulus.policyVersion == decision.policyVersion,
+              row.stimulus.candidates == expectedCandidates,
+              row.stimulus.selectionReason == "model_generated_weighted_draw",
               DecisionPointStore.shared.append(row) else {
             throw AniccaAPIError.serviceUnavailable
         }
