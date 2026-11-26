@@ -72,7 +72,7 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(html, /manager-behavioral-foundation-model-guide-ja/);
   assert.match(html, /manager-vipassana-behavior-model-ja/);
   assert.match(html, /manager-measure-welfare-and-harm-ja/);
-  assert.match(text, /汎用Managerモデルの重みの公開/);
+  assert.match(text, /研究用重みは公開済みですが、検証済みの汎用モデル/);
   assert.match(text, /実際の結果を測定する/);
   assert.match(text, /英語57本・日本語45本、計102本の記事/);
   assert.match(text, /AI評価90件/);
@@ -101,3 +101,16 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/ja')?.sha256, sha256('pages/ja.html'));
 });
+
+for (const lang of ['en', 'ja']) {
+  test(lang + ' exposes exactly three stable public entry cards and does not claim v1 weights', () => {
+    const html = read('pages/' + lang + '.html');
+    const section = html.split('id="released"')[1].split('id="research"')[0];
+    assert.equal((section.match(/<article class="card">/g) || []).length, 3);
+    for (const name of ['Manager', 'ManagerBench', 'Anicca']) assert.ok(section.includes('<p class="big">' + name + '</p>'));
+    assert.match(section, /huggingface\.co\/anicca-agent\/manager-v0/);
+    assert.match(section, /manager-v1-2026-11-17/);
+    assert.match(section, /weights were not preserved|重みも保存されませんでした/);
+    assert.match(section, /apps\.apple\.com\/app\/id6755129214/);
+  });
+}
