@@ -27,12 +27,12 @@ appId: ai.anicca.app.ios
 # is a no-op when no sheet is shown.
 - repeat:
     times: 5
-  commands:
-    - tapOn:
-        text: "Cancel"
-        optional: true
-    - waitForAnimationToEnd:
-        timeout: 1500
+    commands:
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
