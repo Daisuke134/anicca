@@ -38,8 +38,10 @@ jobs:
     name: Maestro gate suite
     runs-on: macos-15-intel
     # Outer backstop (the runner also caps each long command itself:
-    # build 45m, flows 15m each — worst case ~140m of capped work).
-    timeout-minutes: 240
+    # build 45m, flows 15m each with one driver-timeout retry, plus a
+    # simulator reboot between flows — worst case ~245m of capped
+    # work, so the backstop sits above that).
+    timeout-minutes: 300
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     defaults:

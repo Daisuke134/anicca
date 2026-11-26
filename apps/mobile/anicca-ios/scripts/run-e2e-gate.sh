@@ -57,8 +57,11 @@ xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --
 # Maestro's XCTest driver can be slow to start after several
 # successive runs on a loaded CI simulator — flows 04/05 of run
 # 45682131989 died with IOSDriverTimeoutException before executing a
-# single step. Give the driver a generous startup budget.
-export MAESTRO_DRIVER_STARTUP_TIMEOUT=${MAESTRO_DRIVER_STARTUP_TIMEOUT:-240000}
+# single step, and in run 45744355774 flows 02/03/03b/04 all died the
+# same way even at 240s. Give the driver a generous startup budget;
+# the reboot + retry in run_flow below is the structural fix, this
+# is only the per-attempt budget.
+export MAESTRO_DRIVER_STARTUP_TIMEOUT=${MAESTRO_DRIVER_STARTUP_TIMEOUT:-300000}
 
 run_capped() {
   # $1 = cap in seconds; the rest is the command. Returns the
@@ -145,20 +148,51 @@ FLOWS=(
 )
 declare -a FLOW_STATUS
 OVERALL=0
+reboot_sim() {
+  # A fresh boot gives the next flow a clean XCTest/driver
+  # environment. Successive `maestro test` invocations on one
+  # long-lived simulator leave the XCTest runner degraded: in gate
+  # run 45744355774 flow 01 passed, then flows 02/03/03b/04 ALL died
+  # with IOSDriverTimeoutException before executing a single step.
+  # Installed apps and their data survive a reboot, so the suite's
+  # cross-flow state (onboarding completed by flows 01/02, relied on
+  # by 03/03b/04/05) is preserved.
+  echo "== rebooting simulator for a fresh driver environment =="
+  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$UDID" -b
+  xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
+}
+
 run_flow() {
   local name=$1
-  echo "== maestro: $name =="
-  run_capped 900 maestro test --device "$UDID" "maestro/gate/$name.yaml" \
-    --format junit --output "$EVIDENCE/junit/$name.xml" \
-    --test-output-dir "$EVIDENCE/maestro-tests" \
-    > "$EVIDENCE/logs/$name.log" 2>&1
-  local rc=$?
-  if [[ $rc == 0 ]]; then FLOW_STATUS+=("$name=passed"); else FLOW_STATUS+=("$name=failed"); OVERALL=1; fi
+  local attempt rc
+  for attempt in 1 2; do
+    echo "== maestro: $name (attempt $attempt) =="
+    run_capped 900 maestro test --device "$UDID" "maestro/gate/$name.yaml" \
+      --format junit --output "$EVIDENCE/junit/$name.xml" \
+      --test-output-dir "$EVIDENCE/maestro-tests" \
+      > "$EVIDENCE/logs/$name.log" 2>&1
+    rc=$?
+    if [[ $rc == 0 ]]; then FLOW_STATUS+=("$name=passed"); echo "   -> rc=0"; return; fi
+    # Self-heal the observed cascade: a driver-startup timeout means
+    # the flow never executed a step, so a reboot + one retry is a
+    # clean re-run, not a masked failure. Any other failure is final.
+    if [[ $attempt == 1 ]] && grep -q "IOSDriverTimeoutException" "$EVIDENCE/logs/$name.log"; then
+      echo "   -> driver startup timeout; rebooting and retrying once"
+      mv "$EVIDENCE/logs/$name.log" "$EVIDENCE/logs/$name.attempt1.log"
+      reboot_sim
+      continue
+    fi
+    break
+  done
+  FLOW_STATUS+=("$name=failed"); OVERALL=1
   echo "   -> rc=$rc"
 }
 
 run_flow "01-onboarding-first-words"
+reboot_sim
 run_flow "02-paywall-plans"
+reboot_sim
 run_flow "03-living-home-words"
 # Words-change proof: dump hierarchy now (T0), wait with the app in the
 # foreground, then 03b + T1 dump. The deck dwell is ~20s; 35s of wait
@@ -173,7 +207,9 @@ run_capped 120 maestro --device "$UDID" hierarchy > "$EVIDENCE/hierarchy-t1.txt"
 WORDS_JSON=$(python3 scripts/e2e_gate_quote_check.py "$EVIDENCE/hierarchy-t0.txt" "$EVIDENCE/hierarchy-t1.txt" 2>/dev/null || echo '{"status":"failed","t0":null,"t1":null,"detail":"quote check crashed"}')
 echo "words-change: $WORDS_JSON"
 echo "$WORDS_JSON" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)['status']=='passed' else 1)" || OVERALL=1
+reboot_sim
 run_flow "04-poyo-on-home"
+reboot_sim
 run_flow "05-settings-round-trip"
 
 # --- 4. Verdict ------------------------------------------------------
