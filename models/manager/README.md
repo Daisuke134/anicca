@@ -35,7 +35,7 @@ measure → learn**.
 
 ## Feedback welcome
 
-We publish code, data cards, weights and results specifically so that
+We publish available code, data cards and results, and intend to release cleared weights, so that
 people who know more than us can tell us what is wrong. Issues and pull
 requests on this repository are the feedback channel; every result file
 ships with the exact commands needed to reproduce its numbers.
@@ -44,6 +44,20 @@ ships with the exact commands needed to reproduce its numbers.
 
 Code and documentation in this directory: MIT (repository license).
 Model weights derived from `HuggingFaceTB/SmolLM2-135M-Instruct`
-(Apache-2.0) are published under Apache-2.0. Training data terms are in
+(Apache-2.0) are intended for release under Apache-2.0, subject to training-data terms and verified artifact availability. Training data terms are in
 `v0/DATA_CARD.md`. Be.FM weights are **not** redistributed or loaded
 commercially anywhere in this project (rights not yet clear).
+
+## Research release status (2026-11-25)
+
+Manager is an experimental behavior model; ManagerBench is its evaluation program. GitHub entry points:
+
+- [Manager v0 reproduction instructions](v0/README.md), [model card](v0/MODEL_CARD.md), and [data card](v0/DATA_CARD.md).
+- [ManagerBench evaluation code](../../products/manager/evals/managerbench_v1.py) and [four-track aggregate evidence](../../docs/research/manager/verification/MANAGERBENCH_V1_FOUR_REAL_TRACKS_20261107.json). The latter is an aggregate evidence replay, not a leaderboard of fresh model inference.
+- [Research articles](https://aniccaai.com/blog/c/research).
+
+Manager v0 is a 135M research baseline, not a production intervention policy. On the preregistered 1,000-case Hillstrom evaluation, Qini was 0.0041 for v0 versus 0.1017 for the logistic T-learner; v0 failed its promotion gate. Do not deploy it to choose interventions. The full frozen training split and the subsample used for optimization are distinct. No claim of real-user benefit follows from these results.
+
+**Hugging Face status:** anonymous Hub API check on November 25 found no public models under `anicca-agent`; `anicca-agent/manager-v0` returned HTTP 401. The public [BehaviorBench pilot aggregate results](https://huggingface.co/datasets/anicca-agent/behaviorbench-first-run-results) are a separate artifact, not the ManagerBench dataset. Public Manager weights and a ManagerBench Hub dataset are unverified. Publish only cleared artifacts, with version/hash, model and dataset cards, reproducible commands, failed results, and independently readable public URLs. Do not redistribute restricted third-party source records or serialized derivatives without permission.
+
+Our planned comparison separates observed individual response prediction, population fidelity, and causal intervention ranking; compare only matched cases, protocols and baselines. Chiron (Ye et al., arXiv:2611.24830) is a reference for joint psychological measurement, prediction, and population alignment. No Chiron end-to-end comparison has yet been completed by Anicca. Psychological scores are uncertain research outputs, not diagnoses or a basis for manipulating users.
