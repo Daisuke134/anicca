@@ -61,6 +61,51 @@ External frames we also run, unchanged, under their own licenses:
 CC BY-NC-ND 4.0) and the Centaur Psych-101 / Psych-201 frames. We
 reference those datasets; we do not redistribute them.
 
+
+## Unified capability release candidate (v0.2 scope, not a released version)
+
+The existing offline replay remains the canonical aggregation. Its 260 rows
+and 10 historical incomplete arms retain the frozen SHA-256
+`688f0c564965c809cdc113d1cb61ca5ab553fb18d78f0f6980bb3b1bc44d3d42`.
+The optional capability view does not replace it or define a global rank.
+
+```bash
+python3 files/eval/managerbench/run.py --root . \
+  --check files/eval/managerbench/baseline-2026-11-15.json \
+  --output /tmp/managerbench-replay.json \
+  --capability-scorecard /tmp/managerbench-capabilities.json
+python3 -m unittest discover -s files/eval/managerbench -t files/eval/managerbench
+```
+
+Optional flags `--gemma-receipt` and `--anomaly-receipt` accept the exact
+published bytes pinned by [capability_scorecard.py](../../files/eval/managerbench/capability_scorecard.py).
+Use the [Gemma release evaluation asset](https://github.com/Daisuke134/anicca/releases/download/manager-gemma4-e2b-hillstrom-2026-11-26/eval_adapter.json)
+and [Run35 synthetic receipt at its pinned commit](https://github.com/Daisuke134/anicca-ops/blob/45e7efff65849f277ab62082a884936696755a44/files/research-artifacts/behavior-anomaly-2026-11-26/receipt.json).
+They are references, not bundled external datasets. Absent optional receipts
+are explicitly unmeasured. The Gemma BFM02 metrics are recomputed from the
+24 recorded contexts; Hillstrom metrics are aggregate-only. Synthetic
+defensive anomalies are not real-world security evidence.
+
+### Release contract
+
+* Each matched result identifies model and dataset revision, split and
+  unit, prompt/scorer version, inference stack/settings, attempted/valid/
+  invalid counts, source and checksum, and uncertainty where available.
+  Missing metadata is null and disqualifies unsupported comparisons.
+* BehaviorBench final-68 receipt coverage is 68/68, but explicit valid
+  counts exist for 48/68 arms; 20 are unknown (18 game-distribution arms
+  and 2 multiround arms). The known valid-count sum 33,018 is **not** the
+  full valid count. The optional view audits this from pinned source bytes.
+* No pooled cross-task accuracy, no unknown-to-zero conversion, no
+  comparison across incompatible inference stacks or denominators.
+* The candidate must preserve baseline bytes and pass tests in normal and
+  optimized Python; verify artifact hashes, rights and CI before tagging.
+  The complete unified release also needs the remaining external tracks,
+  independent matched evaluations and explicit missing product evidence.
+* Actual model promotion, measured human benefit, and app deployment
+  require separate acceptance gates. See [product intake #9513](https://github.com/Daisuke134/anicca/issues/9513).
+  This candidate is not a production or efficacy claim.
+
 ## Results
 
 See [RESULTS.md](RESULTS.md). Headline, stated plainly: **our own model
