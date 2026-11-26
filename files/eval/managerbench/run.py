@@ -214,13 +214,22 @@ def main():
     p.add_argument("--root", type=Path, default=ROOT)
     p.add_argument("--output", type=Path)
     p.add_argument("--check", type=Path, help="Fail on any change to the frozen replay, including provenance")
+    p.add_argument("--capability-scorecard", type=Path, help="Optional separate capability view; frozen replay unchanged")
+    p.add_argument("--gemma-receipt", type=Path)
+    p.add_argument("--anomaly-receipt", type=Path)
     args = p.parse_args()
+    if (args.gemma_receipt or args.anomaly_receipt) and not args.capability_scorecard:
+        p.error("external receipts require --capability-scorecard")
     result = finite(aggregate(args.root))
     if args.check and result != json.loads(args.check.read_text()):
         raise SystemExit("REPRODUCTION_CONDITION_DIFFERENCE: investigate; do not overwrite baseline")
     payload = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)+"\n"
     if args.output:
         args.output.write_text(payload)
+    if args.capability_scorecard:
+        from capability_scorecard import build_scorecard
+        scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt)
+        args.capability_scorecard.write_text(json.dumps(scorecard, indent=2, allow_nan=False)+"\n")
     print(f"PASS: {len(result['rows'])} family/task/condition rows; {len(result['incomplete'])} incomplete arms; no pooled score")
 
 
