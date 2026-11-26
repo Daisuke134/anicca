@@ -1,0 +1,56 @@
+{
+  "source_blob": "2a04926e24c38949674fbde342edb7c58006b0c8",
+  "n": 256,
+  "positives": 42,
+  "metrics": {
+    "logistic": {
+      "brier": 0.12698886412139093,
+      "auc": 0.6994882064975523
+    },
+    "prior": {
+      "brier": 0.13720703125,
+      "auc": 0.5
+    },
+    "base_cal": {
+      "brier": 0.13838601938792244,
+      "auc": 0.5360480640854473
+    },
+    "standard_cal": {
+      "brier": 0.13749669396520206,
+      "auc": 0.46417445482866043
+    },
+    "weighted_cal": {
+      "brier": 0.13831034506467305,
+      "auc": 0.6247218513573654
+    }
+  },
+  "matched": 10,
+  "bootstrap": {
+    "seed": 20261126,
+    "draws": 5000,
+    "scope": "fixed predictions, stratified paired case bootstrap, no multiplicity correction",
+    "comparisons": {
+      "standard_cal": {
+        "delta": 0.16054739652870492,
+        "ci95": [
+          -0.008900756564307999,
+          0.32365376056964845
+        ]
+      },
+      "base_cal": {
+        "delta": 0.0886737872719181,
+        "ci95": [
+          0.01813529149977755,
+          0.1552069425901202
+        ]
+      },
+      "logistic": {
+        "delta": -0.07476635514018692,
+        "ci95": [
+          -0.1683355585224744,
+          0.021584334668446892
+        ]
+      }
+    }
+  }
+}
