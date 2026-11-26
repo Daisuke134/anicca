@@ -224,12 +224,17 @@ def main():
     if args.check and result != json.loads(args.check.read_text()):
         raise SystemExit("REPRODUCTION_CONDITION_DIFFERENCE: investigate; do not overwrite baseline")
     payload = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)+"\n"
+    if args.capability_scorecard:
+        from capability_scorecard import build_scorecard
+        paths=[x.resolve() for x in (args.output,args.capability_scorecard,args.check,args.gemma_receipt,args.anomaly_receipt) if x is not None]
+        if len(set(paths))!=len(paths):
+            p.error("output and input paths must be distinct")
+        scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt, args.root)
+        card_payload=json.dumps(scorecard, indent=2, allow_nan=False)+"\n"
     if args.output:
         args.output.write_text(payload)
     if args.capability_scorecard:
-        from capability_scorecard import build_scorecard
-        scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt)
-        args.capability_scorecard.write_text(json.dumps(scorecard, indent=2, allow_nan=False)+"\n")
+        args.capability_scorecard.write_text(card_payload)
     print(f"PASS: {len(result['rows'])} family/task/condition rows; {len(result['incomplete'])} incomplete arms; no pooled score")
 
 
