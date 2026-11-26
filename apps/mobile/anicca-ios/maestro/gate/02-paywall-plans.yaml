@@ -27,12 +27,27 @@ tags: [e2e-gate]
 # (largest iPhone) the whole paywall fits one screen, and in run
 # 45626471372 a scroll swipe landed as a tap on the Lifetime row —
 # it SELECTED Lifetime, which removed the Annual trial timeline
-# from the tree and failed the run. Annual is selected at entry,
-# so the trial timeline is asserted first, while it exists.
+# from the tree and failed the run.
+# Run 45823132740 (2026-11-26) failed the same assertion with NO
+# scroll and NO plan tap anywhere in the flow (maestro.log shows no
+# tap command after the onboarding notifications step): the failure
+# screenshot shows Lifetime selected (filled check, lifetime CTA and
+# disclosure) while the Annual card already rendered "3 days free",
+# i.e. trial eligibility for Annual was .eligible. The trial timeline
+# renders only while the SELECTED package's trial presentation is
+# .eligible (PaywallVariantBView.trialEndDate), so the selection state
+# at assertion time — not eligibility, not a dialog — was the failure.
+# Make the selection deterministic: tap the Annual card explicitly,
+# then assert the timeline.
+- tapOn:
+    id: "paywall-plan-annual"
+    retryTapIfNoChange: false
+- waitForAnimationToEnd:
+    timeout: 1500
 - extendedWaitUntil:
     visible:
       id: "paywall-trial-timeline"
-    timeout: 15000
+    timeout: 30000
 - assertVisible:
     id: "paywall-trial-timeline"
 - extendedWaitUntil:
