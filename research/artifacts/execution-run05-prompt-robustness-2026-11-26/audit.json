@@ -1,0 +1,78 @@
+{
+  "scope": "fixed-prediction paired stratified bootstrap; 2000 draws; unadjusted, only 9 positives; not training uncertainty",
+  "metric_pairs_verified": 40,
+  "ensemble_minus_canonical": {
+    "base": {
+      "auc_ci": [
+        -0.32183908045977017,
+        -0.12005108556832694
+      ],
+      "brier_ci": [
+        7.273773161561858e-05,
+        0.00024263662011630993
+      ]
+    },
+    "weighted_42": {
+      "auc_ci": [
+        -0.3231162196679438,
+        -0.11621966794380584
+      ],
+      "brier_ci": [
+        7.863853012220201e-05,
+        0.0002663532041145694
+      ]
+    },
+    "dpo_42": {
+      "auc_ci": [
+        -0.3128991060025543,
+        -0.06513409961685823
+      ],
+      "brier_ci": [
+        0.0002583391783000516,
+        0.0004900281750401803
+      ]
+    },
+    "dpo_consistency_42": {
+      "auc_ci": [
+        -0.32567049808429116,
+        -0.11494252873563221
+      ],
+      "brier_ci": [
+        5.162464939083289e-05,
+        0.00024629894272820696
+      ]
+    }
+  },
+  "rank_disagreement": {
+    "base": {
+      "canonical": 0.0,
+      "english_paraphrase": 0.20833333333333334,
+      "japanese_question": 0.21096491228070174,
+      "japanese_full": 0.4504385964912281
+    },
+    "weighted_42": {
+      "canonical": 0.0,
+      "english_paraphrase": 0.19714912280701755,
+      "japanese_question": 0.24605263157894736,
+      "japanese_full": 0.4410087719298246
+    },
+    "dpo_42": {
+      "canonical": 0.0,
+      "english_paraphrase": 0.22653508771929826,
+      "japanese_question": 0.2412280701754386,
+      "japanese_full": 0.45460526315789473
+    },
+    "dpo_consistency_42": {
+      "canonical": 0.0,
+      "english_paraphrase": 0.20767543859649124,
+      "japanese_question": 0.25877192982456143,
+      "japanese_full": 0.4543859649122807
+    }
+  },
+  "calibration_prior": {
+    "p": 0.15625,
+    "auc": 0.5,
+    "brier": 0.0888671875,
+    "nll": 0.32799893869260643
+  }
+}
