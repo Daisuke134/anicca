@@ -1,0 +1,34 @@
+{
+  "scope": "fixed-prediction unadjusted paired stratified bootstrap, 2000 draws per seed, not training uncertainty",
+  "metrics_verified": 32,
+  "joint_minus_augmentation_ci": {
+    "42": {
+      "held_en": [
+        -0.045248868778280604,
+        0.02111613876319751
+      ],
+      "held_ja": [
+        -0.03167420814479638,
+        0.018099547511312264
+      ],
+      "raw_range": [
+        0.000497541961328193,
+        0.0010009983500938865
+      ]
+    },
+    "43": {
+      "held_en": [
+        -0.02714932126696823,
+        0.009049773755656187
+      ],
+      "held_ja": [
+        -0.021116138763197623,
+        0.012066365007541435
+      ],
+      "raw_range": [
+        8.255830571297917e-07,
+        0.0001031259561441707
+      ]
+    }
+  }
+}
