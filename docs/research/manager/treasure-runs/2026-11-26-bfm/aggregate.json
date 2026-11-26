@@ -1,0 +1,130 @@
+{
+  "scope": "public viewer first-action research probe, not official Psych-101 or Cross-Centaur replication; no raw data export",
+  "dataset_revision": "532794c51e046a0ddaf560e7972789688d46bf63",
+  "groups": [
+    {
+      "offset": 5080,
+      "sha256": "6aa81eefe9635e06d5e2c9e4d2f12ef56e2aea65d5b0cd00086392c4c43dc194",
+      "group": "temporal_discounting->classification",
+      "labels": {
+        "A": 5,
+        "B": 3
+      }
+    },
+    {
+      "offset": 5160,
+      "sha256": "7baab16f4f3e7f560cb4704c6e3def0b690d70c419029f63132459c2dd205244",
+      "group": "shuffled_card_task->two_armed_bandit",
+      "labels": {
+        "risky": 6,
+        "safe": 2
+      }
+    },
+    {
+      "offset": 7080,
+      "sha256": "d37aff8ce0d8ae8ff735065a4313377d9aaed34386284a562db29d8a42bc303e",
+      "group": "ultimatum_game->temporal_discounting",
+      "labels": {
+        "immediate": 5,
+        "delayed": 3
+      }
+    }
+  ],
+  "n_cases": 24,
+  "unique_people": 24,
+  "forward_passes": 288,
+  "uniform_nll": 0.6931471805599453,
+  "uniform_brier": 0.25,
+  "seconds": 78.19143641705159,
+  "summary": [
+    {
+      "model": "base",
+      "condition": "matched",
+      "n": 24,
+      "nll": 1.7461093046670246,
+      "raw_nll": 2.5511807755877576,
+      "brier": 0.44871868722932157,
+      "correct": 12
+    },
+    {
+      "model": "base",
+      "condition": "shuffled",
+      "n": 24,
+      "nll": 1.6935966340595374,
+      "raw_nll": 2.4959615574528775,
+      "brier": 0.44500419408113967,
+      "correct": 12
+    },
+    {
+      "model": "base",
+      "condition": "none",
+      "n": 24,
+      "nll": 1.4369174834182807,
+      "raw_nll": 1.8771087514857452,
+      "brier": 0.4060027707317808,
+      "correct": 12
+    },
+    {
+      "model": "adapter",
+      "condition": "matched",
+      "n": 24,
+      "nll": 0.9903799809785925,
+      "raw_nll": 1.291110306357344,
+      "brier": 0.3563315687831768,
+      "correct": 12
+    },
+    {
+      "model": "adapter",
+      "condition": "shuffled",
+      "n": 24,
+      "nll": 0.9526971811835913,
+      "raw_nll": 1.253365145996213,
+      "brier": 0.3430865483726983,
+      "correct": 12
+    },
+    {
+      "model": "adapter",
+      "condition": "none",
+      "n": 24,
+      "nll": 1.0217665438632795,
+      "raw_nll": 1.1729691221068304,
+      "brier": 0.3669010947642337,
+      "correct": 12
+    }
+  ],
+  "paired_bootstrap": [
+    {
+      "comparison": "base:matched minus adapter:matched",
+      "mean": 0.7557293236884322,
+      "ci95": [
+        0.2817518481745548,
+        1.2547279718835134
+      ],
+      "positive": 13,
+      "n": 24
+    },
+    {
+      "comparison": "adapter:shuffled minus adapter:matched",
+      "mean": -0.037682799795001214,
+      "ci95": [
+        -0.08743917595575518,
+        0.0029642283255694943
+      ],
+      "positive": 10,
+      "n": 24
+    },
+    {
+      "comparison": "adapter:none minus adapter:matched",
+      "mean": 0.031386562884687094,
+      "ci95": [
+        -0.055703241150005633,
+        0.11519333202414907
+      ],
+      "positive": 16,
+      "n": 24
+    }
+  ],
+  "bootstrap_scope": "descriptive paired resampling of 24 nonrandomly selected unique people, not population inference",
+  "script_sha256": "75462194849a579882771d9483859736f4f15352545e66b355539f899d4fb214",
+  "local_result_sha256": "b133506efac98c8b653025c6f4520438f27e68d664027049d14691faeae40816"
+}

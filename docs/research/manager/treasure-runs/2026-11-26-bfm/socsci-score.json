@@ -1,0 +1,142 @@
+{
+  "source_blob": "6b98b188930abea9ec89628bfd7a1a682f6a9c0d",
+  "source": "files/bench-2026-11-25/socsci210/predictions.jsonl",
+  "scope": "historical Qwen2.5-0.5B-Instruct, one unseen study 9nphm, mixed fp32/bf16; no new inference; individual normalized absolute-error score on valid rows and separately failure-zero policy; not full paper",
+  "n": 512,
+  "duplicates": 0,
+  "invalid": 13,
+  "valid": 499,
+  "normalized_valid_only": 0.6452905811623247,
+  "normalized_invalid_zero": 0.6289062500000001,
+  "exact": 56,
+  "groups": [
+    {
+      "pair": "0:0",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.5989583333333333,
+      "normalized_invalid_zero": 0.5989583333333333,
+      "exact": 2
+    },
+    {
+      "pair": "0:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6197916666666669,
+      "normalized_invalid_zero": 0.6197916666666669,
+      "exact": 3
+    },
+    {
+      "pair": "1:0",
+      "attempted": 32,
+      "valid": 30,
+      "normalized_valid": 0.6555555555555556,
+      "normalized_invalid_zero": 0.6145833333333334,
+      "exact": 3
+    },
+    {
+      "pair": "1:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6145833333333333,
+      "normalized_invalid_zero": 0.6145833333333333,
+      "exact": 1
+    },
+    {
+      "pair": "2:0",
+      "attempted": 32,
+      "valid": 26,
+      "normalized_valid": 0.6730769230769232,
+      "normalized_invalid_zero": 0.5468750000000001,
+      "exact": 3
+    },
+    {
+      "pair": "2:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6458333333333333,
+      "normalized_invalid_zero": 0.6458333333333333,
+      "exact": 5
+    },
+    {
+      "pair": "3:0",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6979166666666665,
+      "normalized_invalid_zero": 0.6979166666666665,
+      "exact": 8
+    },
+    {
+      "pair": "3:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6406250000000002,
+      "normalized_invalid_zero": 0.6406250000000002,
+      "exact": 4
+    },
+    {
+      "pair": "4:0",
+      "attempted": 32,
+      "valid": 31,
+      "normalized_valid": 0.5913978494623655,
+      "normalized_invalid_zero": 0.5729166666666666,
+      "exact": 1
+    },
+    {
+      "pair": "4:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6406249999999999,
+      "normalized_invalid_zero": 0.6406249999999999,
+      "exact": 3
+    },
+    {
+      "pair": "5:0",
+      "attempted": 32,
+      "valid": 30,
+      "normalized_valid": 0.6555555555555554,
+      "normalized_invalid_zero": 0.6145833333333333,
+      "exact": 2
+    },
+    {
+      "pair": "5:1",
+      "attempted": 32,
+      "valid": 31,
+      "normalized_valid": 0.5698924731182797,
+      "normalized_invalid_zero": 0.5520833333333335,
+      "exact": 1
+    },
+    {
+      "pair": "6:0",
+      "attempted": 32,
+      "valid": 31,
+      "normalized_valid": 0.6666666666666669,
+      "normalized_invalid_zero": 0.6458333333333335,
+      "exact": 5
+    },
+    {
+      "pair": "6:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.7187499999999998,
+      "normalized_invalid_zero": 0.7187499999999998,
+      "exact": 5
+    },
+    {
+      "pair": "7:0",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.671875,
+      "normalized_invalid_zero": 0.671875,
+      "exact": 5
+    },
+    {
+      "pair": "7:1",
+      "attempted": 32,
+      "valid": 32,
+      "normalized_valid": 0.6666666666666669,
+      "normalized_invalid_zero": 0.6666666666666669,
+      "exact": 5
+    }
+  ]
+}
