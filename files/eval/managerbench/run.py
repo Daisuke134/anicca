@@ -217,8 +217,9 @@ def main():
     p.add_argument("--capability-scorecard", type=Path, help="Optional separate capability view; frozen replay unchanged")
     p.add_argument("--gemma-receipt", type=Path)
     p.add_argument("--anomaly-receipt", type=Path)
+    p.add_argument("--holdout-regression-receipt", type=Path, help="Optional pinned TODO38 regression screen")
     args = p.parse_args()
-    if (args.gemma_receipt or args.anomaly_receipt) and not args.capability_scorecard:
+    if (args.gemma_receipt or args.anomaly_receipt or args.holdout_regression_receipt) and not args.capability_scorecard:
         p.error("external receipts require --capability-scorecard")
     result = finite(aggregate(args.root))
     if args.check and result != json.loads(args.check.read_text()):
@@ -226,7 +227,7 @@ def main():
     payload = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)+"\n"
     if args.capability_scorecard:
         from capability_scorecard import build_scorecard
-        paths=[x.resolve() for x in (args.output,args.capability_scorecard,args.check,args.gemma_receipt,args.anomaly_receipt) if x is not None]
+        paths=[x.resolve() for x in (args.output,args.capability_scorecard,args.check,args.gemma_receipt,args.anomaly_receipt,args.holdout_regression_receipt) if x is not None]
         if len(set(paths))!=len(paths):
             p.error("output and input paths must be distinct")
         # Preflight both destinations before writing either output. This is
@@ -237,6 +238,9 @@ def main():
             if not target.parent.is_dir() or target.is_dir():
                 p.error("output destination must be a file in an existing directory")
         scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt, args.root)
+        if args.holdout_regression_receipt:
+            from regression_guard import evaluate
+            scorecard["tracks"]["holdout_regression"] = evaluate(args.holdout_regression_receipt)
         card_payload=json.dumps(scorecard, indent=2, allow_nan=False)+"\n"
     if args.output:
         args.output.write_text(payload)
