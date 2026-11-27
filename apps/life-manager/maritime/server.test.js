@@ -162,3 +162,45 @@ test('runtime status reads only the local health and schedules endpoints',async 
  const result=await require('./runtime-status.js').readRuntimeStatus({port:server.address().port});
  assert.equal(result.health.ok,true);assert.equal(result.health.relayBindingHash,'a'.repeat(64));assert.deepEqual(result.schedules,schedules);
 });
+
+
+test('per-user simulation is served on /simulate, logged, and reported on /sim/health', async t => {
+  const fs = require('node:fs'); const os = require('node:os'); const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lm-sim-server-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const ledgerPath = path.join(dir, 'per-user-predictions.jsonl');
+  const base = await listening(t, { config, relayWake: async () => ({ accepted: true }), simLedger: { path: ledgerPath } });
+  const empty = await fetch(base + '/sim/stats');
+  assert.equal(empty.status, 200);
+  assert.equal((await empty.json()).rows, 0);
+  const response = await fetch(base + '/simulate', { method: 'POST',
+    body: JSON.stringify({ person_id: 'lm_user_1', profile: { desired_state: 'confidence', pain_point: 'self_doubt', struggle_frequency: 'daily' } }) });
+  assert.equal(response.status, 200);
+  const decision = await response.json();
+  assert.equal(decision.engine, 'anicca-society-sim-run2-v1');
+  assert.equal(decision.person_id, 'lm_user_1');
+  assert.equal(decision.decision.category, 'confidence');
+  assert.equal(decision.decision.nudges_per_day, 2);
+  const health = await (await fetch(base + '/sim/health')).json();
+  assert.equal(health.ok, true);
+  assert.equal(health.ledger.rows, 1);
+  assert.equal(health.ledger.distinct_persons, 1);
+  assert.equal(fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').length, 1);
+});
+
+test('per-user simulation rejects unknown answers and keeps chat behaviour intact', async t => {
+  const base = await listening(t, { config, relayWake: async () => ({ accepted: true }), simLedger: { append: false } });
+  const bad = await fetch(base + '/simulate', { method: 'POST', body: JSON.stringify({ profile: { desired_state: 'rich', pain_point: 'stress', struggle_frequency: 'daily' } }) });
+  assert.equal(bad.status, 400);
+  assert.equal((await bad.json()).errorClass, 'sim_profile_invalid');
+  const badChat = await fetch(base + '/chat', { method: 'POST', body: JSON.stringify({ message: 'hi', sim: { profile: { desired_state: 'calm' } } }) });
+  assert.equal(badChat.status, 400);
+  const chat = await fetch(base + '/chat', { method: 'POST', body: JSON.stringify({ message: 'hi', sim: { profile: { desired_state: 'focus', pain_point: 'stress', struggle_frequency: 'weekly' }, person_id: 'lm_user_2' } }) });
+  assert.equal(chat.status, 200);
+  const payload = await chat.json();
+  assert.equal(payload.simulation.person_id, 'lm_user_2');
+  assert.equal(payload.simulation.decision.category, 'focus');
+  const plain = await fetch(base + '/chat', { method: 'POST', body: JSON.stringify({ message: 'hi' }) });
+  assert.equal(plain.status, 200);
+  assert.equal((await plain.json()).simulation, undefined);
+});
