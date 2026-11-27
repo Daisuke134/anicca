@@ -60,12 +60,20 @@ tags: [e2e-gate]
 - tapOn:
     id: "theme-sageMist"
     retryTapIfNoChange: false
+# Selecting an available theme applies it AND dismisses the picker
+# back to the Settings sheet in the same action (ThemePickerView:
+# themeStore.select + dismiss), so the in-picker selected checkmark
+# (theme-selected-*) no longer exists when any later command runs.
+# Run 45917553504 failed on exactly that: its failure screenshot
+# shows the Settings sheet already reading "Theme: Sage Mist" — the
+# selection HAD landed. The durable observable on the sheet is the
+# Theme row's value text.
 - extendedWaitUntil:
     visible:
-      id: "theme-selected-sageMist"
+      text: "Sage Mist"
     timeout: 15000
 - assertVisible:
-    id: "theme-selected-sageMist"
+    text: "Sage Mist"
 - tapOn:
     id: "settings-done"
     retryTapIfNoChange: false
