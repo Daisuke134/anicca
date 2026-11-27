@@ -72,3 +72,12 @@ these candidates in DecisionPointStore and validates the home response against
 the journal before display. Older journals may omit this optional field; no
 candidate probabilities are invented for them. This is assignment evidence,
 not proof of delivery or display. Do not put these private texts in analytics.
+
+## Offline candidate preflight (TODO39)
+Before considering a new candidate for Anicca mobile or another product, run
+`python -m models.manager.product.check_candidate --receipt PRIVATE_PINNED_RAW_RECEIPT --candidate dpo_43 --checkpoint-sha256 CHECKPOINT_SHA`.
+This retrospective fixed-frame diagnostic returns exit 2 for a known regression
+or unknown checkpoint; even a screen pass is NOT release approval. No raw
+predictions are published. Existing serving, authentication, consent and
+independent release gates remain unchanged; wire this into owner CI before
+relying on enforcement. See ManagerBench optional --holdout-regression-receipt.
