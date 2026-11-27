@@ -71,19 +71,18 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         tap("onboarding-first-continue")
         tap("onboarding-reminder-continue")
         tap("onboarding-notifications-skip")
-        // All three plans wait: the cards render staggered as products
-        // resolve, and an instant .exists check raced the Lifetime card
-        // in run 43974753572 (failure at the lifetime assertion). The
+        // Issue #731: the first screen is the single yearly offer. The
         // annual wait also gates the flow's offerings load before the
         // paywall, and that load can stall on the Intel runner: in run
         // 43988380826 the loading spinner was still up after 45s+ and
         // the 30s wait expired with no plan rendered (journey code
         // unchanged from the passing run 43980794304). Annual therefore
-        // waits 120s; once products resolve, the other cards follow
-        // within the stagger the 30s waits already cover.
+        // waits 120s. Weekly and Lifetime are folded behind "Other
+        // plans" and must NOT be on screen until that row is tapped.
         XCTAssertTrue(app.buttons["paywall-plan-annual"].waitForExistence(timeout: 120))
-        XCTAssertTrue(app.buttons["paywall-plan-weekly"].waitForExistence(timeout: 30))
-        XCTAssertTrue(app.buttons["paywall-plan-lifetime"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any)["paywall-plan-badge-best-value"].exists)
+        XCTAssertFalse(app.buttons["paywall-plan-weekly"].exists)
+        XCTAssertFalse(app.buttons["paywall-plan-lifetime"].exists)
         XCTAssertFalse(app.buttons["paywall-plan-monthly"].exists)
         XCTAssertTrue(app.staticTexts["paywall-monthly-equivalent"].label.contains("5.00"))
         XCTAssertTrue(app.otherElements["paywall-trial-timeline"].exists || app.staticTexts["paywall-trial-timeline"].exists)
@@ -91,9 +90,18 @@ final class OnboardingWinnerE2ETests: XCTestCase {
         time.lifetime = .keepAlways
         add(time)
         let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = "winner-three-plan-paywall"
+        screenshot.name = "winner-single-offer-paywall"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+        // "Other plans" expands in place; no plan is hidden behind a sheet.
+        tap("paywall-other-plans")
+        XCTAssertTrue(app.buttons["paywall-plan-weekly"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["paywall-plan-lifetime"].waitForExistence(timeout: 30))
+        XCTAssertFalse(app.buttons["paywall-plan-monthly"].exists)
+        let expanded = XCTAttachment(screenshot: app.screenshot())
+        expanded.name = "winner-other-plans-expanded"
+        expanded.lifetime = .keepAlways
+        add(expanded)
         tap("paywall-close-button")
         XCTAssertTrue(app.staticTexts["quote-text"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quote-text"].label, words)

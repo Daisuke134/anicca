@@ -125,8 +125,8 @@ enum PaywallOfferingSelection {
 /// highlighted with a savings badge; Adapty — weekly plans drive 55.5%
 /// of subscription revenue and convert install→trial at 9.8% vs 1.8%
 /// for annual, try 2–3 plans and never show five; winner I am runs
-/// three tiers). Exactly three cards: annual first (highlighted as best
-/// value, default selection, 3-day free trial), then weekly, then
+/// three tiers). Three plans are on sale: annual first (highlighted as
+/// best value, default selection, 3-day free trial), then weekly, then
 /// lifetime. Monthly is not sold on the paywall — four choices made
 /// people deliberate instead of deciding.
 enum PaywallPlanDisplay {
@@ -141,6 +141,31 @@ enum PaywallPlanDisplay {
         case "lifetime": return 2
         default: return 3
         }
+    }
+}
+
+/// Single-offer layout (Issue #731): the paywall leads with one offer —
+/// the annual plan and its free trial — and folds the remaining plans
+/// behind a visible "Other plans" row.
+///
+/// The row expands in place rather than opening a sheet. Issue #9356
+/// rejected the earlier hidden-sheet version because the Lifetime row
+/// was cut off and the plans were unreachable from the first screen;
+/// this keeps the single-offer focus without hiding anything: the row
+/// itself is always on screen and one tap shows every plan.
+enum PaywallOfferLayout {
+    /// The one plan the paywall leads with.
+    static let primaryPlanName = "annual"
+
+    static func isPrimary(planName: String) -> Bool {
+        planName == primaryPlanName
+    }
+
+    /// The "Other plans" row stays expanded while a folded plan is the
+    /// selected one, so the user can always see what they are buying.
+    static func isExpanded(manuallyExpanded: Bool, selectedPlanName: String?) -> Bool {
+        guard let selectedPlanName else { return manuallyExpanded }
+        return manuallyExpanded || !isPrimary(planName: selectedPlanName)
     }
 }
 
