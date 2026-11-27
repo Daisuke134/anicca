@@ -4,10 +4,12 @@
 
 このリポジトリは、苦しみを終わらせるための行動介入に取り組む、オープンな会社 **Anicca** の公開旗艦です。開けるものは全てここに置きます（製品のコード、研究、評価）。資格情報、運用の生記録、顧客の情報はこのリポジトリには置かず、別の非公開の運用リポに置きます。
 
-- 会社: Anicca
-- モデル: **Manager**（通知や返信、提出物などの刺激に対して人がどう反応するかを学び、人が本当に欲しい反応が最大になる入力を選ぶモデル）
-- 評価: **ManagerBench**（AI が「人が欲しいもの」を作れたかどうかを測る、1つのベンチマーク。ケースは「状況 → AI が作ったもの（刺激） → 人の実測の反応」の形）
-- 製品: **Anicca**（アファメーションとナッジのアプリ。iOS のコードは `apps/`）と、無人で仕事を回す **Life Manager**（下記）
+- 聖書: **One Bible** — https://github.com/Daisuke134/anicca-ops/blob/main/team/BIBLE.md
+- 会社: Anicca（行動のOpenAI）
+- モデル: **Manager**（通知や返信、提出物などの刺激に対して人がどう反応するかを学び、人が本当に欲しい反応が最大になる入力を選ぶモデル）https://huggingface.co/anicca-agent/manager-v0
+- 評価: **ManagerBench**（AI が「人が欲しいもの」を作れたかどうかを測る、1つのベンチマーク。ケースは「状況 → AI が作ったもの（刺激） → 人の実測の反応」の形）https://github.com/Daisuke134/anicca/blob/main/benchmarks/managerbench/README.md
+- 製品（旗艦）: **Anicca**（アファメーションとナッジのアプリ。iOS のコードは `apps/`）https://apps.apple.com/us/app/daily-affirmations-anicca/id6755129214
+- 多くのプロダクト、一つのエンジン: iOSアプリ6本、Capafy、各プラットフォームでのサービス、データ販売、受託。すべて Manager + ManagerBench + データフライホイールで動く。目標は App Store を含むすべてのプラットフォームで独占を取り、企業・政府・エージェント・消費者のすべてに売ること。無人で仕事を回す **Life Manager**（下記）は会社の本体ではない。
 
 入口: [START-HERE.md](START-HERE.md) · 研究記事: [aniccaai.com/blog](https://aniccaai.com/blog) · 会社の数字: [aniccaai.com/open](https://aniccaai.com/open) · ライセンス: MIT（[LICENSE](LICENSE)）
 
