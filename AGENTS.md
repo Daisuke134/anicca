@@ -1,5 +1,13 @@
 # Life Manager project instructions
 
+
+## Company rules (GitHub, all agents) — 2026-11-27 t4385u–t4387u
+
+- **RULE LIVENESS-CHECK:** Before assigning work to another worker, run `python3 team/scripts/worker_liveness.py` in [anicca-ops](https://github.com/Daisuke134/anicca-ops) (or read `team/WORKER-LIVENESS.md` if generated in the same minute). Never assign to a DEAD worker. For a STALE worker, assign with an ALIVE backup owner. If every specialist is dead, the assigner (参謀's executor or a Cursor cloud agent) runs the work — do not wait. ALIVE = real self-output or heartbeat within 6h; STALE = 6–48h; DEAD = >48h or never. Routing/ASSIGN lines are not proof of life.
+- **RULE COMPANY-WIDE-FIX:** When any agent is corrected, put the fix into the shared identity files on GitHub first, not only that agent's own settings or memory. Shared files: `AGENTS.md`, `IDENTITY.md` / `identity.md`, `CLAUDE.md`, `GEMINI.md`, `team/ONBOARDING.md`, `team/RULES.md` in anicca-ops, and the same filenames in the anicca, anicca-products, and life-manager repos.
+
+Canonical rules: https://github.com/Daisuke134/anicca-ops/blob/main/team/RULES.md
+
 ## Comedy Stage v8 two-minute cut — 2026-11-22 follow-up
 After the second failed voice performance, the **next rehearsal's primary script** is `comedy/sagi-injury-help-2min-live.md`. The previous `comedy/sagi-injury-help.md` v8 is preserved, not overwritten. Read the latest `comedy/feedback/REVIEW-2026-11-22-INJURY-RETRY.md` and `comedy/prompts/INJURY-STAGE-LOCK-2MIN.md`. The AI's first two lines must match v8 exactly; **do not fall into repeated location/window questions**. The stage dialogue must progress from fictional diagnosis to concrete dispatch errors and human reactions. This is not a guarantee of live Voice compliance; test the actual device before stage. Follow `skills/comedy-agent/SKILL.md` v0.2.
 
