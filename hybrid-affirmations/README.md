@@ -120,6 +120,8 @@ npx firebase-tools deploy --only hosting
 
 **GitHub Pages:** publish the contents of `dist/`. `base` is `./`, so the built files work from a subpath as well as a domain root. Replace `dist/firebase-config.js` with the real config on the host, or rebuild with `.env.local`.
 
+The offline demo is published at <https://daisuke134.github.io/anicca/hybrid-affirmations/>. That copy still has the placeholder config, so the badge stays **Offline demo** and no model is called. `manager-support/` on the same Pages branch is a separate site and is not part of this app.
+
 There is no Firebase project attached in this repository. See the list in the final handoff, and the banner inside the running app, for the exact missing values.
 
 ## Tests
