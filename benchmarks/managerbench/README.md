@@ -149,3 +149,22 @@ MIT (repository license). External benchmarks keep their own licenses
 (BehaviorBench data: CC BY-NC-ND 4.0). Training-data terms for the
 MG-06 frame are in
 [`models/manager/v0/DATA_CARD.md`](../../models/manager/v0/DATA_CARD.md).
+
+### Matched binary comparisons (HA06)
+The optional Gemma pilot view now reports paired outcomes on all non-tied
+BFM-02 cases. Its published receipt is pinned by SHA-256. The prior is a
+deterministic baseline, not another identically configured model run.
+`files/eval/managerbench/paired_binary.py` also exposes
+`compare_matched_runs` for declared matching external model protocols:
+dataset/split, manifest, evaluator, prompt and inference-protocol digests
+must match, and all expected IDs must occur in both outcome maps.
+Invalid and abstained answers count against strict accuracy. Exact two-sided
+McNemar p-values assume independent pairs; do not interpret as clustered,
+multiplicity-adjusted or causal evidence. Independent runner must verify
+metadata and actual model checkpoint identities. No promotion from this view.
+
+Mac M4 replay (2026-11-27): Gemma adapter vs prior on 16 non-tied cases,
+10 vs 7 correct, 6 improvements and 3 regressions, exact p=.5078125.
+This is historical receipt replay, not new inference, training or human benefit.
+16/16 focused tests normal and optimized Python; frozen 260-row replay
+and 10 incomplete arms unchanged.

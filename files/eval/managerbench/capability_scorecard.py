@@ -4,6 +4,7 @@ import json
 import math
 from collections import Counter
 from pathlib import Path
+from paired_binary import compare_binary
 
 GEMMA_SHA = 'd672b7101376b5d1d4f366cef0f4dda8eff97263799672446807032256a723e1'
 ANOMALY_SHA = '3e4b89e9b095cea985a56ffae4a532a975784954ade13d6c3f724cf01b12ba89'
@@ -26,12 +27,16 @@ def gemma_track(d):
     if len(rows)!=24 or len({r['context_id'] for r in rows})!=24 or h['n']!=1000:
         raise ValueError('unexpected evaluation frame')
     nt=mc=pc=0; mr=pr=0.
+    baseline_outcomes={}; candidate_outcomes={}; ids=[]
     for r in rows:
         a,b=probability(r['human_a']),probability(r['human_b'])
         if r['model'] not in ('A','B') or r['baseline'] not in ('A','B'):
             raise ValueError('unexpected choice')
         if a!=b:
             nt+=1; win='A' if a>b else 'B';mc+=r['model']==win;pc+=r['baseline']==win
+            case_id=str(r['context_id']); ids.append(case_id)
+            baseline_outcomes[case_id]='correct' if r['baseline']==win else 'incorrect'
+            candidate_outcomes[case_id]='correct' if r['model']==win else 'incorrect'
             mr+=max(a,b)-(a if r['model']=='A' else b)
             pr+=max(a,b)-(a if r['baseline']=='A' else b)
     if (nt,mc,pc,0)!=(s['n_non_tied'],s['model_correct'],s['prior_correct'],s['model_invalid']) or not nt:
@@ -46,7 +51,7 @@ def gemma_track(d):
     if type(h['mean_pred_uplift']) not in (int,float) or not math.isfinite(h['mean_pred_uplift']) or abs(h['mean_pred_uplift'])>1:
         raise ValueError('invalid uplift')
     return {'status':'PILOT_RECEIPT_REPLAY','source':GEMMA_SOURCE,'sha256':GEMMA_SHA,
-            'model':'Gemma4-E2B + Hillstrom adapter','humor':{'n_cases':24,'n_non_tied':nt,'accuracy':mc/nt,'prior_accuracy':pc/nt,'regret':mr/nt,'prior_regret':pr/nt},
+            'model':'Gemma4-E2B + Hillstrom adapter','humor':{'n_cases':24,'n_non_tied':nt,'accuracy':mc/nt,'prior_accuracy':pc/nt,'regret':mr/nt,'prior_regret':pr/nt, 'paired_non_tied':compare_binary(ids, baseline_outcomes, candidate_outcomes)},
             'intervention_prediction':{'n':h['n'],**{k:h[k] for k in ('brier','auc','accuracy','logloss','mean_p_assigned','mean_pred_uplift')}},
             'limitation':'Hillstrom aggregate only; base metrics not in this asset; no base rank or causal benefit claim.'}
 
@@ -104,3 +109,4 @@ def build_scorecard(replay, gemma=None, anomaly=None, behavior_root=None):
                       **{k:{'status':'NOT_INTEGRATED_IN_THIS_VIEW'} for k in ('general_intelligence','social_simulation','culture','memory','agent_execution','multimodal')},
                       'real_product_benefit':{'status':'UNVERIFIED'}},
             'promotion_eligible':False,'limitation':'Receipt replay, not fresh model inference; distinct metrics and denominators cannot be pooled.'}
+
