@@ -4,10 +4,12 @@
 
 This repository is the public flagship of **Anicca**, an open company working to end suffering through behavior intervention. Everything we can open lives here — product code, research, and evaluations. Credentials, raw operations records, and customer data are never published in this repository; they stay in a separate private operations repository.
 
-- **Company**: Anicca
-- **Model**: **Manager** — a model that learns how people respond to a stimulus (a notification, a message, a deliverable) and chooses the input most likely to produce the response people actually want.
-- **Eval**: **ManagerBench** — one benchmark: can AI make something people want? Every case is *situation → what the AI made (stimulus) → the person's measured response*.
-- **Product**: **Anicca** — the affirmation and nudge app people touch (iOS code under `apps/`). **Life Manager**, the no-human-in-the-loop work system, is documented in full below.
+- **Bible**: **One Bible** — https://github.com/Daisuke134/anicca-ops/blob/main/team/BIBLE.md
+- **Company**: Anicca, the OpenAI of behavior
+- **Model**: **Manager** — a model that learns how people respond to a stimulus (a notification, a message, a deliverable) and chooses the input most likely to produce the response people actually want. https://huggingface.co/anicca-agent/manager-v0
+- **Eval**: **ManagerBench** — one benchmark: can AI make something people want? Every case is *situation → what the AI made (stimulus) → the person's measured response*. https://github.com/Daisuke134/anicca/blob/main/benchmarks/managerbench/README.md
+- **Product (flagship)**: **Anicca** — the affirmation and nudge app people touch (iOS code under `apps/`). https://apps.apple.com/us/app/daily-affirmations-anicca/id6755129214
+- **Many products, one engine**: six live iOS apps, Capafy, services on every platform, data sales, and client work, all running on Manager + ManagerBench + the data flywheel. The goal is a monopoly on every platform, App Store included, selling to enterprise, government, agents and consumers. **Life Manager**, the no-human-in-the-loop work system, is documented in full below and is not the company identity.
 
 **Start here**: [START-HERE.md](START-HERE.md) · Research: [aniccaai.com/blog](https://aniccaai.com/blog) · Live company numbers: [aniccaai.com/open](https://aniccaai.com/open) · License: MIT ([LICENSE](LICENSE))
 
