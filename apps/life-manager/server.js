@@ -59,6 +59,7 @@ const { handleMaritimeManagerArtifact } = require("./lib/maritime-manager-artifa
 const { handleMaritimeManagerWake } = require("./lib/maritime-manager-wake.js");
 const { createMaritimeManagerDependencies } = require("./lib/maritime-manager-dependencies.js");
 const { handleWebCalendarRequest } = require("./lib/web-calendar.js");
+const { handleWebSimRequest } = require("./lib/web-sim.js");
 const { handleWebTravelRequest, buildTodaySnapshot } = require("./lib/web-travel.js");
 const { handleWebBillingRequest, trialEndFor } = require("./lib/web-billing.js");
 const {
@@ -796,6 +797,14 @@ const server = http.createServer(async (req, res) => {
     }).catch(() => {
       if (!res.headersSent) res.writeHead(503, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
       res.end(JSON.stringify({ error: "message_link_unavailable" }));
+    });
+    return;
+  }
+  if (path === "/api/lm-web/sim") {
+    handleWebSimRequest(req, res, { publicOrigin: LM_PANEL_BASE }).catch(() => {
+      if (res.headersSent) { res.end(); return; }
+      res.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ ok: false, error: "sim_unavailable" }));
     });
     return;
   }

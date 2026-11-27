@@ -109,6 +109,22 @@ function mountClient(html, responses = {}, href = "https://life.example/lm") {
   return { handlers, requests, redirects, replacements, feedback, root, signIn, window, imessagePairing, imessageCode, imessageLink, imessageCopyButton, clipboardWrites, execution };
 }
 
+test("signed-in page asks the onboarding questions and keeps them off the signed-out page", () => {
+  const signedOut = visibleHtml(renderWebPage({}));
+  assert.doesNotMatch(signedOut, /<form|data-action="sim-decide"|self_love|procrastination/);
+  const signedIn = visibleHtml(renderWebPage({
+    user,
+    snapshot: snapshot({ setupState: "trial_offer" }),
+    trialOffer: { firstChargeAt: "2030-01-08T00:00:00.000Z", timezone: "Asia/Tokyo" },
+  }));
+  assert.match(signedIn, /data-action="sim-decide"/);
+  assert.match(signedIn, /value="self_love"/);
+  assert.match(signedIn, /value="letting_go"/);
+  assert.match(signedIn, /value="procrastination"/);
+  assert.match(signedIn, /value="calm" checked/);
+  assert.match(signedIn, /id="lm-sim-decision" hidden/);
+});
+
 test("signed-out page starts with one Google Calendar connection CTA instead of a Life Manager login", () => {
   const html = visibleHtml(renderWebPage({}));
   assert.match(html, /Google Calendarに接続/);
