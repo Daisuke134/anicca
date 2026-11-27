@@ -50,6 +50,13 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(html, /huggingface\.co\/anicca-agent\/manager-v0/);
   assert.match(text, /honest negative result/);
   assert.doesNotMatch(text, /Open-weight model in development/);
+  assert.match(text, /that loop is not closed yet/);
+  assert.match(text, /designed as one loop/);
+  assert.match(text, /real intervention cases from the product are still 0/);
+  assert.match(text, /merged weights themselves were lost before they were ever pushed/);
+  assert.doesNotMatch(text, /running one loop in the real world/);
+  assert.doesNotMatch(text, /all of it measured by ManagerBench/);
+  assert.doesNotMatch(text, /provenance with the checkpoint/);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/')?.sha256, sha256('pages/en.html'));
@@ -97,6 +104,13 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(html, /huggingface\.co\/anicca-agent\/manager-v0/);
   assert.match(text, /negative result/);
   assert.doesNotMatch(text, /オープンウェイトモデルは構築中/);
+  assert.match(text, /その輪はまだ閉じていません/);
+  assert.match(text, /1つの輪になるよう設計しています/);
+  assert.match(text, /製品からの実介入ケースはまだ0件/);
+  assert.match(text, /重み自体は公開前に失われ/);
+  assert.doesNotMatch(text, /輪を実世界で回しています/);
+  assert.doesNotMatch(text, /全てがManagerBenchで測られます/);
+  assert.doesNotMatch(text, /チェックポイントと一緒に公開/);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/ja')?.sha256, sha256('pages/ja.html'));
