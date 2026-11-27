@@ -10,6 +10,16 @@
 # wait is an extendedWaitUntil — no fixed sleeps.
 appId: ai.anicca.app.ios
 ---
+# Scroll discipline for every option tap below (changed 2026-11-27):
+# scrollUntilVisible only ever swipes DOWN, and a swipe that starts
+# while the target is already on screen — or while the screen is
+# still transitioning in — carries the target off the top, after
+# which the command can never find it again. It failed exactly that
+# way on the FIRST row of the zodiac list in run 45868572518 and on
+# the goal screen's first option in run 45926835034, while passing
+# other runs by luck. So: settle first (waitForAnimationToEnd), and
+# scroll ONLY when the target is not already visible (runFlow when:
+# notVisible). Targets below the fold keep the original scroll.
 - launchApp:
     arguments:
       uiTesting: "true"
@@ -40,11 +50,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-welcome-cta"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-goal-calm"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-goal-calm"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-goal-calm"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-goal-calm"
     retryTapIfNoChange: false
@@ -55,11 +72,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-goal-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-focus_categories-anxiety"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-focus_categories-anxiety"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-focus_categories-anxiety"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-focus_categories-anxiety"
     retryTapIfNoChange: false
@@ -97,11 +121,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-birth_context-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-mood_baseline-neutral"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-mood_baseline-neutral"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-mood_baseline-neutral"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-mood_baseline-neutral"
     retryTapIfNoChange: false
@@ -112,11 +143,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-mood_baseline-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-struggle-stress"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-struggle-stress"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-struggle-stress"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-struggle-stress"
     retryTapIfNoChange: false
@@ -127,11 +165,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-struggles-next"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-stress_trigger-work"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-stress_trigger-work"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-stress_trigger-work"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-stress_trigger-work"
     retryTapIfNoChange: false
@@ -142,11 +187,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-stress_trigger-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-depth-daily"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-depth-daily"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-depth-daily"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-depth-daily"
     retryTapIfNoChange: false
@@ -157,11 +209,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-depth-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-belief_themes-self_trust"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-belief_themes-self_trust"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-belief_themes-self_trust"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-belief_themes-self_trust"
     retryTapIfNoChange: false
@@ -179,11 +238,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-micro-save"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-tone-gentle"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-tone-gentle"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-tone-gentle"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-tone-gentle"
     retryTapIfNoChange: false
@@ -194,11 +260,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-tone-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-life_context-work"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-life_context-work"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-life_context-work"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-life_context-work"
     retryTapIfNoChange: false
@@ -209,11 +282,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-life_context-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-routine_anchors-waking"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-routine_anchors-waking"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-routine_anchors-waking"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-routine_anchors-waking"
     retryTapIfNoChange: false
@@ -224,11 +304,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-routine_anchors-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-prior_attempts-meditation"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-prior_attempts-meditation"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-prior_attempts-meditation"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-prior_attempts-meditation"
     retryTapIfNoChange: false
@@ -239,11 +326,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-prior_attempts-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-prior_helpfulness-meditation"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-prior_helpfulness-meditation"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-prior_helpfulness-meditation"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-prior_helpfulness-meditation"
     retryTapIfNoChange: false
@@ -254,11 +348,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-prior_helpfulness-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-start_reason-overwhelmed"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-start_reason-overwhelmed"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-start_reason-overwhelmed"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-start_reason-overwhelmed"
     retryTapIfNoChange: false
@@ -269,11 +370,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-start_reason-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-quiet_hours-none"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-quiet_hours-none"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-quiet_hours-none"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-quiet_hours-none"
     retryTapIfNoChange: false
@@ -284,11 +392,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-quiet_hours-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "theme-sandWave"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "theme-sandWave"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "theme-sandWave"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "theme-sandWave"
     retryTapIfNoChange: false
@@ -299,11 +414,18 @@ appId: ai.anicca.app.ios
 - tapOn:
     id: "onboarding-theme-continue"
     retryTapIfNoChange: false
-- scrollUntilVisible:
-    element:
-      id: "onboarding-icon-AppIcon"
-    direction: DOWN
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    when:
+      notVisible:
+        id: "onboarding-icon-AppIcon"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "onboarding-icon-AppIcon"
+          direction: DOWN
+          timeout: 30000
 - tapOn:
     id: "onboarding-icon-AppIcon"
     retryTapIfNoChange: false
