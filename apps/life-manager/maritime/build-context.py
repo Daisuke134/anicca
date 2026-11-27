@@ -16,7 +16,8 @@ MAX_COMPRESSED_BYTES = 500_000_000
 MAX_UNPACKED_BYTES = 2_000_000_000
 DOCKERFILE = 'apps/life-manager/maritime/Dockerfile'
 EXCLUDED_PARTS = {'.git', '.worktrees', 'worktrees', '.cloak', '.codex', '.claude', '.superpowers',
-                  'node_modules', '.venv', 'venv', 'state', 'memory', 'profiles', 'credentials', '__pycache__'}
+                  '.vcsdd', 'node_modules', '.venv', 'venv', 'state', 'memory', 'profiles', 'credentials',
+                  '__pycache__'}
 
 def excluded(name):
     relative = PurePosixPath(name)
