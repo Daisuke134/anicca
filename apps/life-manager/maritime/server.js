@@ -1,9 +1,13 @@
 'use strict';
 const http = require('node:http');
+const sim = require('./sim/per-user-sim.js');
+
+const PERSON_ID = /^[A-Za-z0-9._:-]{1,64}$/;
 
 // This VM receives platform wake notifications. Business work stays in the
 // existing central queue and is dispatched separately through detached exec.
-function createMaritimeManagerServer({ config = {}, relayWake, readSchedules, relayTimeoutMs = 10000 } = {}) {
+// It also runs the per-user behaviour simulation for every Maritime user.
+function createMaritimeManagerServer({ config = {}, relayWake, readSchedules, relayTimeoutMs = 10000, simulateUser, simLedger = {} } = {}) {
   const tenantId = config.tenantId;
   const releaseSha = config.releaseSha;
   if (typeof tenantId !== 'string' || !/^lm_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(tenantId)
@@ -13,15 +17,53 @@ function createMaritimeManagerServer({ config = {}, relayWake, readSchedules, re
   }
   const modelReady = config.modelReady === true;
   const ready = modelReady && typeof relayWake === 'function';
+  const ledgerPath = simLedger.path || sim.defaultLedgerPath();
+  const recordSimulation = simLedger.append === false ? () => false : result => sim.appendLedger(result, { ledgerPath });
+  const runSimulation = typeof simulateUser === 'function'
+    ? input => { const result = simulateUser(input); recordSimulation(result); return result; }
+    : input => { const result = sim.simulate(input); recordSimulation(result); return result; };
   function json(response, status, body) {
     response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     response.end(JSON.stringify(body));
+  }
+  async function readJson(request, limit) {
+    const chunks = []; let bytes = 0;
+    for await (const chunk of request) {
+      bytes += chunk.length;
+      if (bytes <= limit) chunks.push(chunk);
+    }
+    if (bytes > limit) return { error: 'body_too_large' };
+    try { return { body: JSON.parse(Buffer.concat(chunks).toString('utf8')) }; } catch { return { error: 'invalid_message' }; }
+  }
+  function simulateFrom(body) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return { errorClass: 'sim_profile_invalid' };
+    const source = body.profile !== undefined ? body : body.sim;
+    if (!source || typeof source !== 'object' || Array.isArray(source)) return { errorClass: 'sim_profile_invalid' };
+    const validated = sim.validateProfile(source.profile);
+    if (validated.error) return { errorClass: 'sim_profile_invalid', detail: validated.error };
+    const personId = typeof source.person_id === 'string' && PERSON_ID.test(source.person_id) ? source.person_id : null;
+    return { result: runSimulation({ profile: validated.profile, personId }) };
   }
   const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && request.url === '/health') {
       json(response, ready ? 200 : 503, { ok: ready, releaseSha,
         ...(/^[0-9a-f]{64}$/.test(config.relayBindingHash || '') ? { relayBindingHash: config.relayBindingHash } : {}),
         ...(!ready ? { errorClass: modelReady ? 'wake_relay_unconfigured' : 'cloud_model_config_missing' } : {}) });
+      return;
+    }
+    if (request.method === 'GET' && (request.url === '/sim/health' || request.url === '/sim/stats')) {
+      const stats = sim.ledgerStats({ ledgerPath });
+      json(response, 200, request.url === '/sim/health'
+        ? { ok: true, engine: sim.ENGINE, releaseSha, ledger: stats }
+        : stats);
+      return;
+    }
+    if (request.method === 'POST' && request.url === '/simulate') {
+      const parsed = await readJson(request, 8192);
+      if (parsed.error) { json(response, parsed.error === 'body_too_large' ? 413 : 400, { errorClass: parsed.error }); return; }
+      const simulated = simulateFrom(parsed.body);
+      if (simulated.errorClass) { json(response, 400, simulated); return; }
+      json(response, 200, simulated.result);
       return;
     }
     if (request.method === 'GET' && request.url === '/schedules') {
@@ -52,7 +94,14 @@ function createMaritimeManagerServer({ config = {}, relayWake, readSchedules, re
     const kind = body.source === 'scheduled'
       ? (body.message === 'lm:cycle' ? 'cycle' : body.message === 'lm:report' ? 'report' : null) : null;
     if (!kind) {
-      json(response, 200, { response: 'Life Managerは定期的に仕事を進め、結果を日次レポートでお知らせします。' }); return;
+      let simulation;
+      if (body.sim !== undefined) {
+        const simulated = simulateFrom(body);
+        if (simulated.errorClass) { json(response, 400, simulated); return; }
+        simulation = simulated.result;
+      }
+      json(response, 200, { response: 'Life Managerは定期的に仕事を進め、結果を日次レポートでお知らせします。',
+        ...(simulation ? { simulation } : {}) }); return;
     }
     const abort = new AbortController(); let timer;
     try {
