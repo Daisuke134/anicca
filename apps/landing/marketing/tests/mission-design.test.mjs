@@ -37,4 +37,5 @@ test('mission typography wins legacy locale rules and Japanese reflows without a
  const css=read('assets/styles.css');
  assert.match(css,/body\.manager-mission \.hero h1\{[^}]*font-size:clamp\(64px,7\.6vw,106px\)/);
  assert.match(css,/@media\(max-width:600px\)[\s\S]*body\.manager-mission:lang\(ja\) \.hero h1\{font-size:clamp\(32px,8vw,48px\);max-width:none\}/);
+ assert.match(css,/body\.manager-mission:lang\(ja\) \.hero h1\{word-break:auto-phrase\}/);
 });

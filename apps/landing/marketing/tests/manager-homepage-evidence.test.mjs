@@ -58,6 +58,8 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.doesNotMatch(text, /all of it measured by ManagerBench/);
   assert.doesNotMatch(text, /provenance with the checkpoint/);
   assert.match(text, /no answers, votes, ranks, or measured effects yet/i);
+  assert.match(text, /pilot ground for measurement/i);
+  assert.doesNotMatch(text, /as a measured intervention environment/i);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/')?.sha256, sha256('pages/en.html'));
@@ -113,6 +115,7 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.doesNotMatch(text, /全てがManagerBenchで測られます/);
   assert.doesNotMatch(text, /チェックポイントと一緒に公開/);
   assert.match(text, /回答・投票・順位・測定結果はまだ0件/);
+  assert.match(text, /これから実測する環境に/);
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/ja')?.sha256, sha256('pages/ja.html'));
