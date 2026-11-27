@@ -13,6 +13,8 @@ struct ManagerBenchCase: Codable, Equatable {
     var stimulus: Stimulus
     var response = Response()
     var observationWindowClosedAt: Date?
+    /// Actual local time the final outcome became available; legacy rows stay unknown.
+    var outcomeAvailableAt: Date? = nil
 
     struct Situation: Codable, Equatable {
         var answerSnapshot: [String: [String]]
@@ -118,8 +120,9 @@ struct ManagerBenchCase: Codable, Equatable {
         date >= decisionPointAt && date <= decisionPointAt.addingTimeInterval(TimeInterval(outcomeWindowSec))
     }
 
-    mutating func observe(_ event: ManagerBenchEvent, at date: Date) {
+    mutating func observe(_ event: ManagerBenchEvent, at date: Date, recordedAt: Date? = nil) {
         guard containsInObservationWindow(date) else { return }
+        let previousResponse = response
         switch event {
         case .notificationDelivered:
             response.notificationDelivered = true
@@ -144,12 +147,21 @@ struct ManagerBenchCase: Codable, Equatable {
             response.shared = true
             response.sharedAt = earliest(response.sharedAt, date)
         }
+        // A corrected closed outcome was not known at its earlier version time.
+        if observationWindowClosedAt != nil, response != previousResponse, let available = outcomeAvailableAt {
+            if let recordedAt, recordedAt >= date {
+                outcomeAvailableAt = max(available, recordedAt)
+            } else {
+                outcomeAvailableAt = nil
+            }
+        }
     }
 
     mutating func closeObservationWindow(at date: Date) {
         let end = decisionPointAt.addingTimeInterval(TimeInterval(outcomeWindowSec))
         guard date >= end, observationWindowClosedAt == nil else { return }
         observationWindowClosedAt = end
+        outcomeAvailableAt = date
         // These actions have durable callbacks in this app. A missing APNs receipt is
         // not evidence of non-delivery: iOS does not report background delivery here.
         if source == "notification", response.appOpened == nil { response.appOpened = false }

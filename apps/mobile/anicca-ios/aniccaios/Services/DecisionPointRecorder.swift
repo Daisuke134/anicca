@@ -106,7 +106,7 @@ final class DecisionPointStore {
             let matching = pending.filter { $0.deliveryId == record.deliveryId && $0.personId == record.personId }
             for observation in matching {
                 if records[index].containsInObservationWindow(observation.observedAt) {
-                    records[index].observe(observation.event, at: observation.observedAt)
+                    records[index].observe(observation.event, at: observation.observedAt, recordedAt: Date())
                 } else if !persistOutsideWindow(observation) { return false }
             }
             guard write(records, to: casesURL) else { return false }
@@ -123,7 +123,7 @@ final class DecisionPointStore {
             var records = loadCases()
             if let index = records.firstIndex(where: { $0.personId == personId && $0.deliveryId == deliveryId }) {
                 if records[index].containsInObservationWindow(date) {
-                    records[index].observe(event, at: date)
+                    records[index].observe(event, at: date, recordedAt: Date())
                     return write(records, to: casesURL)
                 }
                 return persistOutsideWindow(.init(personId: personId, deliveryId: deliveryId, messageId: messageId, event: event, observedAt: date))
@@ -323,6 +323,8 @@ final class DecisionPointRecorder {
         payload["outcome_window_sec"] = outcomeWindowSec
         payload["response"] = [String: Any]()
         payload.removeValue(forKey: "observation_window_closed_at")
+        payload.removeValue(forKey: "outcome_available_at")
+        payload.removeValue(forKey: "outcomeAvailableAt")
         guard JSONSerialization.isValidJSONObject(payload),
               let data = try? JSONSerialization.data(withJSONObject: payload),
               var row = try? ManagerBenchCase.decoder.decode(ManagerBenchCase.self, from: data),

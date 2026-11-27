@@ -19,9 +19,10 @@ struct ManagerHistoryFeatures: Codable, Equatable {
                   row.decisionPointAt < decision,
                   row.outcomeWindowSec > 0,
                   row.hasValidAssignment,
-                  let closed = row.observationWindowClosedAt else { return false }
+                  let closed = row.observationWindowClosedAt,
+                  let available = row.outcomeAvailableAt else { return false }
             let end = row.decisionPointAt.addingTimeInterval(TimeInterval(row.outcomeWindowSec))
-            return end <= closed && closed < decision
+            return end <= closed && closed <= available && available < decision
         }
         // Ambiguous duplicate assignments fail closed, rather than weighting a person twice.
         let groups = Dictionary(grouping: eligible, by: { $0.deliveryId })
