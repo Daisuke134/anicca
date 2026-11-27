@@ -158,9 +158,19 @@ reboot_sim() {
   # cross-flow state (onboarding completed by flows 01/02, relied on
   # by 03/03b/04/05) is preserved.
   echo "== rebooting simulator for a fresh driver environment =="
-  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
-  xcrun simctl bootstatus "$UDID" -b
-  xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100
+  run_capped 60 xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+  # bootstatus must be capped: in run 45882723387 the simulator wedged
+  # during flow 03b (device unreachable; simctl uninstall timed out in
+  # Maestro's teardown), and this uncapped bootstatus then blocked for
+  # ~3.5 hours until the 300-minute job timeout cancelled the run —
+  # flows 04/05 never started and no gate-result.json was written.
+  if ! run_capped 300 xcrun simctl bootstatus "$UDID" -b; then
+    echo "   -> bootstatus did not complete; trying one explicit boot"
+    run_capped 60 xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+    run_capped 300 xcrun simctl bootstatus "$UDID" -b \
+      || echo "   -> simulator still not booted; continuing (flows fail bounded, never hang)"
+  fi
+  run_capped 60 xcrun simctl status_bar "$UDID" override --time '9:41' --batteryState charged --batteryLevel 100 || true
 }
 
 run_flow() {
@@ -189,8 +199,19 @@ run_flow() {
     # is final. (The per-attempt cap is 1500s: a legitimate flow took
     # 888s in run 45841118170, so the old 900s cap raced real passes
     # and killed flows 01 and 02 before they could finish.)
-    if [[ $attempt == 1 ]] && { grep -q "IOSDriverTimeoutException" "$EVIDENCE/logs/$name.log" || [[ $rc == 124 ]]; }; then
-      echo "   -> driver startup timeout or cap-kill; rebooting and retrying once"
+    # A wedged device mid-flow is the same class: in run 45882723387
+    # flow 03b died at launchApp with "Device became unreachable" (the
+    # detail lives in the flow's maestro.log, not the runner log).
+    env_failure=0
+    if grep -q "IOSDriverTimeoutException" "$EVIDENCE/logs/$name.log" || [[ $rc == 124 ]]; then
+      env_failure=1
+    fi
+    mlog=$(ls -t "$EVIDENCE"/maestro-tests/*/*/logs/maestro.log 2>/dev/null | head -1 || true)
+    if [[ -n "${mlog:-}" ]] && grep -q "Device became unreachable" "$mlog"; then
+      env_failure=1
+    fi
+    if [[ $attempt == 1 && $env_failure == 1 ]]; then
+      echo "   -> environment failure (driver timeout, cap-kill, or device unreachable); rebooting and retrying once"
       mv "$EVIDENCE/logs/$name.log" "$EVIDENCE/logs/$name.attempt1.log"
       reboot_sim
       continue
