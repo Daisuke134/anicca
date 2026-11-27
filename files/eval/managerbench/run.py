@@ -214,13 +214,34 @@ def main():
     p.add_argument("--root", type=Path, default=ROOT)
     p.add_argument("--output", type=Path)
     p.add_argument("--check", type=Path, help="Fail on any change to the frozen replay, including provenance")
+    p.add_argument("--capability-scorecard", type=Path, help="Optional separate capability view; frozen replay unchanged")
+    p.add_argument("--gemma-receipt", type=Path)
+    p.add_argument("--anomaly-receipt", type=Path)
     args = p.parse_args()
+    if (args.gemma_receipt or args.anomaly_receipt) and not args.capability_scorecard:
+        p.error("external receipts require --capability-scorecard")
     result = finite(aggregate(args.root))
     if args.check and result != json.loads(args.check.read_text()):
         raise SystemExit("REPRODUCTION_CONDITION_DIFFERENCE: investigate; do not overwrite baseline")
     payload = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)+"\n"
+    if args.capability_scorecard:
+        from capability_scorecard import build_scorecard
+        paths=[x.resolve() for x in (args.output,args.capability_scorecard,args.check,args.gemma_receipt,args.anomaly_receipt) if x is not None]
+        if len(set(paths))!=len(paths):
+            p.error("output and input paths must be distinct")
+        # Preflight both destinations before writing either output. This is
+        # not a two-file atomic transaction; callers must check CLI exit status.
+        for target in (args.output, args.capability_scorecard):
+            if target is None:
+                continue
+            if not target.parent.is_dir() or target.is_dir():
+                p.error("output destination must be a file in an existing directory")
+        scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt, args.root)
+        card_payload=json.dumps(scorecard, indent=2, allow_nan=False)+"\n"
     if args.output:
         args.output.write_text(payload)
+    if args.capability_scorecard:
+        args.capability_scorecard.write_text(card_payload)
     print(f"PASS: {len(result['rows'])} family/task/condition rows; {len(result['incomplete'])} incomplete arms; no pooled score")
 
 
