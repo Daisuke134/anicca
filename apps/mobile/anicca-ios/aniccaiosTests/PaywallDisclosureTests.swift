@@ -75,7 +75,9 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: true, selectedPlanName: "annual"))
         XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: "weekly"))
         XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: "lifetime"))
-        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: nil))
+        // No selection yet (offerings still loading): follow the toggle.
+        XCTAssertFalse(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: nil))
+        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: true, selectedPlanName: nil))
     }
 
     // User rule (2026-11-15): a user who already pays never sees a
