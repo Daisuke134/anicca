@@ -433,6 +433,7 @@ enum AnalyticsEvent: String {
     case paywallShown = "paywall_shown"
     case paywallPrimerViewed = "paywall_primer_viewed"
     case paywallPlanSelectionViewed = "paywall_plan_selection_viewed"
+    case paywallOtherPlansToggled = "paywall_other_plans_toggled"
     case onboardingPaywallCustomerInfoResult = "onboarding_paywall_customer_info_result"
     case onboardingPaywallOfferingLoadResult = "onboarding_paywall_offering_load_result"
     case onboardingPaywallPurchased = "onboarding_paywall_purchased"

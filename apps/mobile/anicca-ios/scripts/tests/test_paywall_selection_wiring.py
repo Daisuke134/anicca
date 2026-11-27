@@ -279,18 +279,33 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("eligibility[package.storeProduct.productIdentifier]?.status", self.source)
         self.assertIn("PaywallTrialPresentation.resolve(", self.source)
 
-    def test_primary_offer_and_alternatives_do_not_have_competing_scroll_regions(self):
-        # Winner spec section 6: exactly three plans as cards on one screen;
-        # no "Other plans" sheet may hide a plan.
-        self.assertNotIn('accessibilityIdentifier("paywall-other-plans")', self.source)
+    def test_single_offer_leads_and_other_plans_expand_in_place(self):
+        # Issue #731: the annual plan is the only offer on the first screen;
+        # weekly and lifetime fold behind an "Other plans" row that expands
+        # in place. No sheet may hide a plan (Issue #9356 rejected the sheet).
+        self.assertIn('accessibilityIdentifier("paywall-other-plans")', self.source)
         self.assertNotIn(".sheet(isPresented: $showOtherPlans)", self.source)
-        self.assertIn("private var planCards", self.source)
+        self.assertIn("private var offerSection", self.source)
+        self.assertIn("PaywallOfferLayout.isPrimary(planName:", self.source)
+        self.assertIn("PaywallOfferLayout.isExpanded(", self.source)
         self.assertIn('accessibilityIdentifier("paywall-billed-amount")', self.source)
         self.assertIn('accessibilityIdentifier("paywall-monthly-equivalent")', self.source)
         self.assertNotIn("dailyPrice", self.source)
         self.assertNotIn(".lineLimit(1)", self.source)
         for key in ("paywall_plan_restore", "paywall_plan_terms", "paywall_plan_privacy"):
             self.assertIn(key, self.source)
+
+    def test_trust_line_and_trial_analytics_are_wired(self):
+        # Issue #731: one trust line under the CTA, and the funnel events
+        # paywall_viewed / trial_started must reach Mixpanel.
+        self.assertIn('accessibilityIdentifier("paywall-trust-line")', self.source)
+        self.assertIn('"paywall_b_trust_trial"', self.source)
+        self.assertIn('"paywall_b_trust_no_trial"', self.source)
+        self.assertIn("trackScreenViewed(screenID: .paywall", self.source)
+        analytics = ANALYTICS.read_text(encoding="utf-8")
+        self.assertIn("case paywallShown", analytics)
+        self.assertIn("case trialStarted", analytics)
+        self.assertIn("track(.trialStarted", analytics)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

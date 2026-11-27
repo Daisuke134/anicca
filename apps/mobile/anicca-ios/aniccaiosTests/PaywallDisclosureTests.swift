@@ -18,12 +18,14 @@ final class PaywallDisclosureTests: XCTestCase {
         }
     }
 
-    // Issue #9356: every plan is a card on the first screen, longest
-    // commitment first — annual, monthly, weekly, lifetime.
+    // Issue #9356: plans are ordered by commitment length; monthly is on
+    // sale but not offered on this screen, so it never renders.
     func testPlanOrderingPutsAnnualFirstAndLifetimeLast() {
         let ranks = ["annual": 0, "monthly": 1, "weekly": 2, "lifetime": 3]
-        let ordered = PaywallPlanOrdering.ordered(["weekly", "lifetime", "monthly", "annual"]) { ranks[$0] ?? 4 }
-        XCTAssertEqual(ordered, ["annual", "monthly", "weekly", "lifetime"])
+        XCTAssertEqual(
+            PaywallPlanOrdering.ordered(["weekly", "lifetime", "annual"]) { ranks[$0] ?? 99 },
+            ["annual", "weekly", "lifetime"]
+        )
     }
 
     func testPlanOrderingIsStableWithinEqualRanks() {
@@ -43,10 +45,9 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertEqual(PaywallVariantBView.planIdentifierName(for: .lifetime), "lifetime")
     }
 
-    // Decided 2026-11-15 from primary sources (RevenueCat, Adapty,
-    // winner I am's three tiers): the paywall sells exactly three
-    // plans — annual highlighted first, then weekly, then lifetime.
-    // Monthly is not sold on the paywall.
+    // Decided 2026-11-15 from primary sources (RevenueCat, Adapty, winner
+    // I am's three tiers): three plans are on sale — annual highlighted
+    // first, then weekly, then lifetime. Monthly is not sold here.
     func testPaywallShowsExactlyThreePlans() {
         XCTAssertTrue(PaywallPlanDisplay.isVisible(planName: "annual"))
         XCTAssertTrue(PaywallPlanDisplay.isVisible(planName: "weekly"))
@@ -56,6 +57,25 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertFalse(PaywallPlanDisplay.isVisible(planName: "custom"))
         XCTAssertLessThan(PaywallPlanDisplay.rank(planName: "annual"), PaywallPlanDisplay.rank(planName: "weekly"))
         XCTAssertLessThan(PaywallPlanDisplay.rank(planName: "weekly"), PaywallPlanDisplay.rank(planName: "lifetime"))
+    }
+
+    // Issue #731: the first screen leads with one offer — the annual plan
+    // and its free trial. Weekly and Lifetime fold behind "Other plans".
+    func testSingleOfferLeadsWithTheAnnualPlan() {
+        XCTAssertTrue(PaywallOfferLayout.isPrimary(planName: "annual"))
+        XCTAssertFalse(PaywallOfferLayout.isPrimary(planName: "weekly"))
+        XCTAssertFalse(PaywallOfferLayout.isPrimary(planName: "lifetime"))
+        XCTAssertFalse(PaywallOfferLayout.isPrimary(planName: "monthly"))
+    }
+
+    // A folded plan that is selected must stay visible: collapsing the row
+    // while weekly or lifetime is selected would hide the plan being bought.
+    func testOtherPlansRowStaysExpandedWhileAFoldedPlanIsSelected() {
+        XCTAssertFalse(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: "annual"))
+        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: true, selectedPlanName: "annual"))
+        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: "weekly"))
+        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: "lifetime"))
+        XCTAssertTrue(PaywallOfferLayout.isExpanded(manuallyExpanded: false, selectedPlanName: nil))
     }
 
     // User rule (2026-11-15): a user who already pays never sees a
