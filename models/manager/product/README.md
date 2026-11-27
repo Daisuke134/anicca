@@ -81,3 +81,10 @@ or unknown checkpoint; even a screen pass is NOT release approval. No raw
 predictions are published. Existing serving, authentication, consent and
 independent release gates remain unchanged; wire this into owner CI before
 relying on enforcement. See ManagerBench optional --holdout-regression-receipt.
+
+## Research candidate 40 (UCI factual purchase prediction only)
+Portable 17-parameter research checkpoint and scorer are staged for review.
+The scorer rejects other scopes; mobile_preflight returns BLOCKED_OUT_OF_SCOPE.
+No production routing, live app behavior or release authorization is changed.
+The dataset is UCI Online Shoppers Purchasing Intention (CC BY 4.0), Sakar et al.,
+https://doi.org/10.24432/C5F88Q. No source rows included.
