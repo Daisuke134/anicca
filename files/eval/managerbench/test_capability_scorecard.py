@@ -55,3 +55,21 @@ class CapabilityScorecardTests(unittest.TestCase):
             self.assertNotEqual(p.returncode,0)
             self.assertIn('paths must be distinct',p.stderr)
             self.assertFalse(pth.exists())
+
+    def test_cli_preflight_invalid_destination_preserves_outputs(self):
+        root=Path(__file__).resolve().parents[3]
+        with tempfile.TemporaryDirectory() as d:
+            tmp=Path(d)
+            out=tmp/'replay.json'
+            out.write_text('existing sentinel')
+            for card in (tmp/'missing'/'card.json',tmp):
+                with self.subTest(card=card):
+                    p=subprocess.run([sys.executable,str(Path(__file__).with_name('run.py')),'--root',str(root),'--output',str(out),'--capability-scorecard',str(card)],capture_output=True,text=True)
+                    self.assertNotEqual(p.returncode,0)
+                    self.assertIn('output destination must be a file in an existing directory',p.stderr)
+                    self.assertEqual(out.read_text(),'existing sentinel')
+            card=tmp/'card.json'
+            p=subprocess.run([sys.executable,str(Path(__file__).with_name('run.py')),'--root',str(root),'--output',str(tmp/'missing'/'replay.json'),'--capability-scorecard',str(card)],capture_output=True,text=True)
+            self.assertNotEqual(p.returncode,0)
+            self.assertIn('output destination must be a file in an existing directory',p.stderr)
+            self.assertFalse(card.exists())

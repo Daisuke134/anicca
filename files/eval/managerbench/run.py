@@ -229,6 +229,13 @@ def main():
         paths=[x.resolve() for x in (args.output,args.capability_scorecard,args.check,args.gemma_receipt,args.anomaly_receipt) if x is not None]
         if len(set(paths))!=len(paths):
             p.error("output and input paths must be distinct")
+        # Preflight both destinations before writing either output. This is
+        # not a two-file atomic transaction; callers must check CLI exit status.
+        for target in (args.output, args.capability_scorecard):
+            if target is None:
+                continue
+            if not target.parent.is_dir() or target.is_dir():
+                p.error("output destination must be a file in an existing directory")
         scorecard = build_scorecard(result, args.gemma_receipt, args.anomaly_receipt, args.root)
         card_payload=json.dumps(scorecard, indent=2, allow_nan=False)+"\n"
     if args.output:
