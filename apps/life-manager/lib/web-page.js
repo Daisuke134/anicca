@@ -101,6 +101,35 @@ function pageState(snapshot, model = {}) {
   return `<section class="card"><h1>Calendarの状態を確認しています</h1><p>状態を確認できません。あとで再読み込みしてください。</p></section>`;
 }
 
+function choice(name, value, label, checked, kind) {
+  const type = kind === "checkbox" ? "checkbox" : "radio";
+  return `<label class="choice"><input type="${type}" name="${name}" value="${value}"${checked ? " checked" : ""}>${label}</label>`;
+}
+
+function simMarkup() {
+  const desired = [
+    ["calm", "落ち着き", true],
+    ["confidence", "自信", false],
+    ["focus", "集中", false],
+    ["self_love", "自分を大切にする", false],
+    ["letting_go", "手放す", false],
+  ].map(([value, label, checked]) => choice("desired_state", value, label, checked, "radio")).join("");
+  const pains = [
+    ["stress", "ストレス", true],
+    ["anxiety", "不安", false],
+    ["self_doubt", "自信のなさ", false],
+    ["procrastination", "先延ばし", false],
+    ["sleep", "睡眠", false],
+  ].map(([value, label, checked]) => choice("pain_point_ids", value, label, checked, "checkbox")).join("");
+  const frequency = [
+    ["rarely", "めったにない", false],
+    ["weekly", "週に数回", false],
+    ["daily", "ほぼ毎日", true],
+    ["many_times_daily", "1日に何度も", false],
+  ].map(([value, label, checked]) => choice("struggle_frequency", value, label, checked, "radio")).join("");
+  return `<section class="card" id="lm-sim"><h2>最初の一言</h2><p class="muted">回答から、最初の声かけを決めます。</p><form id="lm-sim-form"><fieldset><legend>望む状態</legend>${desired}</fieldset><fieldset><legend>困りごと</legend>${pains}</fieldset><fieldset><legend>困る頻度</legend>${frequency}</fieldset><button class="button" type="button" data-action="sim-decide">最初の一言を決める</button></form><section id="lm-sim-decision" hidden><p id="lm-sim-line"></p><p id="lm-sim-when" class="muted"></p><p class="muted">これはシミュレーション上の仮説です。</p></section></section>`;
+}
+
 const CLIENT_SCRIPT = String.raw`(async () => {
   const signIn = document.getElementById("lm-sign-in");
   if (signIn) {
@@ -214,6 +243,41 @@ const CLIENT_SCRIPT = String.raw`(async () => {
     say("コードをMessagesで送信するとiMessageが接続されます。");
   }
 
+  async function decideSim() {
+    const desired = document.querySelector('input[name="desired_state"]:checked')?.value || "";
+    const pains = [...document.querySelectorAll('input[name="pain_point_ids"]:checked')].map((node) => node.value);
+    const frequency = document.querySelector('input[name="struggle_frequency"]:checked')?.value || "";
+    let timezone = "UTC";
+    try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { /* UTC fallback */ }
+    const result = await api("/api/lm-web/sim", "POST", {
+      desired_state: desired,
+      pain_point_ids: pains,
+      struggle_frequency: frequency,
+      timezone,
+    });
+    if (result.ok !== true || typeof result.decision?.first_line !== "string") {
+      say(result.error === "answers_unmapped"
+        ? "この回答の組み合わせでは、最初の一言をまだ決められません。別の回答を選べます。"
+        : "最初の一言をいま表示できません。このページの他の操作はそのまま使えます。");
+      return;
+    }
+    const box = document.getElementById("lm-sim-decision");
+    const line = document.getElementById("lm-sim-line");
+    const when = document.getElementById("lm-sim-when");
+    if (!box || !line || !when) throw new Error("sim_ui_unavailable");
+    const windows = { morning: "朝", midday: "昼", evening: "夕方", late: "夜" };
+    const windowName = windows[result.decision.delivery_window] || "";
+    const at = typeof result.decision.delivery_at_local === "string" && /^\d{2}:\d{2}$/.test(result.decision.delivery_at_local)
+      ? result.decision.delivery_at_local : "";
+    const count = Number(result.decision.nudges_per_day);
+    line.textContent = result.decision.first_line;
+    const countText = Number.isInteger(count) && count >= 1 && count <= 3 ? "1日" + count + "回です。" : "";
+    when.textContent = at
+      ? "最初の声かけは現地時間 " + at + (windowName ? "（" + windowName + "）" : "") + "です。" + countText
+      : "最初の声かけの時刻はまだ表示できません。";
+    box.hidden = false;
+  }
+
   async function copyIMessageCode() {
     const code = document.getElementById("lm-imessage-code")?.textContent || "";
     if (!/^LMI_[A-Za-z0-9_-]{32}$/.test(code)) throw new Error("imessage_code_unavailable");
@@ -233,9 +297,13 @@ const CLIENT_SCRIPT = String.raw`(async () => {
       else if (button.dataset.action === "link-telegram") await linkTelegram();
       else if (button.dataset.action === "link-imessage") await linkIMessage();
       else if (button.dataset.action === "copy-imessage-code") await copyIMessageCode();
+      else if (button.dataset.action === "sim-decide") await decideSim();
       else button.disabled = false;
+      if (button.dataset.action === "sim-decide") button.disabled = false;
     } catch {
-      say("操作を完了できませんでした。接続状態を確認してから再度お試しください。");
+      say(button.dataset.action === "sim-decide"
+        ? "最初の一言をいま表示できません。このページの他の操作はそのまま使えます。"
+        : "操作を完了できませんでした。接続状態を確認してから再度お試しください。");
       button.disabled = false;
     }
   });
@@ -259,7 +327,7 @@ function renderWebPage(model = {}) {
   const user = model.user && WEB_UID_RE.test(String(model.user.uid || "")) ? model.user : null;
   const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Life Manager</title><style>
     :root{color-scheme:light;--ink:#17231e;--muted:#65736b;--line:#dce5df;--paper:#f4f7f4;--card:#fff;--accent:#19654b}
-    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;line-height:1.55}.shell{width:min(100% - 28px,620px);margin:0 auto;padding:28px 0 44px}.brand{font-weight:700;margin:0 0 20px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 5px 22px #153e2410}h1,h2,p{margin-top:0}h1{font-size:clamp(1.45rem,6vw,2rem);line-height:1.2;margin-bottom:12px}h2{font-size:1.1rem;margin:22px 0 8px}.lead,.muted,.feedback{color:var(--muted)}.eyebrow{font-size:.84rem;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:8px}.button{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;width:100%;min-height:50px;padding:12px 18px;text-decoration:none;font:inherit;font-weight:700;margin:12px 0 4px}.button.secondary{background:#e8efea;color:var(--ink)}.button:disabled{opacity:.6;cursor:wait}.terms{font-size:.97rem}.text-link{display:block;margin-top:12px;color:var(--accent);text-align:center}.text-link[type="button"]{appearance:none;border:0;background:transparent;padding:0;width:100%;font:inherit;text-decoration:underline;cursor:pointer}.feedback{min-height:1.4em;margin:0 2px 12px}@media(min-width:600px){.shell{padding-top:44px}.card{padding:32px}}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;line-height:1.55}.shell{width:min(100% - 28px,620px);margin:0 auto;padding:28px 0 44px}.brand{font-weight:700;margin:0 0 20px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 5px 22px #153e2410}h1,h2,p{margin-top:0}h1{font-size:clamp(1.45rem,6vw,2rem);line-height:1.2;margin-bottom:12px}h2{font-size:1.1rem;margin:22px 0 8px}.lead,.muted,.feedback{color:var(--muted)}.eyebrow{font-size:.84rem;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:8px}.button{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;width:100%;min-height:50px;padding:12px 18px;text-decoration:none;font:inherit;font-weight:700;margin:12px 0 4px}.button.secondary{background:#e8efea;color:var(--ink)}.button:disabled{opacity:.6;cursor:wait}.terms{font-size:.97rem}.text-link{display:block;margin-top:12px;color:var(--accent);text-align:center}.text-link[type="button"]{appearance:none;border:0;background:transparent;padding:0;width:100%;font:inherit;text-decoration:underline;cursor:pointer}.feedback{min-height:1.4em;margin:0 2px 12px}fieldset{border:0;margin:0 0 12px;padding:0}legend{font-weight:700;margin-bottom:6px}.choice{display:flex;gap:8px;align-items:center;margin:4px 0}@media(min-width:600px){.shell{padding-top:44px}.card{padding:32px}}
   </style>`;
 
   if (!user) {
@@ -275,7 +343,7 @@ function renderWebPage(model = {}) {
   const csrf = escapeHtml(user.csrf || "");
   const initialScanNeeded = snapshotValue.initialScanNeeded === true
     && snapshotValue.calendarState === "connected";
-  return `<!doctype html><html lang="ja"><head>${head}<meta name="lm-web-csrf" content="${csrf}"></head><body><main class="shell"><p class="brand">Life Manager</p><p id="lm-feedback" class="feedback" role="status" aria-live="polite"></p><div id="lm-flow" data-setup-state="${escapeHtml(state)}" data-initial-scan-needed="${initialScanNeeded}">${stateHtml}</div></main><script>${CLIENT_SCRIPT}</script></body></html>`;
+  return `<!doctype html><html lang="ja"><head>${head}<meta name="lm-web-csrf" content="${csrf}"></head><body><main class="shell"><p class="brand">Life Manager</p><p id="lm-feedback" class="feedback" role="status" aria-live="polite"></p><div id="lm-flow" data-setup-state="${escapeHtml(state)}" data-initial-scan-needed="${initialScanNeeded}">${stateHtml}</div>${simMarkup()}</main><script>${CLIENT_SCRIPT}</script></body></html>`;
 }
 
 module.exports = { escapeHtml, renderWebPage };
