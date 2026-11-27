@@ -14,6 +14,18 @@ tags: [e2e-gate]
 - launchApp:
     arguments:
       uiTesting: "true"
+      # The living home's auto-advance is DISABLED under -uiTesting by
+      # design (HomeAutoAdvance.isDisabledForUITesting in FeedRootView:
+      # Maestro steps can outlast the 29s dwell and move the deck
+      # mid-assertion) — UNLESS recording mode is requested, in which
+      # case the app behaves exactly as it does for a real user. The
+      # gate's words-changed proof (runner: T0 dump, 35s foreground
+      # wait, T1 dump) is meaningless with the deck frozen: run
+      # 45917553504 produced t0 == t1 ("I can say thank you for being
+      # understood.") for exactly this reason. Recording mode is set
+      # ONLY in flows 03/03b, whose assertions (feed visible, quote
+      # visible) are insensitive to which card is showing.
+      aniccaRecordingMode: "true"
 # A fresh simulator can present the system "Sign in to Apple Account"
 # sheet over the app (observed on the CI runner, 2026-11-25), and the
 # app re-triggers the StoreKit check -- and with it the sheet -- more
