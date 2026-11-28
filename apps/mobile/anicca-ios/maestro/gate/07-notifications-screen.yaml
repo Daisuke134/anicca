@@ -1,0 +1,34 @@
+# E2E GATE 07 — the Notifications screen opens from Settings and shows
+# the reminder schedule and permission state (NotificationsSettingsView).
+# Catches a dead NavigationLink / crashing sheet in the reminder screen,
+# which ships silently without E2E. Requires onboarding completed by
+# flow 01 in the same suite run.
+appId: ai.anicca.app.ios
+name: Gate 07 notifications screen from Settings
+tags: [e2e-gate, real-device-ok]
+---
+- launchApp:
+    arguments:
+      uiTesting: "true"
+- runFlow: _gate_dismiss_system_sheets.yaml
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+- tapOn:
+    id: "feed-settings"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme"
+    timeout: 15000
+- tapOn:
+    text: "Notifications|通知"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: "reminder-permission-status"
+    timeout: 15000
+- assertVisible:
+    id: "reminder-permission-status"
+- takeScreenshot: "gate-07-notifications-screen"

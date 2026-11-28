@@ -1,0 +1,67 @@
+name: Anicca XCUITest on Firebase Test Lab (real iPhone)
+
+# Free real-device route: Firebase Spark plan = 5 physical-device runs/day.
+# Test Lab is deprecated and shuts down 2027-09-30. Needs repo secrets:
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_B64  (App Store Connect API key, for signing)
+#   ANICCA_E2E_XCCONFIG_B64                    (already set)
+#   FIREBASE_SA_JSON, FIREBASE_PROJECT_ID      (service account of a Spark project)
+# Without the Firebase secrets the job still builds and uploads the test zip.
+on:
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: XCUITest class to run
+        default: CoreRealDeviceE2ETests
+        type: string
+permissions:
+  contents: read
+jobs:
+  ftl:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      HAVE_FB: ${{ secrets.FIREBASE_SA_JSON != '' }}
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject private SDK configuration
+        env:
+          ANICCA_PRODUCTION_XCCONFIG_B64: ${{ secrets.ANICCA_E2E_XCCONFIG_B64 }}
+        run: |
+          bash ci_scripts/ci_post_clone.sh
+          cp Configs/Production.xcconfig Configs/Staging.xcconfig
+      - name: ASC API key
+        env:
+          P8: ${{ secrets.ASC_KEY_P8_B64 }}
+        run: |
+          mkdir -p ~/private_keys && echo "$P8" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+      - name: build-for-testing (iphoneos)
+        run: |
+          xcodebuild build-for-testing -project aniccaios.xcodeproj -scheme aniccaios \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            -only-testing:aniccaiosUITests/${{ inputs.tests }}
+      - name: Package
+        run: |
+          cd "$RUNNER_TEMP/dd/Build/Products" && zip -r "$RUNNER_TEMP/MyTests.zip" Debug-iphoneos ./*.xctestrun
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ftl-tests-zip
+          path: ${{ runner.temp }}/MyTests.zip
+          retention-days: 7
+      - name: Run on Firebase Test Lab (real iPhone)
+        if: env.HAVE_FB == 'true'
+        env:
+          SA: ${{ secrets.FIREBASE_SA_JSON }}
+          PROJ: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json"
+          gcloud firebase test ios run --project "$PROJ" --test "$RUNNER_TEMP/MyTests.zip" \
+            --device model=iphone15pro,version=17.5,locale=en_US,orientation=portrait \
+            --results-dir "anicca-ftl-${{ github.run_id }}"

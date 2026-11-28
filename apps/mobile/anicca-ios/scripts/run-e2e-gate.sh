@@ -222,6 +222,22 @@ run_flow() {
   echo "   -> rc=$rc"
 }
 
+RESULT_FILE=gate-result.json
+SUITE=gate
+if [[ -n "${E2E_FLOWS_ONLY:-}" ]]; then
+# Smoke mode (anicca-e2e-smoke.yml): onboarding (01) then only the
+# listed gate flows. Writes smoke-result.json, NEVER gate-result.json,
+# so a subset run can never certify an App Store submission.
+RESULT_FILE=smoke-result.json
+SUITE=smoke
+run_flow "01-onboarding-first-words"
+for f in $E2E_FLOWS_ONLY; do
+  [[ "$f" == "01-onboarding-first-words" ]] && continue
+  reboot_sim
+  run_flow "$f"
+done
+WORDS_JSON='{"status":"skipped","t0":null,"t1":null,"detail":"smoke mode: words-change check not run"}'
+else
 run_flow "01-onboarding-first-words"
 reboot_sim
 run_flow "02-paywall-plans"
@@ -248,15 +264,21 @@ reboot_sim
 run_flow "04-poyo-on-home"
 reboot_sim
 run_flow "05-settings-round-trip"
+reboot_sim
+run_flow "06-quote-deep-link"
+reboot_sim
+run_flow "07-notifications-screen"
+fi
 
 # --- 4. Verdict ------------------------------------------------------
 FINISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 FLOW_STATUS_CSV=$(IFS=,; echo "${FLOW_STATUS[*]}")
 python3 - "$EVIDENCE" "$STARTED_AT" "$FINISHED_AT" "$VERSION" "$BUILD_NUM" \
-  "$SOURCE_COMMIT" "$MAESTRO_VERSION" "$RUNTIME" "$DEVICE_TYPE" "$FLOW_STATUS_CSV" "$WORDS_JSON" <<'PY'
+  "$SOURCE_COMMIT" "$MAESTRO_VERSION" "$RUNTIME" "$DEVICE_TYPE" "$FLOW_STATUS_CSV" "$WORDS_JSON" \
+  "$RESULT_FILE" "$SUITE" <<'PY'
 import json, os, sys
 (ev, started, finished, version, build, commit, maestro_v,
- runtime, device_type, flows_csv, words_json) = sys.argv[1:12]
+ runtime, device_type, flows_csv, words_json, result_file, suite) = sys.argv[1:14]
 flows = []
 for pair in flows_csv.split(","):
     if not pair:
@@ -275,6 +297,7 @@ if os.environ.get("GITHUB_RUN_ID"):
         os.environ["GITHUB_RUN_ID"])
 manifest = {
     "app_id": "ai.anicca.app.ios",
+    "suite": suite,
     "version": version,
     "build": build,
     "source_commit": commit,
@@ -292,7 +315,7 @@ manifest = {
         "t1_quote": words.get("t1"),
     }],
 }
-with open(f"{ev}/gate-result.json", "w") as f:
+with open(f"{ev}/{result_file}", "w") as f:
     json.dump(manifest, f, indent=2, ensure_ascii=False)
 print(json.dumps(manifest, indent=2, ensure_ascii=False))
 PY
