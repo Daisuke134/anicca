@@ -32,6 +32,13 @@ regexes = [
 ]
 
 [[allowlists]]
+description = "hybrid-affirmations localStorage key name, not a credential (commit e20a3f07)"
+regexTarget = "match"
+regexes = [
+  '''anicca-hybrid-affirmations-v1''',
+]
+
+[[allowlists]]
 description = "public on-chain contract addresses (NOT secrets — anyone can look them up on basescan.org / etherscan.io)"
 regexTarget = "match"
 regexes = [
