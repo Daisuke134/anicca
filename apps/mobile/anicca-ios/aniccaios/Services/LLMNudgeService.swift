@@ -11,15 +11,19 @@ actor LLMNudgeService {
 
     /// 今日の戦略（LLMが生成）- Phase 7+8
     private(set) var overallStrategy: String?
+    private var latestAttempt: UUID?
 
-    private init() {
-        self.session = URLSession.shared
+    init(session: URLSession = .shared) {
+        self.session = session
         self.decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601  // ISO8601文字列をDateに変換
     }
 
     /// 今日生成されたNudgeを取得
     func fetchTodaysNudges() async throws -> [LLMGeneratedNudge] {
+        let attempt = UUID()
+        latestAttempt = attempt
+        overallStrategy = nil
         // Free ユーザーは LLM Nudge 無効（APIコスト節約）
         let isEntitled = await MainActor.run { AppState.shared.subscriptionInfo.isEntitled }
         guard isEntitled else {
@@ -29,7 +33,7 @@ actor LLMNudgeService {
 
         let (url, appVersion) = await MainActor.run { (AppConfig.nudgeTodayURL, AppConfig.appVersion) }
         let deviceId = await AppState.shared.resolveDeviceId()
-        logger.info("🔄 [LLM] Requesting: \(url.absoluteString) with deviceId: \(deviceId), v\(appVersion)")
+        logger.info("🔄 [LLM] Requesting nudges, v\(appVersion)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -47,9 +51,6 @@ actor LLMNudgeService {
 
             guard (200..<300).contains(httpResponse.statusCode) else {
                 logger.error("❌ [LLM] Failed: HTTP \(httpResponse.statusCode)")
-                if let body = String(data: data, encoding: .utf8) {
-                    logger.error("❌ [LLM] Response: \(body)")
-                }
                 throw ServiceError.httpError(httpResponse.statusCode)
             }
 
@@ -62,9 +63,11 @@ actor LLMNudgeService {
             }
 
             // Phase 7+8: overallStrategyを保存
-            self.overallStrategy = responseBody.overallStrategy
+            if latestAttempt == attempt {
+                self.overallStrategy = responseBody.overallStrategy
+            }
 
-            logger.info("✅ [LLM] Decoded \(responseBody.nudges.count) nudges, strategy: \(responseBody.overallStrategy ?? "none")")
+            logger.info("✅ [LLM] Decoded \(responseBody.nudges.count) nudges")
             return responseBody.nudges
         } catch {
             logger.error("Failed to fetch todays nudges: \(error.localizedDescription)")
