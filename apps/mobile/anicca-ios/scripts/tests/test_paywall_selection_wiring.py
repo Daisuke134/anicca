@@ -279,18 +279,50 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("eligibility[package.storeProduct.productIdentifier]?.status", self.source)
         self.assertIn("PaywallTrialPresentation.resolve(", self.source)
 
-    def test_primary_offer_and_alternatives_do_not_have_competing_scroll_regions(self):
-        # Winner spec section 6: exactly three plans as cards on one screen;
-        # no "Other plans" sheet may hide a plan.
-        self.assertNotIn('accessibilityIdentifier("paywall-other-plans")', self.source)
+    def test_primary_offer_is_the_annual_card_and_other_plans_fold_inline(self):
+        # Issue #731: one annual card. Weekly/lifetime unfold in place.
+        # A sheet must not replace that disclosure.
         self.assertNotIn(".sheet(isPresented: $showOtherPlans)", self.source)
+        self.assertIn("PaywallPlanPresentation.featured", self.source)
+        self.assertIn("PaywallPlanPresentation.folded", self.source)
+        self.assertIn('accessibilityIdentifier("paywall-other-plans")', self.source)
+        self.assertIn("AnalyticsManager.shared.track(.paywallOtherPlansExpanded", self.source)
+        self.assertIn("PaywallTrustLine.localizationKey(trialEligible: hasTrialEligibility)", self.source)
+        self.assertIn('accessibilityIdentifier("paywall-trust-line")', self.source)
+        self.assertIn('accessibilityIdentifier("paywall-plan-cta")', self.source)
+        cta = self.source.index('accessibilityIdentifier("paywall-plan-cta")')
+        trust = self.source.index('accessibilityIdentifier("paywall-trust-line")')
+        self.assertLess(cta, trust)
         self.assertIn("private var planCards", self.source)
         self.assertIn('accessibilityIdentifier("paywall-billed-amount")', self.source)
         self.assertIn('accessibilityIdentifier("paywall-monthly-equivalent")', self.source)
+        self.assertIn('accessibilityIdentifier("paywall-plan-\\(Self.planIdentifierName(for: package.packageType))")', self.source)
         self.assertNotIn("dailyPrice", self.source)
         self.assertNotIn(".lineLimit(1)", self.source)
         for key in ("paywall_plan_restore", "paywall_plan_terms", "paywall_plan_privacy"):
             self.assertIn(key, self.source)
+        analytics = ANALYTICS.read_text(encoding="utf-8")
+        self.assertIn('case paywallShown = "paywall_shown"', analytics)
+        self.assertIn('case productSelected = "product_selected"', analytics)
+        self.assertIn('case purchaseStarted = "purchase_started"', analytics)
+        self.assertIn('case purchaseResult = "purchase_result"', analytics)
+        self.assertIn('case paywallOtherPlansExpanded = "paywall_other_plans_expanded"', analytics)
+
+    def test_trust_line_copy_is_localized_for_english_and_japanese(self):
+        en = (APP_ROOT / "aniccaios/Resources/en.lproj/Localizable.strings").read_text(encoding="utf-8")
+        ja = (APP_ROOT / "aniccaios/Resources/ja.lproj/Localizable.strings").read_text(encoding="utf-8")
+        self.assertIn(
+            '"paywall_no_payment_now_cancel" = "No payment now. Cancel anytime in Settings.";',
+            en,
+        )
+        self.assertIn('"paywall_cancel_anytime_settings" = "Cancel anytime in Settings.";', en)
+        self.assertIn('"paywall_other_plans" = "Other plans";', en)
+        self.assertIn(
+            '"paywall_no_payment_now_cancel" = "今は支払いなし。設定からいつでも解約できます。";',
+            ja,
+        )
+        self.assertIn('"paywall_cancel_anytime_settings" = "設定からいつでも解約できます。";', ja)
+        self.assertIn('"paywall_other_plans" = "その他のプラン";', ja)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

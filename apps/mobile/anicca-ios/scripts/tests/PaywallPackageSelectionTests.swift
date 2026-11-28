@@ -274,6 +274,30 @@ final class PaywallPackageSelectionTests {
         }
     }
 
+    func testDefaultScreenFeaturesOnlyTheAnnualPlan() {
+        let plans = ["weekly", "lifetime", "monthly", "annual"]
+        let featured = PaywallPlanPresentation.featured(plans) { $0 == "annual" }
+        let folded = PaywallPlanPresentation.folded(plans) { $0 == "annual" }
+        precondition(featured == ["annual"])
+        precondition(folded == ["weekly", "lifetime", "monthly"])
+    }
+
+    func testFoldedPlansKeepOfferingOrderBehindOtherPlans() {
+        let plans = ["annual", "weekly", "lifetime"]
+        precondition(PaywallPlanPresentation.folded(plans) { $0 == "annual" } == ["weekly", "lifetime"])
+    }
+
+    func testMissingAnnualKeepsEveryVisiblePlanOnTheFirstScreen() {
+        let plans = ["weekly", "lifetime"]
+        precondition(PaywallPlanPresentation.featured(plans) { $0 == "annual" } == plans)
+        precondition(PaywallPlanPresentation.folded(plans) { $0 == "annual" }.isEmpty)
+    }
+
+    func testTrustLinePromisesNoPaymentOnlyWhenTrialIsEligible() {
+        precondition(PaywallTrustLine.localizationKey(trialEligible: true) == "paywall_no_payment_now_cancel")
+        precondition(PaywallTrustLine.localizationKey(trialEligible: false) == "paywall_cancel_anytime_settings")
+    }
+
     func testTrialPresentationRequiresThisProductsFreeOfferAndEligibility() {
         precondition(PaywallTrialPresentation.resolve(hasFreeTrial: true, isEligible: true) == .eligible)
         precondition(PaywallTrialPresentation.resolve(hasFreeTrial: true, isEligible: nil) == .conditional)
@@ -284,6 +308,10 @@ final class PaywallPackageSelectionTests {
     }
 
     var allTests: [(String, () -> Void)] { [
+        ("testDefaultScreenFeaturesOnlyTheAnnualPlan", testDefaultScreenFeaturesOnlyTheAnnualPlan),
+        ("testFoldedPlansKeepOfferingOrderBehindOtherPlans", testFoldedPlansKeepOfferingOrderBehindOtherPlans),
+        ("testMissingAnnualKeepsEveryVisiblePlanOnTheFirstScreen", testMissingAnnualKeepsEveryVisiblePlanOnTheFirstScreen),
+        ("testTrustLinePromisesNoPaymentOnlyWhenTrialIsEligible", testTrustLinePromisesNoPaymentOnlyWhenTrialIsEligible),
         ("testTrialPresentationRequiresThisProductsFreeOfferAndEligibility", testTrialPresentationRequiresThisProductsFreeOfferAndEligibility),
         ("testEveryAssignedOfferingUsesSoftGateAndEverySurfaceCanClose", testEveryAssignedOfferingUsesSoftGateAndEverySurfaceCanClose),
         ("testHonneCurrentFallsBackToAniccaVariantB", testHonneCurrentFallsBackToAniccaVariantB),

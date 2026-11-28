@@ -431,6 +431,7 @@ enum AnalyticsEvent: String {
 
     // Paywall funnel
     case paywallShown = "paywall_shown"
+    case paywallOtherPlansExpanded = "paywall_other_plans_expanded"
     case paywallPrimerViewed = "paywall_primer_viewed"
     case paywallPlanSelectionViewed = "paywall_plan_selection_viewed"
     case onboardingPaywallCustomerInfoResult = "onboarding_paywall_customer_info_result"

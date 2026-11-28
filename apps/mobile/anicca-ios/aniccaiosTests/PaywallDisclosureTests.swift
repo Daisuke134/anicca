@@ -58,6 +58,21 @@ final class PaywallDisclosureTests: XCTestCase {
         XCTAssertLessThan(PaywallPlanDisplay.rank(planName: "weekly"), PaywallPlanDisplay.rank(planName: "lifetime"))
     }
 
+    // Issue #731: the first screen is the annual card. Weekly and
+    // lifetime keep their order behind Other plans. With no annual
+    // package, those plans stay on the first screen. "No payment now"
+    // is only the eligible-trial line.
+    func testFirstScreenFeaturesAnnualAndFoldsTheOtherPlans() {
+        let plans = ["weekly", "lifetime", "annual"]
+        XCTAssertEqual(PaywallPlanPresentation.featured(plans) { $0 == "annual" }, ["annual"])
+        XCTAssertEqual(PaywallPlanPresentation.folded(plans) { $0 == "annual" }, ["weekly", "lifetime"])
+        let withoutAnnual = ["weekly", "lifetime"]
+        XCTAssertEqual(PaywallPlanPresentation.featured(withoutAnnual) { $0 == "annual" }, withoutAnnual)
+        XCTAssertTrue(PaywallPlanPresentation.folded(withoutAnnual) { $0 == "annual" }.isEmpty)
+        XCTAssertEqual(PaywallTrustLine.localizationKey(trialEligible: true), "paywall_no_payment_now_cancel")
+        XCTAssertEqual(PaywallTrustLine.localizationKey(trialEligible: false), "paywall_cancel_anytime_settings")
+    }
+
     // User rule (2026-11-15): a user who already pays never sees a
     // paywall; everyone else does. The live refresh decides when it
     // succeeds; the cached state is only the fallback for a failed one.

@@ -1335,6 +1335,8 @@
 "paywall_b_review" = "\"Anicca me ayudó a ser más amable conmigo.\"";
 "paywall_b_trust_no_trial" = "Cancela cuando quieras · Satisfacción garantizada";
 "paywall_b_trust_trial" = "3 días gratis, luego %@ · Cancela cuando quieras";
+"paywall_no_payment_now_cancel" = "Sin pago ahora. Cancela cuando quieras en Ajustes.";
+"paywall_cancel_anytime_settings" = "Cancela cuando quieras en Ajustes.";
 "paywall_trial_timeline_start" = "Comienza la prueba gratuita — todo desbloqueado";
 "paywall_trial_timeline_reminder" = "Te recordaremos antes de que termine tu prueba";
 "paywall_trial_timeline_charge" = "La prueba termina — %@ si no cancelas antes";

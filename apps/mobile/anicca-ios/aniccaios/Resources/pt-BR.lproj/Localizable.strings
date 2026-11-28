@@ -1295,6 +1295,8 @@
 "paywall_b_cta_trial" = "Começar grátis";
 "paywall_b_trust_no_trial" = "Cancele quando quiser · Satisfação garantida";
 "paywall_b_trust_trial" = "3 dias grátis, depois %@ · Cancele quando quiser";
+"paywall_no_payment_now_cancel" = "Sem pagamento agora. Cancele quando quiser em Ajustes.";
+"paywall_cancel_anytime_settings" = "Cancele quando quiser em Ajustes.";
 "paywall_trial_timeline_start" = "Início do teste gratuito — tudo liberado";
 "paywall_trial_timeline_reminder" = "Vamos te lembrar antes do fim do teste";
 "paywall_trial_timeline_charge" = "Fim do teste — %@ se você não cancelar antes";
