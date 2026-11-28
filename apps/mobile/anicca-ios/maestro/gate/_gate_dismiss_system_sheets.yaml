@@ -1,0 +1,17 @@
+# Shared preamble for gate flows 06/07: dismiss the system sheets a fresh
+# simulator (or a real iPhone without a sandbox account) can show over
+# the app. Every tap is optional, so this is a no-op when nothing shows.
+appId: ai.anicca.app.ios
+---
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Cancel|キャンセル"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn:
+    text: "許可しない|Don't Allow|Don’t Allow"
+    optional: true
+    retryTapIfNoChange: false

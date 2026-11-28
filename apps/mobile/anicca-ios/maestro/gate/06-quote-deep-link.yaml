@@ -1,0 +1,34 @@
+# E2E GATE 06 — the daily-affirmation deep link lands on the right words.
+# anicca://quote/q003 is what the 4-daily notification / widget opens
+# (aniccaiosApp.onOpenURL -> QuoteNavigationCoordinator -> FeedRootView
+# builds the deck with q003 first). Requires onboarding completed by
+# flow 01 in the same suite run. q003 = "Every breath moves me closer to
+# my truest self." (en) / "一呼吸ごとに、本当の自分に近づいています。" (ja).
+appId: ai.anicca.app.ios
+name: Gate 06 quote deep link anicca://quote/q003
+tags: [e2e-gate, real-device-ok]
+---
+- launchApp:
+    arguments:
+      uiTesting: "true"
+- runFlow: _gate_dismiss_system_sheets.yaml
+- extendedWaitUntil:
+    visible:
+      id: "feed-today"
+    timeout: 30000
+- openLink: "anicca://quote/q003"
+# iOS asks before a custom scheme opens an app from outside it.
+- tapOn:
+    text: "Open|開く"
+    optional: true
+    retryTapIfNoChange: false
+- runFlow: _gate_dismiss_system_sheets.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quote-text"
+      text: ".*(Every breath moves me closer to my truest self|一呼吸ごとに、本当の自分に近づいています).*"
+    timeout: 20000
+- assertVisible:
+    id: "quote-text"
+    text: ".*(Every breath moves me closer to my truest self|一呼吸ごとに、本当の自分に近づいています).*"
+- takeScreenshot: "gate-06-quote-deep-link-q003"

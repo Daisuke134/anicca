@@ -68,3 +68,18 @@ build reached recording; its MP4 is incomplete and not acceptance evidence.
 For the final delegated verification, dispatch once only. If that run fails or
 is cancelled, preserve its actual result and report the blocker; do not rerun
 it or weaken assertions. This includes a host-admission failure.
+
+## Gate flows 06/07 and the smoke workflow (2026-11-28)
+
+- `gate/06-quote-deep-link.yaml`: `anicca://quote/q003` lands on q003's words.
+- `gate/07-notifications-screen.yaml`: Settings -> Notifications opens and shows
+  the permission state (`reminder-permission-status`).
+- Both run in the full gate (`anicca-e2e-gate.yml`) after flow 05.
+- `.github/workflows/anicca-e2e-smoke.yml` runs onboarding (01) plus only the
+  selected flows on a free GitHub macOS simulator. It is triggered by PRs touching
+  `maestro/gate/**` or manually. It writes `smoke-result.json` and never
+  `gate-result.json`, so it cannot certify a build.
+  `E2E_FLOWS_ONLY="06-quote-deep-link 07-notifications-screen" bash scripts/run-e2e-gate.sh DIR`
+- Real iPhone: official Maestro is simulator-only (issue #686). Flows tagged
+  `real-device-ok` avoid `clearState`/`permissions`, which the community
+  real-device drivers do not support.
