@@ -208,20 +208,25 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - runFlow: _dismiss-apple-account.yaml
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 07-paywall
-      # Issue #9356 as decided 2026-11-15: exactly three plans, each a
-      # card on this first screen — annual highlighted as best value,
-      # weekly, lifetime. Nothing hides behind an "Other plans" sheet,
-      # and monthly is not sold on the paywall at all.
+      # Issue #731: annual is the only plan card on this first screen.
+      # Weekly and lifetime unfold behind Other plans. Monthly is not sold.
       - assertVisible:
           id: "paywall-plan-annual"
       - assertVisible:
           id: "paywall-plan-badge-best-value"
+      - assertNotVisible:
+          id: "paywall-plan-weekly"
+      - assertNotVisible:
+          id: "paywall-plan-lifetime"
+      - assertNotVisible:
+          id: "paywall-plan-monthly"
+      - tapOn:
+          id: "paywall-other-plans"
+          retryTapIfNoChange: false
       - assertVisible:
           id: "paywall-plan-weekly"
       - assertVisible:
           id: "paywall-plan-lifetime"
-      - assertNotVisible:
-          id: "paywall-plan-monthly"
       # Selecting a plan happens in place, on this same screen: the
       # purchase CTA stays visible and switches to the weekly terms.
       - tapOn:
@@ -297,10 +302,15 @@ name: Adaptive personalized onboarding, optional Premium, and audit frames 00–
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
       - takeScreenshot: 14-premium-from-themes
       - assertNotVisible: "(?i)sign in to (your )?apple[ \u00A0](account|id)"
-      # Issue #9356: on this second paywall appearance too, the three
-      # plans are cards on the first screen and monthly is absent.
+      # Issue #731: this second paywall also opens on the annual card.
+      # Weekly and lifetime appear only after Other plans.
       - assertVisible:
           id: "paywall-plan-annual"
+      - assertNotVisible:
+          id: "paywall-plan-weekly"
+      - tapOn:
+          id: "paywall-other-plans"
+          retryTapIfNoChange: false
       - assertVisible:
           id: "paywall-plan-weekly"
       - assertVisible:

@@ -1443,6 +1443,8 @@
 "paywall_b_review" = "\"Anicca helped me be kinder to myself.\"";
 "paywall_b_trust_no_trial" = "Cancel anytime · Satisfaction guaranteed";
 "paywall_b_trust_trial" = "3 days free, then %@ · Cancel anytime";
+"paywall_no_payment_now_cancel" = "No payment now. Cancel anytime in Settings.";
+"paywall_cancel_anytime_settings" = "Cancel anytime in Settings.";
 "paywall_trial_timeline_start" = "Free trial starts — everything unlocked";
 "paywall_trial_timeline_reminder" = "We remind you before your trial ends";
 "paywall_trial_timeline_charge" = "Trial ends — %@ unless you cancel first";

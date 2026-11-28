@@ -130,6 +130,11 @@ final class OnboardingV2Tests: XCTestCase {
         XCTAssertEqual(event.rawValue, "paywall_plan_selection_viewed")
     }
 
+    func test_analytics_paywallOtherPlansExpanded_exists() {
+        let event = AnalyticsEvent.paywallOtherPlansExpanded
+        XCTAssertEqual(event.rawValue, "paywall_other_plans_expanded")
+    }
+
     // MARK: - PaywallGateVariant (2026-11-08 hard paywall A/B)
 
     func test_gateVariant_oldHardOffering_resolvesSoft() {

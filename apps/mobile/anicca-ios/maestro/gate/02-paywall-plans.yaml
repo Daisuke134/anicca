@@ -1,6 +1,7 @@
-# E2E GATE 02 — the soft paywall after onboarding shows exactly
-# Weekly / Annual / Lifetime, Annual carries the Best Value badge,
-# the free-trial timeline is shown, Monthly is NOT offered, and the
+# E2E GATE 02 — the soft paywall after onboarding shows the Annual
+# plan as the only card, with the Best Value badge and the free-trial
+# timeline. Weekly and Lifetime stay behind "Other plans" and appear
+# after that disclosure is tapped. Monthly is NOT offered, and the
 # paywall is dismissible without a purchase.
 # (Selection state itself is not exposed through the accessibility
 # tree; the badge is the black-box observable for "Annual is the
@@ -17,7 +18,7 @@ tags: [e2e-gate]
     visible:
       id: "paywall-plan-cta"
     timeout: 60000
-- assertVisible:
+- assertNotVisible:
     id: "paywall-plan-weekly"
 - assertVisible:
     id: "paywall-plan-annual"
@@ -54,10 +55,15 @@ tags: [e2e-gate]
     timeout: 60000
 - assertVisible:
     id: "paywall-trial-timeline"
+- tapOn:
+    id: "paywall-other-plans"
+    retryTapIfNoChange: false
 - extendedWaitUntil:
     visible:
       id: "paywall-plan-lifetime"
     timeout: 15000
+- assertVisible:
+    id: "paywall-plan-weekly"
 - assertVisible:
     id: "paywall-plan-lifetime"
 - assertNotVisible:

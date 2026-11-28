@@ -1295,6 +1295,8 @@
 "paywall_b_cta_trial" = "Kostenlos starten";
 "paywall_b_trust_no_trial" = "Jederzeit kündbar · Zufriedenheit garantiert";
 "paywall_b_trust_trial" = "3 Tage kostenlos, dann %@ · Jederzeit kündbar";
+"paywall_no_payment_now_cancel" = "Jetzt keine Zahlung. Jederzeit in den Einstellungen kündbar.";
+"paywall_cancel_anytime_settings" = "Jederzeit in den Einstellungen kündbar.";
 "paywall_trial_timeline_start" = "Kostenlose Testphase beginnt — alles freigeschaltet";
 "paywall_trial_timeline_reminder" = "Wir erinnern dich, bevor deine Testphase endet";
 "paywall_trial_timeline_charge" = "Testphase endet — %@, sofern du nicht vorher kündigst";

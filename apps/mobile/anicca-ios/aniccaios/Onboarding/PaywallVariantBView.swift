@@ -3,8 +3,9 @@ import RevenueCat
 import StoreKit
 import UIKit
 
-/// Every plan on sale is shown as a card on the first screen (Issue #9356);
-/// no plan hides behind an "Other plans" sheet.
+/// The annual plan is the only card on the first screen (issue #731).
+/// Weekly, lifetime, and any other non-annual package stay purchasable
+/// and unfold in place behind "Other plans". There is no other-plans sheet.
 struct PaywallVariantBView: View {
     let variant: String
     let onPurchaseSuccess: (CustomerInfo) -> Void
@@ -21,6 +22,7 @@ struct PaywallVariantBView: View {
     @State private var showReloadAfterTimeout = false
     @State private var trackedOfferingLoadOutcomes: Set<String> = []
     @State private var eligibility: [String: IntroEligibility] = [:]
+    @State private var otherPlansExpanded = false
 
     private var offering: Offering? { appState.cachedOffering }
     private var packages: [Package] {
@@ -244,33 +246,77 @@ struct PaywallVariantBView: View {
             .buttonStyle(PressScaleButtonStyle())
             .disabled(selectedPackage == nil || isPurchasing)
             .accessibilityIdentifier("paywall-plan-cta")
+            Text(NSLocalizedString(PaywallTrustLine.localizationKey(trialEligible: hasTrialEligibility), comment: ""))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("paywall-trust-line")
         }
     }
 
-    /// The three plans the paywall sells, as selectable cards on the first screen.
+    /// Annual is one large card. Other visible plans unfold under it.
     private var planCards: some View {
         VStack(spacing: 10) {
-            ForEach(orderedPackages, id: \.identifier) { package in
+            ForEach(featuredPackages, id: \.identifier) { package in
+                planButton(package, prominent: package.packageType == .annual)
+            }
+            if !foldedPackages.isEmpty {
                 Button {
-                    // Selection feedback while a value changes (Apple HIG, Playing haptics).
-                    UISelectionFeedbackGenerator().selectionChanged()
-                    selectedPackage = package
-                    AnalyticsManager.shared.track(.productSelected, properties: [
-                        "product_id": package.storeProduct.productIdentifier,
-                        "offering_id": offering?.identifier ?? "unknown",
-                        "source": "paywall",
-                    ])
+                    otherPlansExpanded.toggle()
+                    if otherPlansExpanded {
+                        AnalyticsManager.shared.track(.paywallOtherPlansExpanded, properties: [
+                            "offering_id": offering?.identifier ?? "unknown",
+                            "source": "paywall",
+                        ])
+                    }
                 } label: {
-                    offerCard(package: package, isSelected: selectedPackage?.identifier == package.identifier)
-                        .contentShape(Rectangle())
+                    HStack(spacing: 4) {
+                        Text(String(localized: "paywall_other_plans"))
+                        Image(systemName: otherPlansExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption2.weight(.semibold))
+                            .accessibilityHidden(true)
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.Colors.accent)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(isPurchasing)
-                .accessibilityIdentifier("paywall-plan-\(Self.planIdentifierName(for: package.packageType))")
+                .accessibilityIdentifier("paywall-other-plans")
+                if otherPlansExpanded {
+                    ForEach(foldedPackages, id: \.identifier) { package in
+                        planButton(package, prominent: false)
+                    }
+                }
             }
         }
-        // No identifier on this container either: the cards' own
-        // identifiers are the E2E contract and nothing may shadow them.
+        // No identifier on this container: the cards' own identifiers
+        // are the E2E contract and nothing may shadow them.
+    }
+
+    private func planButton(_ package: Package, prominent: Bool) -> some View {
+        Button {
+            // Selection feedback while a value changes (Apple HIG, Playing haptics).
+            UISelectionFeedbackGenerator().selectionChanged()
+            selectedPackage = package
+            AnalyticsManager.shared.track(.productSelected, properties: [
+                "product_id": package.storeProduct.productIdentifier,
+                "offering_id": offering?.identifier ?? "unknown",
+                "source": "paywall",
+            ])
+        } label: {
+            offerCard(
+                package: package,
+                isSelected: selectedPackage?.identifier == package.identifier,
+                prominent: prominent
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isPurchasing)
+        .accessibilityIdentifier("paywall-plan-\(Self.planIdentifierName(for: package.packageType))")
     }
 
     /// Stable accessibility-identifier suffix for a plan card.
@@ -294,9 +340,9 @@ struct PaywallVariantBView: View {
         }
     }
 
-    /// The three plans the paywall sells, in display order: annual
-    /// (highlighted, default), weekly, lifetime. Monthly is filtered out
-    /// here — see PaywallPlanDisplay for the primary-source reasoning.
+    /// Plans still for sale, in display order: annual (highlighted,
+    /// default), weekly, lifetime. Monthly is filtered out here — see
+    /// PaywallPlanDisplay. The first screen shows only `featuredPackages`.
     private var orderedPackages: [Package] {
         let visible = packages.filter {
             PaywallPlanDisplay.isVisible(planName: Self.planIdentifierName(for: $0.packageType))
@@ -306,7 +352,15 @@ struct PaywallVariantBView: View {
         }
     }
 
-    private func offerCard(package: Package, isSelected: Bool) -> some View {
+    private var featuredPackages: [Package] {
+        PaywallPlanPresentation.featured(orderedPackages) { $0.packageType == .annual }
+    }
+
+    private var foldedPackages: [Package] {
+        PaywallPlanPresentation.folded(orderedPackages) { $0.packageType == .annual }
+    }
+
+    private func offerCard(package: Package, isSelected: Bool, prominent: Bool) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 if package.packageType == .annual {
@@ -323,7 +377,7 @@ struct PaywallVariantBView: View {
                 Text(localizedPlanTitle(for: package))
                     .font(.subheadline)
                 Text(billedAmount(for: package))
-                    .font(.system(.title2, design: .serif).weight(.semibold))
+                    .font(.system(prominent ? .title : .title2, design: .serif).weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("paywall-billed-amount")
                 if let equivalent = monthlyEquivalent(for: package) {
@@ -345,7 +399,7 @@ struct PaywallVariantBView: View {
                 .foregroundStyle(AppTheme.Colors.accent)
                 .accessibilityHidden(true)
         }
-        .padding(16)
+        .padding(prominent ? 22 : 16)
         .foregroundStyle(AppTheme.Colors.label)
         .selectionCard(isSelected: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

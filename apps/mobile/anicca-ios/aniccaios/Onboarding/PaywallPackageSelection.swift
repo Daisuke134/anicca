@@ -125,10 +125,12 @@ enum PaywallOfferingSelection {
 /// highlighted with a savings badge; Adapty — weekly plans drive 55.5%
 /// of subscription revenue and convert install→trial at 9.8% vs 1.8%
 /// for annual, try 2–3 plans and never show five; winner I am runs
-/// three tiers). Exactly three cards: annual first (highlighted as best
-/// value, default selection, 3-day free trial), then weekly, then
-/// lifetime. Monthly is not sold on the paywall — four choices made
-/// people deliberate instead of deciding.
+/// three tiers). Exactly three plans stay for sale: annual first
+/// (highlighted as best value, default selection, free trial), then
+/// weekly, then lifetime. Monthly is not sold — four choices made
+/// people deliberate instead of deciding. Issue #731 shows only the
+/// annual plan on the first screen; weekly and lifetime unfold behind
+/// "Other plans" (see PaywallPlanPresentation).
 enum PaywallPlanDisplay {
     static func isVisible(planName: String) -> Bool {
         planName == "annual" || planName == "weekly" || planName == "lifetime"
@@ -141,6 +143,33 @@ enum PaywallPlanDisplay {
         case "lifetime": return 2
         default: return 3
         }
+    }
+}
+
+/// Issue #731: the first screen is a single annual card. Every other
+/// visible package stays purchasable and keeps its order, folded behind
+/// the "Other plans" disclosure. With no annual package, nothing is
+/// folded — the remaining plans stay on screen.
+enum PaywallPlanPresentation {
+    static func featured<Candidate>(_ candidates: [Candidate], isAnnual: (Candidate) -> Bool) -> [Candidate] {
+        let annual = candidates.filter(isAnnual)
+        return annual.isEmpty ? candidates : annual
+    }
+
+    static func folded<Candidate>(_ candidates: [Candidate], isAnnual: (Candidate) -> Bool) -> [Candidate] {
+        guard candidates.contains(where: isAnnual) else { return [] }
+        return candidates.filter { !isAnnual($0) }
+    }
+}
+
+/// One reassurance line under the purchase button. "No payment now" is
+/// promised only after this package's free trial is confirmed eligible.
+enum PaywallTrustLine {
+    static let noPaymentNowAndCancelKey = "paywall_no_payment_now_cancel"
+    static let cancelAnytimeKey = "paywall_cancel_anytime_settings"
+
+    static func localizationKey(trialEligible: Bool) -> String {
+        trialEligible ? noPaymentNowAndCancelKey : cancelAnytimeKey
     }
 }
 

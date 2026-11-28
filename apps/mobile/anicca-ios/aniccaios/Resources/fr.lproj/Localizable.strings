@@ -1295,6 +1295,8 @@
 "paywall_b_cta_trial" = "Commencer gratuitement";
 "paywall_b_trust_no_trial" = "Annulable à tout moment · Satisfaction garantie";
 "paywall_b_trust_trial" = "3 jours gratuits, puis %@ · Annulez à tout moment";
+"paywall_no_payment_now_cancel" = "Aucun paiement maintenant. Résiliation à tout moment dans Réglages.";
+"paywall_cancel_anytime_settings" = "Résiliation à tout moment dans Réglages.";
 "paywall_trial_timeline_start" = "Début de l'essai gratuit — tout est débloqué";
 "paywall_trial_timeline_reminder" = "Nous vous préviendrons avant la fin de votre essai";
 "paywall_trial_timeline_charge" = "Fin de l'essai — %@ sauf annulation avant";

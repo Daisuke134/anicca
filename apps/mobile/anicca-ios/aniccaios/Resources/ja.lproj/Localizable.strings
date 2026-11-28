@@ -1442,6 +1442,8 @@
 "paywall_b_review" = "「アニッチャのおかげで自分に優しくなれました」";
 "paywall_b_trust_no_trial" = "いつでもキャンセル · 満足保証";
 "paywall_b_trust_trial" = "3日間無料、その後 %@ · いつでもキャンセル可能";
+"paywall_no_payment_now_cancel" = "今は支払いなし。設定からいつでも解約できます。";
+"paywall_cancel_anytime_settings" = "設定からいつでも解約できます。";
 "paywall_trial_timeline_start" = "無料トライアル開始 — 全機能が使えます";
 "paywall_trial_timeline_reminder" = "トライアル終了前にリマインドします";
 "paywall_trial_timeline_charge" = "トライアル終了 — 解約しなければ %@";
@@ -2793,7 +2795,7 @@
 "growth_theme_selected" = "選択中のテーマ";
 
 /* Selected-product billing disclosures */
-"paywall_other_plans" = "ほかのプラン";
+"paywall_other_plans" = "その他のプラン";
 "paywall_billing_period" = "%@ / %@";
 "paywall_billing_once" = "%@（買い切り）";
 "paywall_trial_duration" = "%@ 無料";
