@@ -91,7 +91,7 @@ def router(store: InterventionStore, authenticate, pseudonym_key: bytes, authent
     return api
 
 
-def create_app(path, pseudonym_key, service_token, generator=None, sender_token=None):
+def create_app(path, pseudonym_key, service_token, generator=None, sender_token=None, research_router=None):
     """Private product service. Only the authenticated proxy supplies subjects.
 
     With a generator configured, decisions are generated per person at
@@ -125,6 +125,26 @@ def create_app(path, pseudonym_key, service_token, generator=None, sender_token=
     app.include_router(router(InterventionStore(path, generator or prior),
                               authenticate, pseudonym_key,
                               authenticate_sender=authenticate_sender if sender_token else None))
+
+    if research_router is not None:
+        @app.post('/manager/research/generate')
+        async def research_generate(request: Request):
+            if not await authenticate(request):
+                raise HTTPException(401, 'authentication required')
+            try:
+                body = await request.json()
+                if not isinstance(body, dict) or set(body) != {'case_id', 'scope'}:
+                    raise ValueError('only fixed synthetic case allowed')
+                if not all(isinstance(v, str) for v in body.values()):
+                    raise ValueError('invalid fields')
+                from starlette.concurrency import run_in_threadpool
+                from fastapi.responses import JSONResponse
+                result = await run_in_threadpool(research_router.generate, body['case_id'], body['scope'])
+                return JSONResponse(result, status_code=503 if result['status']=='unavailable' else 200)
+            except PermissionError:
+                raise HTTPException(403, 'research scope required')
+            except (ValueError, KeyError, TypeError):
+                raise HTTPException(422, 'invalid synthetic research request')
 
     @app.get('/manager/health')
     async def health(request: Request):

@@ -88,3 +88,6 @@ The scorer rejects other scopes; mobile_preflight returns BLOCKED_OUT_OF_SCOPE.
 No production routing, live app behavior or release authorization is changed.
 The dataset is UCI Online Shoppers Purchasing Intention (CC BY 4.0), Sakar et al.,
 https://doi.org/10.24432/C5F88Q. No source rows included.
+
+## TODO44 research router
+Optional injected ResearchRouter registers /manager/research/generate, fixed synthetic case IDs only, authenticated subject required. Backend endpoints restricted to explicit loopback HTTP /v1/chat/completions; redirects and inherited proxy disabled, response model identity and complete output checked. At most two configured routes, fallback only unavailable or malformed, never a quality-based hidden retry; no valid output gives 503. All outputs production_eligible=false. Default app_from_env remains unchanged and endpoint absent. This is not production routing or clinical/behavioral intervention. No user data, credentials or costs in receipt.
