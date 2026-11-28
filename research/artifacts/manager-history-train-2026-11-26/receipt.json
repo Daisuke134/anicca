@@ -1,0 +1,148 @@
+{
+  "scope": "same-task public train split diagnostic, NOT Cross-Centaur official or cross-task; train first12 test last8 distinct participant rows; previously examined train cohort; upstream train exposure unknown; no demographic/clinical/raw transcripts saved",
+  "source_sha": "d5a4c1eaab1a7d83be3a3951079c5679712903aa5aa0d521257302607c39c02f",
+  "base_sha": "a89922be0493cec67987c2c837589592f945087c1c55ff46fdb52707a91a8f20",
+  "adapter_sha": "602ab7d51970dfeaa4fe376b9d76ed97cb0c82f6745316f9af4ff2cc5fdec6c6",
+  "train_rows": [
+    1,
+    4,
+    8,
+    9,
+    10,
+    15,
+    16,
+    18,
+    26,
+    27,
+    28,
+    37
+  ],
+  "test_rows": [
+    40,
+    50,
+    58,
+    62,
+    64,
+    65,
+    71,
+    85
+  ],
+  "training_steps": 12,
+  "train_examples": 48,
+  "losses": [
+    1.9775195121765137,
+    0.6058691143989563,
+    0.7297253608703613,
+    0.54967200756073,
+    1.539610743522644,
+    0.860590398311615,
+    1.2450628280639648,
+    1.161851406097412,
+    0.7571130394935608,
+    1.2853469848632812,
+    0.42089396715164185,
+    0.5592811703681946
+  ],
+  "metrics": {
+    "base": {
+      "own": {
+        "n": 32,
+        "nll": 1.0631617593766407,
+        "accuracy": 0.53125,
+        "brier": 0.33804127460425987
+      },
+      "other": {
+        "n": 32,
+        "nll": 0.93449008850034,
+        "accuracy": 0.65625,
+        "brier": 0.28821294046116025
+      },
+      "none": {
+        "n": 32,
+        "nll": 0.6572089533488481,
+        "accuracy": 0.65625,
+        "brier": 0.23210325871134596
+      }
+    },
+    "smoltaur": {
+      "own": {
+        "n": 32,
+        "nll": 0.5148629446758379,
+        "accuracy": 0.6875,
+        "brier": 0.17515651497094006
+      },
+      "other": {
+        "n": 32,
+        "nll": 0.665339568239988,
+        "accuracy": 0.625,
+        "brier": 0.24118197717134382
+      },
+      "none": {
+        "n": 32,
+        "nll": 0.9059448191643751,
+        "accuracy": 0.65625,
+        "brier": 0.29233015864152334
+      }
+    },
+    "pilot005": {
+      "own": {
+        "n": 32,
+        "nll": 1.0931428806516883,
+        "accuracy": 0.5625,
+        "brier": 0.3447592112673841
+      },
+      "other": {
+        "n": 32,
+        "nll": 0.9507532601041653,
+        "accuracy": 0.65625,
+        "brier": 0.28716719753352776
+      },
+      "none": {
+        "n": 32,
+        "nll": 0.6551093459152292,
+        "accuracy": 0.65625,
+        "brier": 0.23099846040488864
+      }
+    },
+    "trained": {
+      "own": {
+        "n": 32,
+        "nll": 0.8703506292708664,
+        "accuracy": 0.5,
+        "brier": 0.2991323209449099
+      },
+      "other": {
+        "n": 32,
+        "nll": 0.8041771278344247,
+        "accuracy": 0.65625,
+        "brier": 0.2539375399534872
+      },
+      "none": {
+        "n": 32,
+        "nll": 0.6528063535498859,
+        "accuracy": 0.65625,
+        "brier": 0.2297906578189014
+      }
+    }
+  },
+  "paired_cluster_ci": {
+    "trained_vs_base_own": [
+      -0.19281113010577422,
+      -0.4586869150436616,
+      0.027302102003017192
+    ],
+    "trained_vs_smolt_own": [
+      0.35548768459502844,
+      0.16641550031848928,
+      0.546743429074826
+    ],
+    "trained_own_vs_other": [
+      0.06617350143644166,
+      -0.2537452857138466,
+      0.4079031313746769
+    ]
+  },
+  "eval_forward_examples": 480,
+  "reload_verified": true,
+  "elapsed": 83.04091666700015
+}
